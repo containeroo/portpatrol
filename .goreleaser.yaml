@@ -27,6 +27,7 @@ dockers:
     extra_files:
       - go.mod
       - cmd
+      - pkg
   - image_templates:
       - ghcr.io/containeroo/toast:{{ trimprefix .Tag "v" }}-arm64v8
       - ghcr.io/containeroo/toast:latest-arm64v8
@@ -38,6 +39,7 @@ dockers:
     extra_files:
       - go.mod
       - cmd
+      - pkg
 
 docker_manifests:
   - name_template: ghcr.io/containeroo/toast:{{ trimprefix .Tag "v" }}
