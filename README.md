@@ -2,6 +2,18 @@
 
 `TOAST` is a simple Go application with zero external dependencies that checks if a specified TCP or HTTP target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
 
+## How It Works
+
+`TOAST` performs the following steps:
+
+- **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
+- **Target Connection Attempts**: It repeatedly attempts to connect to the specified TCP or HTTP target based on the configured interval and timeout.
+- **Logging**: `TOAST` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
+- **Exit Status**:
+
+  - If the target becomes available, TOAST exits with a status code of 0 (success).
+  - If the program is terminated before the target is ready, it exits with a non-zero status code, typically 1, indicating failure or interruption.
+
 ## Environment Variables
 
 `TOAST` accepts the following environment variables:
@@ -10,8 +22,8 @@
 
 - `TARGET_ADDRESS`: The address of the target in the following format:
   - **TCP**: `host:port` (required).
-  - **HTTP**: `host:port` (required).
-- `TARGET_NAME`: The name of the target to check (optional, default: inferred from `TARGET_ADDRESS`)\*.
+  - **HTTP**: `scheme://host:port` (required).
+- `TARGET_NAME`: The name of the target to check (optional, default: inferred from `TARGET_ADDRESS`). If not set, the name will be inferred from the host part of the target address as follows: `http://postgres.default.svc.cluster.local:5432` will be inferred as `postgres.default.svc.cluster.local`.
 - `INTERVAL`: The interval between connection attempts (optional, default: `2s`).
 - `DIAL_TIMEOUT`: The timeout for each connection attempt (optional, default: `1s`).
 - `CHECK_TYPE`: The type of check to perform, either `tcp` or `http` (optional, default: inferred from `TARGET_ADDRESS`).
@@ -21,9 +33,22 @@
 
 - `METHOD`: The HTTP method to use (optional, default: `GET`).
 - `HEADERS`: Comma-separated list of HTTP headers to include in the request (optional).
+  For Example:
+  - `Authorization=Bearer token`
+  - `Content-Type=application/json,Accept=application/json`
 - `EXPECTED_STATUSES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
+  `TOAST` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
 
-**\*** If `TARGET_NAME` is not set, the name will be inferred from the host part of the target address as follows: `postgres.default.svc.cluster.local:5432` will be inferred as `postgres`.
+  - Individual status codes: `200,301,404`
+  - Ranges of status codes: `200,300-302`
+  - Combination of both: `200,301-302,404,500-502`
+
+  Examples:
+
+  - `200,301-302,404`: The check will be considered successful if the target responds with `200`, `301`, `302`, or `404`.
+  - `200,300-302,500-502`: The check will succeed if the target responds with `200`, any status in the range `300-302`, or any status in the range `500-502`.
+
+    This flexibility allows you to precisely define what HTTP responses are acceptable for your service, ensuring that the application only proceeds when the target is in the desired state.
 
 ## Behavior Flowchart
 
@@ -69,18 +94,8 @@ initContainers:
   - name: wait-for-valkey
     image: ghcr.io/containeroo/toast:latest
     env:
-      - name: TARGET_NAME
-        value: valkey
       - name: TARGET_ADDRESS
         value: valkey.default.svc.cluster.local:6379
-      - name: CHECK_TYPE
-        value: tcp # Specify the type of check, either tcp or http
-      - name: INTERVAL
-        value: "2s" # Specify the interval duration, e.g., 2 seconds
-      - name: DIAL_TIMEOUT
-        value: "2s" # Specify the dial timeout duration, e.g., 2 seconds
-      - name: LOG_ADDITIONAL_FIELDS
-        value: "true"
   - name: wait-for-postgres
     image: ghcr.io/containeroo/toast:latest
     env:
@@ -91,9 +106,9 @@ initContainers:
       - name: CHECK_TYPE
         value: tcp # Specify the type of check, either tcp or http
       - name: INTERVAL
-        value: "2s" # Specify the interval duration, e.g., 2 seconds
+        value: "5s" # Specify the interval duration, e.g., 2 seconds
       - name: DIAL_TIMEOUT
-        value: "2s" # Specify the dial timeout duration, e.g., 2 seconds
+        value: "5s" # Specify the dial timeout duration, e.g., 2 seconds
       - name: LOG_ADDITIONAL_FIELDS
         value: "true"
   - name: wait-for-webapp
@@ -118,3 +133,9 @@ initContainers:
       - name: LOG_ADDITIONAL_FIELDS
         value: "true"
 ```
+
+## Usage Scenarios
+
+- Kubernetes initContainers: Use `TOAST` to delay the start of a service until its dependencies are ready, ensuring reliable startup sequences.
+- Startup Scripts: Include `TOAST` in deployment scripts to ensure that services wait for dependencies before proceeding.
+- CI/CD Pipelines: Use `TOAST` in CI/CD pipelines to wait for services to be ready before running integration tests.
