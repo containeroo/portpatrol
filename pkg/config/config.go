@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/containeroo/toast/pkg/checker"
@@ -22,6 +24,7 @@ const (
 
 // Config holds the required environment variables.
 type Config struct {
+	Version             string        // The version of the application.
 	TargetName          string        // The name of the target.
 	TargetAddress       string        // The address of the target.
 	Interval            time.Duration // The interval between connection attempts.
@@ -44,6 +47,27 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 
 	if cfg.TargetAddress == "" {
 		return Config{}, fmt.Errorf("%s environment variable is required", envTargetAddress)
+	}
+
+	if cfg.TargetName == "" {
+		// Prepend scheme if missing to avoid url.Parse error
+		address := cfg.TargetAddress
+		if !strings.Contains(address, "://") {
+			address = fmt.Sprintf("http://%s", address)
+		}
+
+		// Use url.Parse to handle both cases: with and without a port
+		parsedURL, err := url.Parse(address)
+		if err != nil {
+			return Config{}, fmt.Errorf("could not parse target address: %w", err)
+		}
+
+		hostname := parsedURL.Hostname() // Extract the hostname
+		if hostname == "" {
+			return Config{}, fmt.Errorf("could not extract hostname from target address: %s", cfg.TargetAddress)
+		}
+
+		cfg.TargetName = hostname
 	}
 
 	if intervalStr := getenv(envInterval); intervalStr != "" {

@@ -14,17 +14,31 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("valid HTTP check", func(t *testing.T) {
 		t.Parallel()
 
+		// Set up a test HTTP server
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		headers := map[string]string{"Authorization": "Bearer token"}
-		expectedStatusCodes := []int{200}
+		// Mock environment variables
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envMethod:           "GET",
+				envHeaders:          "Authorization=Bearer token",
+				envExpectedStatuses: "200",
+			}
+			return env[key]
+		}
 
-		checker, _ := NewHTTPChecker("example", server.URL, "GET", headers, expectedStatusCodes, 1*time.Second)
-		err := checker.Check(context.Background())
+		// Create the HTTP checker using the mock environment variables
+		checker, err := NewHTTPChecker(context.Background(), "example", server.URL, 1*time.Second, mockEnv)
+		if err != nil {
+			t.Fatalf("failed to create HTTPChecker: %v", err)
+		}
+
+		// Perform the check
+		err = checker.Check(context.Background())
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -33,17 +47,31 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("unexpected status code", func(t *testing.T) {
 		t.Parallel()
 
+		// Set up a test HTTP server with a different status code
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 		})
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		headers := map[string]string{"Authorization": "Bearer token"}
-		expectedStatusCodes := []int{200}
+		// Mock environment variables
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envMethod:           "GET",
+				envHeaders:          "Authorization=Bearer token",
+				envExpectedStatuses: "200",
+			}
+			return env[key]
+		}
 
-		checker, _ := NewHTTPChecker("example", server.URL, "GET", headers, expectedStatusCodes, 1*time.Second)
-		err := checker.Check(context.Background())
+		// Create the HTTP checker using the mock environment variables
+		checker, err := NewHTTPChecker(context.Background(), "example", server.URL, 1*time.Second, mockEnv)
+		if err != nil {
+			t.Fatalf("failed to create HTTPChecker: %v", err)
+		}
+
+		// Perform the check, expecting an error due to the unexpected status code
+		err = checker.Check(context.Background())
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}

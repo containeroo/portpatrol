@@ -1,10 +1,8 @@
-package config_test
+package config
 
 import (
 	"testing"
 	"time"
-
-	"github.com/containeroo/toast/pkg/config"
 )
 
 func TestParseConfig_ValidConfig(t *testing.T) {
@@ -18,14 +16,15 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 			return env[key]
 		}
 
-		expectedCfg := config.Config{
+		expectedCfg := Config{
+			TargetName:    "example.com", // Extracted from TargetAddress
 			TargetAddress: "http://example.com",
 			Interval:      2 * time.Second,
 			DialTimeout:   1 * time.Second,
 			CheckType:     "http",
 		}
 
-		cfg, err := config.ParseConfig(getenv)
+		cfg, err := ParseConfig(getenv)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -48,14 +47,45 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 			return env[key]
 		}
 
-		expectedCfg := config.Config{
+		expectedCfg := Config{
+			TargetName:    "www.example.com", // Extracted from TargetAddress
 			TargetAddress: "www.example.com:80",
 			Interval:      5 * time.Second,
 			DialTimeout:   10 * time.Second,
 			CheckType:     "http",
 		}
 
-		cfg, err := config.ParseConfig(getenv)
+		cfg, err := ParseConfig(getenv)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if cfg != expectedCfg {
+			t.Fatalf("expected config %+v, got %+v", expectedCfg, cfg)
+		}
+	})
+	t.Run("valid config with kubernetes service", func(t *testing.T) {
+		t.Parallel()
+
+		getenv := func(key string) string {
+			env := map[string]string{
+				"TARGET_ADDRESS": "http://postgres.postgres.svc.cluster.local:80",
+				"INTERVAL":       "5s",
+				"DIAL_TIMEOUT":   "10s",
+				"CHECK_TYPE":     "http",
+			}
+			return env[key]
+		}
+
+		expectedCfg := Config{
+			TargetName:    "postgres.postgres.svc.cluster.local", // Extracted from TargetAddress
+			TargetAddress: "http://postgres.postgres.svc.cluster.local:80",
+			Interval:      5 * time.Second,
+			DialTimeout:   10 * time.Second,
+			CheckType:     "http",
+		}
+
+		cfg, err := ParseConfig(getenv)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -78,14 +108,15 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 			return env[key]
 		}
 
-		expectedCfg := config.Config{
+		expectedCfg := Config{
+			TargetName:    "example.com", // Extracted from TargetAddress
 			TargetAddress: "tcp://example.com:80",
 			Interval:      5 * time.Second,
 			DialTimeout:   10 * time.Second,
 			CheckType:     "tcp",
 		}
 
-		cfg, err := config.ParseConfig(getenv)
+		cfg, err := ParseConfig(getenv)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -110,7 +141,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 			return env[key]
 		}
 
-		_, err := config.ParseConfig(getenv)
+		_, err := ParseConfig(getenv)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -127,11 +158,12 @@ func TestParseConfig_Invalid(t *testing.T) {
 			return env[key]
 		}
 
-		_, err := config.ParseConfig(getenv)
+		_, err := ParseConfig(getenv)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 	})
+
 	t.Run("invalid dial timeout", func(t *testing.T) {
 		t.Parallel()
 
@@ -143,7 +175,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 			return env[key]
 		}
 
-		_, err := config.ParseConfig(getenv)
+		_, err := ParseConfig(getenv)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -160,7 +192,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 			return env[key]
 		}
 
-		_, err := config.ParseConfig(getenv)
+		_, err := ParseConfig(getenv)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -177,7 +209,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 			return env[key]
 		}
 
-		_, err := config.ParseConfig(getenv)
+		_, err := ParseConfig(getenv)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -190,7 +222,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 			return ""
 		}
 
-		_, err := config.ParseConfig(getenv)
+		_, err := ParseConfig(getenv)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}

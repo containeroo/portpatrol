@@ -24,7 +24,7 @@ func TestRunLoop_HTTPChecker_Success(t *testing.T) {
 		http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		go func() { // make linter happy
+		go func() {
 			_ = server.ListenAndServe()
 		}()
 
@@ -38,7 +38,17 @@ func TestRunLoop_HTTPChecker_Success(t *testing.T) {
 			CheckType:     "http",
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, http.MethodGet, nil, []int{http.StatusOK}, cfg.DialTimeout)
+		// Mock environment variables for HTTPChecker
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"METHOD":            "GET",
+				"HEADERS":           "",
+				"EXPECTED_STATUSES": "200",
+			}
+			return env[key]
+		}
+
+		checker, err := checker.NewHTTPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %v", err)
 		}
@@ -67,7 +77,7 @@ func TestRunLoop_HTTPChecker_Success(t *testing.T) {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		go func() { // make linter happy
+		go func() {
 			_ = server.ListenAndServe()
 		}()
 
@@ -81,7 +91,17 @@ func TestRunLoop_HTTPChecker_Success(t *testing.T) {
 			CheckType:     "http",
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, http.MethodGet, nil, []int{http.StatusOK}, cfg.DialTimeout)
+		// Mock environment variables for HTTPChecker
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"METHOD":            "GET",
+				"HEADERS":           "",
+				"EXPECTED_STATUSES": "200",
+			}
+			return env[key]
+		}
+
+		checker, err := checker.NewHTTPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %v", err)
 		}
@@ -122,7 +142,12 @@ func TestRunLoop_TCPChecker_Success(t *testing.T) {
 		CheckType:     "tcp",
 	}
 
-	checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, nil)
+	// Mock environment variables for TCPChecker
+	mockEnv := func(key string) string {
+		return ""
+	}
+
+	checker, err := checker.NewTCPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -156,7 +181,17 @@ func TestRunLoop_HTTPChecker_ContextCancel(t *testing.T) {
 		CheckType:     "http",
 	}
 
-	checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, http.MethodGet, nil, []int{http.StatusOK}, cfg.DialTimeout)
+	// Mock environment variables for HTTPChecker
+	mockEnv := func(key string) string {
+		env := map[string]string{
+			"METHOD":            "GET",
+			"HEADERS":           "",
+			"EXPECTED_STATUSES": "200",
+		}
+		return env[key]
+	}
+
+	checker, err := checker.NewHTTPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -199,7 +234,12 @@ func TestRunLoop_TCPChecker_ContextCancel(t *testing.T) {
 		CheckType:     "tcp",
 	}
 
-	checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, nil)
+	// Mock environment variables for TCPChecker
+	mockEnv := func(key string) string {
+		return ""
+	}
+
+	checker, err := checker.NewTCPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}

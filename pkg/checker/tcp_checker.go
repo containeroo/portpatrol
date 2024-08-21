@@ -8,9 +8,9 @@ import (
 
 // TCPChecker implements the Checker interface for TCP checks.
 type TCPChecker struct {
-	Name    string
-	Address string
-	dialer  *net.Dialer
+	Name    string      // The name of the checker.
+	Address string      // The address of the target.
+	dialer  *net.Dialer // The dialer to use for the connection.
 }
 
 // String returns the name of the checker.
@@ -19,12 +19,16 @@ func (c *TCPChecker) String() string {
 }
 
 // NewTCPChecker initializes a new TCPChecker.
-func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
+func NewTCPChecker(ctx context.Context, name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
 	dialer := &net.Dialer{
 		Timeout: timeout,
 	}
 
-	return &TCPChecker{Name: name, Address: address, dialer: dialer}, nil
+	return &TCPChecker{
+		Name:    name,
+		Address: address,
+		dialer:  dialer,
+	}, nil
 }
 
 // Check performs a TCP connection check.

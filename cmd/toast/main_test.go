@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/containeroo/toast/pkg/config"
+	"github.com/containeroo/toast/pkg/logger"
 )
 
 func TestSetupLogger(t *testing.T) {
@@ -24,6 +25,7 @@ func TestSetupLogger(t *testing.T) {
 
 		var buf bytes.Buffer
 		cfg := config.Config{
+			Version:             "0.0.1",
 			TargetAddress:       "localhost:8080",
 			Interval:            1 * time.Second,
 			DialTimeout:         2 * time.Second,
@@ -31,7 +33,7 @@ func TestSetupLogger(t *testing.T) {
 			LogAdditionalFields: true,
 		}
 
-		logger := setupLogger(cfg, &buf)
+		logger := logger.SetupLogger(cfg, &buf)
 		logger.Info("Test log")
 
 		logOutput := buf.String()
@@ -53,7 +55,7 @@ func TestSetupLogger(t *testing.T) {
 			LogAdditionalFields: false,
 		}
 
-		logger := setupLogger(cfg, &buf)
+		logger := logger.SetupLogger(cfg, &buf)
 		logger.Error("Test error", slog.String("error", "some error"))
 
 		logOutput := buf.String()
@@ -68,11 +70,10 @@ func TestSetupLogger(t *testing.T) {
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	t.Run("SuccessfulHTTPChecker", func(t *testing.T) {
+	t.Run("SuccessfulHTTPCheckerNoTargetName", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			"TARGET_NAME":    "TestHTTP",
 			"TARGET_ADDRESS": "http://localhost:8081",
 			"INTERVAL":       "1s",
 			"DIAL_TIMEOUT":   "1s",
@@ -85,6 +86,49 @@ func TestRun(t *testing.T) {
 
 		server := &http.Server{Addr: ":8081"}
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		go func() { // make linter happy
+			_ = server.ListenAndServe()
+		}()
+		defer server.Close()
+
+		var output bytes.Buffer
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		err := run(ctx, getenv, &output)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		expected := "localhost is ready ✓"
+		if !strings.Contains(output.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
+		}
+
+		if err != nil && err != http.ErrServerClosed {
+			t.Fatalf("Failed to start HTTP server: %v", err)
+		}
+	})
+
+	t.Run("SuccessfulHTTPChecker", func(t *testing.T) {
+		t.Parallel()
+
+		env := map[string]string{
+			"TARGET_NAME":    "TestHTTP",
+			"TARGET_ADDRESS": "http://localhost:8081/another",
+			"INTERVAL":       "1s",
+			"DIAL_TIMEOUT":   "1s",
+			"CHECK_TYPE":     "http",
+		}
+
+		getenv := func(key string) string {
+			return env[key]
+		}
+
+		server := &http.Server{Addr: ":8081"}
+		http.HandleFunc("/another", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
 		go func() { // make linter happy
