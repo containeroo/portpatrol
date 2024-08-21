@@ -48,7 +48,7 @@ func TestRunLoop_HTTPChecker_Success(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %v", err)
 		}
@@ -101,7 +101,7 @@ func TestRunLoop_HTTPChecker_Success(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %v", err)
 		}
@@ -147,7 +147,7 @@ func TestRunLoop_TCPChecker_Success(t *testing.T) {
 		return ""
 	}
 
-	checker, err := checker.NewTCPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+	checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestRunLoop_HTTPChecker_ContextCancel(t *testing.T) {
 		return env[key]
 	}
 
-	checker, err := checker.NewHTTPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+	checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -239,7 +239,7 @@ func TestRunLoop_TCPChecker_ContextCancel(t *testing.T) {
 		return ""
 	}
 
-	checker, err := checker.NewTCPChecker(context.Background(), cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+	checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}

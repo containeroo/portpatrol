@@ -32,7 +32,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		// Create the HTTP checker using the mock environment variables
-		checker, err := NewHTTPChecker(context.Background(), "example", server.URL, 1*time.Second, mockEnv)
+		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create HTTPChecker: %v", err)
 		}
@@ -65,7 +65,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		// Create the HTTP checker using the mock environment variables
-		checker, err := NewHTTPChecker(context.Background(), "example", server.URL, 1*time.Second, mockEnv)
+		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create HTTPChecker: %v", err)
 		}

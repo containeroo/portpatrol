@@ -19,7 +19,7 @@ func (c *TCPChecker) String() string {
 }
 
 // NewTCPChecker initializes a new TCPChecker.
-func NewTCPChecker(ctx context.Context, name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
+func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
 	dialer := &net.Dialer{
 		Timeout: timeout,
 	}

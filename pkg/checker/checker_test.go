@@ -1,7 +1,6 @@
 package checker
 
 import (
-	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("valid HTTP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(context.Background(), "http", "example", "http://example.com", 5*time.Second, func(s string) string {
+		check, err := NewChecker("http", "example", "http://example.com", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err != nil {
@@ -27,7 +26,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("valid TCP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(context.Background(), "tcp", "example", "example.com:80", 5*time.Second, func(s string) string {
+		check, err := NewChecker("tcp", "example", "example.com:80", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err != nil {
@@ -41,7 +40,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("invalid checker type", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := NewChecker(context.Background(), "invalid", "example", "example.com", 5*time.Second, func(s string) string {
+		_, err := NewChecker("invalid", "example", "example.com", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err == nil {

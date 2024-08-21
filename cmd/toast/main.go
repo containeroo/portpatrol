@@ -14,7 +14,7 @@ import (
 	"github.com/containeroo/toast/pkg/runner"
 )
 
-const version = "0.0.2"
+const version = "0.0.3"
 
 // run is the main function of the application
 func run(ctx context.Context, getenv func(string) string, output io.Writer) error {
@@ -26,7 +26,7 @@ func run(ctx context.Context, getenv func(string) string, output io.Writer) erro
 
 	logger := logger.SetupLogger(cfg, output)
 
-	checkerInstance, err := checker.NewChecker(ctx, cfg.CheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getenv)
+	checkerInstance, err := checker.NewChecker(cfg.CheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getenv)
 	if err != nil {
 		return fmt.Errorf("failed to initialize checker: %w", err)
 	}

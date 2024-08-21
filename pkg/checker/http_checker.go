@@ -33,7 +33,7 @@ func (c *HTTPChecker) String() string {
 }
 
 // NewHTTPChecker initializes a new HTTPChecker with its specific configuration.
-func NewHTTPChecker(ctx context.Context, name, address string, timeout time.Duration, getEnv func(string) string) (*HTTPChecker, error) {
+func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*HTTPChecker, error) {
 	// Parse method
 	method := getEnv(envMethod)
 	if method == "" {

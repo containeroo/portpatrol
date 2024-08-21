@@ -26,7 +26,7 @@ func TestTCPChecker(t *testing.T) {
 		}
 
 		// Create the TCP checker using the mock environment variables
-		checker, err := NewTCPChecker(context.Background(), "example", ln.Addr().String(), 1*time.Second, mockEnv)
+		checker, err := NewTCPChecker("example", ln.Addr().String(), 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create TCPChecker: %v", err)
 		}
@@ -47,7 +47,7 @@ func TestTCPChecker(t *testing.T) {
 		}
 
 		// Create the TCP checker using the mock environment variables
-		checker, err := NewTCPChecker(context.Background(), "example", "192.0.2.0:7090", 1*time.Second, mockEnv)
+		checker, err := NewTCPChecker("example", "192.0.2.0:7090", 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create TCPChecker: %v", err)
 		}

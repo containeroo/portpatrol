@@ -13,12 +13,12 @@ type Checker interface {
 }
 
 // NewChecker creates a new Checker based on the check type.
-func NewChecker(ctx context.Context, checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
+func NewChecker(checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	switch checkType {
 	case "http":
-		return NewHTTPChecker(ctx, name, address, timeout, getEnv)
+		return NewHTTPChecker(name, address, timeout, getEnv)
 	case "tcp":
-		return NewTCPChecker(ctx, name, address, timeout, getEnv)
+		return NewTCPChecker(name, address, timeout, getEnv)
 	default:
 		return nil, fmt.Errorf("invalid check type: %s", checkType)
 	}
