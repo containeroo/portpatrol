@@ -49,6 +49,45 @@ func TestNewChecker(t *testing.T) {
 	})
 }
 
+func TestIsValidCheckType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Valid TCP Check Type", func(t *testing.T) {
+		t.Parallel()
+		if isValid := IsValidCheckType("tcp"); !isValid {
+			t.Errorf("expected true for check type 'tcp', got false")
+		}
+	})
+
+	t.Run("Valid HTTP Check Type", func(t *testing.T) {
+		t.Parallel()
+		if isValid := IsValidCheckType("http"); !isValid {
+			t.Errorf("expected true for check type 'http', got false")
+		}
+	})
+
+	t.Run("Invalid Check Type", func(t *testing.T) {
+		t.Parallel()
+		if isValid := IsValidCheckType("invalid"); isValid {
+			t.Errorf("expected false for check type 'invalid', got true")
+		}
+	})
+
+	t.Run("Empty Check Type", func(t *testing.T) {
+		t.Parallel()
+		if isValid := IsValidCheckType(""); isValid {
+			t.Errorf("expected false for empty check type, got true")
+		}
+	})
+
+	t.Run("Random String Check Type", func(t *testing.T) {
+		t.Parallel()
+		if isValid := IsValidCheckType("random"); isValid {
+			t.Errorf("expected false for check type 'random', got true")
+		}
+	})
+}
+
 func TestInferCheckType(t *testing.T) {
 	t.Parallel()
 

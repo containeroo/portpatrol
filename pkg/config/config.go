@@ -102,14 +102,9 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		cfg.CheckType = checkType
 	}
 
-	if !isValidCheckType(cfg.CheckType) {
+	if !checker.IsValidCheckType(cfg.CheckType) {
 		return Config{}, fmt.Errorf("unsupported check type: %s", cfg.CheckType)
 	}
 
 	return cfg, nil
-}
-
-// isValidCheckType validates if the check type is supported.
-func isValidCheckType(checkType string) bool {
-	return checkType == "tcp" || checkType == "http"
 }

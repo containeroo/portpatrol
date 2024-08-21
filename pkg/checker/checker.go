@@ -24,6 +24,11 @@ func NewChecker(checkType, name, address string, timeout time.Duration, getEnv f
 	}
 }
 
+// IsValidCheckType validates if the check type is supported.
+func IsValidCheckType(checkType string) bool {
+	return checkType == "tcp" || checkType == "http"
+}
+
 // InferCheckType infers the check type based on the scheme of the target address.
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
