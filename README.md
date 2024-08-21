@@ -7,12 +7,12 @@
 `TOAST` performs the following steps:
 
 - **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
-- **Target Connection Attempts**: It repeatedly attempts to connect to the specified TCP or HTTP target based on the configured interval and timeout.
+- **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP` or `HTTP` target based on the configured `INTERVAL` and `DIAL_TIMEOUT`.
 - **Logging**: `TOAST` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
 - **Exit Status**:
 
-  - If the target becomes available, TOAST exits with a status code of 0 (success).
-  - If the program is terminated before the target is ready, it exits with a non-zero status code, typically 1, indicating failure or interruption.
+  - If the target becomes available, `TOAST` exits with a status code of `0` (success).
+  - If the program is terminated before the target is ready, it exits with a non-zero status code, typically `1`, indicating failure or interruption.
 
 ## Environment Variables
 
