@@ -14,7 +14,7 @@ import (
 	"github.com/containeroo/toast/pkg/runner"
 )
 
-const version = "0.0.4"
+const version = "0.0.5"
 
 // run is the main function of the application
 func run(ctx context.Context, getenv func(string) string, output io.Writer) error {
@@ -38,8 +38,7 @@ func run(ctx context.Context, getenv func(string) string, output io.Writer) erro
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 
 	if err := run(ctx, os.Getenv, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
