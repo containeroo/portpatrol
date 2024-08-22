@@ -18,6 +18,9 @@ const version = "0.0.4"
 
 // run is the main function of the application
 func run(ctx context.Context, getenv func(string) string, output io.Writer) error {
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	cfg, err := config.ParseConfig(getenv)
 	if err != nil {
 		return fmt.Errorf("configuration error: %w", err)
@@ -35,7 +38,7 @@ func run(ctx context.Context, getenv func(string) string, output io.Writer) erro
 }
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	if err := run(ctx, os.Getenv, os.Stdout); err != nil {
