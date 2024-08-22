@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -35,13 +36,13 @@ func TestHTTPChecker(t *testing.T) {
 		// Create the HTTP checker using the mock environment variables
 		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
 		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %v", err)
+			t.Fatalf("failed to create HTTPChecker: %q", err)
 		}
 
 		// Perform the check
 		err = checker.Check(context.Background())
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 	})
 
@@ -68,7 +69,7 @@ func TestHTTPChecker(t *testing.T) {
 		// Create the HTTP checker using the mock environment variables
 		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
 		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %v", err)
+			t.Fatalf("failed to create HTTPChecker: %q", err)
 		}
 
 		// Perform the check, expecting an error due to the unexpected status code
@@ -76,9 +77,14 @@ func TestHTTPChecker(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
+
+		expected := "unexpected status code: got 404, expected one of [200]"
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
 	})
 
-	t.Run("Test cancel HTTP check", func(t *testing.T) {
+	t.Run("cancel HTTP check", func(t *testing.T) {
 		t.Parallel()
 
 		// Set up a test HTTP server that deliberately delays the response
@@ -102,7 +108,7 @@ func TestHTTPChecker(t *testing.T) {
 		// Create the HTTP checker using the mock environment variables
 		checker, err := NewHTTPChecker("example", server.URL, 5*time.Second, mockEnv)
 		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %v", err)
+			t.Fatalf("failed to create HTTPChecker: %q", err)
 		}
 
 		// Cancel the context after a very short time
@@ -111,8 +117,232 @@ func TestHTTPChecker(t *testing.T) {
 
 		// Perform the check, expecting a context canceled error
 		err = checker.Check(ctx)
-		if err == nil || !strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
-			t.Errorf("expected context canceled or deadline exceeded error, got %v", err)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "context deadline exceeded"
+		if !strings.Contains(err.Error(), expected) {
+			t.Errorf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("header parsing error", func(t *testing.T) {
+		t.Parallel()
+
+		// Mock environment variables with an invalid header
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envMethod:           "GET",
+				envHeaders:          "Authorization Bearer token", // Missing '=' in the header
+				envExpectedStatuses: "200",
+			}
+			return env[key]
+		}
+
+		// Attempt to create the HTTP checker using the mock environment variables
+		_, err := NewHTTPChecker("example", "http://example.com", 1*time.Second, mockEnv)
+		if err == nil {
+			t.Errorf("expected an error, got none")
+		}
+
+		expected := "invalid HEADERS value: invalid header format: Authorization Bearer token"
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+}
+
+func TestParseHeaders(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Valid headers", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "Content-Type=application/json,Authorization=Bearer token"
+		result, err := parseHeaders(headers)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		expected := map[string]string{"Content-Type": "application/json", "Authorization": "Bearer token"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected result: %q, got: %q", expected, result)
+		}
+	})
+
+	t.Run("Single header", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "Content-Type=application/json"
+		result, err := parseHeaders(headers)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		expected := map[string]string{"Content-Type": "application/json"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected result: %q, got: %q", expected, result)
+		}
+	})
+
+	t.Run("Empty headers string", func(t *testing.T) {
+		t.Parallel()
+
+		headers := ""
+		result, err := parseHeaders(headers)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		expected := map[string]string{}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected result: %q, got: %q", expected, result)
+		}
+	})
+
+	t.Run("Malformed header (missing =)", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "Content-Type=application/json,AuthorizationBearer token"
+		_, err := parseHeaders(headers)
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+
+		expected := "invalid header format: AuthorizationBearer token"
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Header with spaces", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "  Content-Type = application/json  , Authorization = Bearer token  "
+		result, err := parseHeaders(headers)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		expected := map[string]string{"Content-Type": "application/json", "Authorization": "Bearer token"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected result: %q, got: %q", expected, result)
+		}
+	})
+
+	t.Run("Header with empty key", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "=value"
+		_, err := parseHeaders(headers)
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+
+		expected := "header key cannot be empty: =value"
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Header with empty value", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "key="
+		result, err := parseHeaders(headers)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		expected := map[string]string{"key": ""}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected result: %q, got: %q", expected, result)
+		}
+	})
+
+	t.Run("Malformed header (empty pair)", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "Content-Type=application/json,"
+		_, err := parseHeaders(headers)
+		if err != nil {
+			t.Error("Expected error, got nil")
+		}
+	})
+}
+
+func TestParseExpectedStatuses(t *testing.T) {
+	t.Parallel()
+
+	t.Run("single status code", func(t *testing.T) {
+		t.Parallel()
+
+		statuses, err := parseExpectedStatuses("200")
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+		expected := []int{200}
+		if !reflect.DeepEqual(statuses, expected) {
+			t.Fatalf("expected %q, got %q", expected, statuses)
+		}
+	})
+
+	t.Run("multiple status codes", func(t *testing.T) {
+		t.Parallel()
+
+		statuses, err := parseExpectedStatuses("200,404,500")
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+		expected := []int{200, 404, 500}
+		if !reflect.DeepEqual(statuses, expected) {
+			t.Fatalf("expected %q, got %q", expected, statuses)
+		}
+	})
+
+	t.Run("status code range", func(t *testing.T) {
+		t.Parallel()
+
+		statuses, err := parseExpectedStatuses("200-202")
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+		expected := []int{200, 201, 202}
+		if !reflect.DeepEqual(statuses, expected) {
+			t.Fatalf("expected %q, got %q", expected, statuses)
+		}
+	})
+
+	t.Run("multipl status code range", func(t *testing.T) {
+		t.Parallel()
+
+		statuses, err := parseExpectedStatuses("200-202,300-301,500")
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		expected := []int{200, 201, 202, 300, 301, 500}
+		if !reflect.DeepEqual(statuses, expected) {
+			t.Fatalf("expected %q, got %q", expected, statuses)
+		}
+	})
+
+	t.Run("invalid status code", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := parseExpectedStatuses("abc")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+	})
+
+	t.Run("invalid status range", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := parseExpectedStatuses("202-200")
+		if err == nil {
+			t.Fatal("expected an error, got none")
 		}
 	})
 }

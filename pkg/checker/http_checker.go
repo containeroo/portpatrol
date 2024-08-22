@@ -41,7 +41,10 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 
 	// Parse headers
-	headers := parseHeaders(getEnv(envHeaders))
+	headers, err := parseHeaders(getEnv(envHeaders))
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s value: %w", envHeaders, err)
+	}
 
 	// Parse expected status codes
 	statusCodes := getEnv(envExpectedStatuses)
@@ -141,21 +144,31 @@ func parseExpectedStatuses(statuses string) ([]int, error) {
 }
 
 // parseHeaders parses the HTTP headers from a comma-separated key=value list.
-func parseHeaders(headers string) map[string]string {
+func parseHeaders(headers string) (map[string]string, error) {
 	headerMap := make(map[string]string)
 	if headers == "" {
-		return headerMap
+		return headerMap, nil
 	}
 
 	// Split the headers into key=value pairs
 	pairs := strings.Split(headers, ",")
 	for _, pair := range pairs {
+		if strings.TrimSpace(pair) == "" {
+			continue // Skip any empty parts resulting from trailing commas
+		}
+
 		// Split the pair into key and value
 		parts := strings.SplitN(pair, "=", 2)
-		if len(parts) == 2 {
-			headerMap[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid header format: %s", pair)
 		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		if key == "" {
+			return nil, fmt.Errorf("header key cannot be empty: %s", pair)
+		}
+		headerMap[key] = value
 	}
 
-	return headerMap
+	return headerMap, nil
 }

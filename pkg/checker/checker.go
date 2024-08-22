@@ -29,7 +29,7 @@ func IsValidCheckType(checkType string) bool {
 	return checkType == "tcp" || checkType == "http"
 }
 
-// InferCheckType infers the check type based on the scheme of the target address.
+// InferCheckType infers the check type based on the scheme of the target address. If no scheme is provided, it defaults to TCP.
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
 

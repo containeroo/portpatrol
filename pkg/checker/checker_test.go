@@ -1,7 +1,6 @@
 package checker
 
 import (
-	"reflect"
 	"testing"
 	"time"
 )
@@ -133,130 +132,6 @@ func TestInferCheckType(t *testing.T) {
 		_, err := InferCheckType("ftp://example.com")
 		if err == nil {
 			t.Fatal("expected an error, got none")
-		}
-	})
-}
-
-func TestParseExpectedStatuses(t *testing.T) {
-	t.Parallel()
-
-	t.Run("single status code", func(t *testing.T) {
-		t.Parallel()
-
-		statuses, err := parseExpectedStatuses("200")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		expected := []int{200}
-		if !reflect.DeepEqual(statuses, expected) {
-			t.Fatalf("expected %v, got %v", expected, statuses)
-		}
-	})
-
-	t.Run("multiple status codes", func(t *testing.T) {
-		t.Parallel()
-
-		statuses, err := parseExpectedStatuses("200,404,500")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		expected := []int{200, 404, 500}
-		if !reflect.DeepEqual(statuses, expected) {
-			t.Fatalf("expected %v, got %v", expected, statuses)
-		}
-	})
-
-	t.Run("status code range", func(t *testing.T) {
-		t.Parallel()
-
-		statuses, err := parseExpectedStatuses("200-202")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		expected := []int{200, 201, 202}
-		if !reflect.DeepEqual(statuses, expected) {
-			t.Fatalf("expected %v, got %v", expected, statuses)
-		}
-	})
-
-	t.Run("multipl status code range", func(t *testing.T) {
-		t.Parallel()
-
-		statuses, err := parseExpectedStatuses("200-202,300-301,500")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		expected := []int{200, 201, 202, 300, 301, 500}
-		if !reflect.DeepEqual(statuses, expected) {
-			t.Fatalf("expected %v, got %v", expected, statuses)
-		}
-	})
-
-	t.Run("invalid status code", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := parseExpectedStatuses("abc")
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-	})
-
-	t.Run("invalid status range", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := parseExpectedStatuses("202-200")
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-	})
-}
-
-func TestParseHeaders(t *testing.T) {
-	t.Parallel()
-
-	t.Run("single header", func(t *testing.T) {
-		t.Parallel()
-
-		headers := parseHeaders("Content-Type=application/json")
-		expected := map[string]string{"Content-Type": "application/json"}
-		if !reflect.DeepEqual(headers, expected) {
-			t.Fatalf("expected %v, got %v", expected, headers)
-		}
-	})
-
-	t.Run("multiple headers", func(t *testing.T) {
-		t.Parallel()
-
-		headers := parseHeaders("Content-Type=application/json, Authorization=Bearer token")
-		expected := map[string]string{
-			"Content-Type":  "application/json",
-			"Authorization": "Bearer token",
-		}
-		if !reflect.DeepEqual(headers, expected) {
-			t.Fatalf("expected %v, got %v", expected, headers)
-		}
-	})
-
-	t.Run("headers with spaces", func(t *testing.T) {
-		t.Parallel()
-
-		headers := parseHeaders("Content-Type = application/json, Authorization = Bearer token")
-		expected := map[string]string{
-			"Content-Type":  "application/json",
-			"Authorization": "Bearer token",
-		}
-		if !reflect.DeepEqual(headers, expected) {
-			t.Fatalf("expected %v, got %v", expected, headers)
-		}
-	})
-
-	t.Run("empty headers", func(t *testing.T) {
-		t.Parallel()
-
-		headers := parseHeaders("")
-		expected := map[string]string{}
-		if !reflect.DeepEqual(headers, expected) {
-			t.Fatalf("expected %v, got %v", expected, headers)
 		}
 	})
 }
