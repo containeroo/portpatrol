@@ -1,6 +1,6 @@
 # TOAST - Trigger Operations After Successful Test
 
-`TOAST` is a simple Go application with zero external dependencies that checks if a specified TCP or HTTP target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
+`TOAST` is a simple Go application with zero external dependencies that checks if a specified `TCP` or `HTTP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
 
 ## How It Works
 

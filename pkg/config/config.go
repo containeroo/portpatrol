@@ -70,6 +70,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		cfg.TargetName = hostname
 	}
 
+	// Parse the interval
 	if intervalStr := getenv(envInterval); intervalStr != "" {
 		interval, err := time.ParseDuration(intervalStr)
 		if err != nil || interval <= 0 {
@@ -78,6 +79,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		cfg.Interval = interval
 	}
 
+	// Parse the dial timeout
 	if dialTimeoutStr := getenv(envDialTimeout); dialTimeoutStr != "" {
 		dialTimeout, err := time.ParseDuration(dialTimeoutStr)
 		if err != nil || dialTimeout <= 0 {
@@ -86,6 +88,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		cfg.DialTimeout = dialTimeout
 	}
 
+	// Parse the log additional fields
 	if logFieldsStr := getenv(envLogAdditionalFields); logFieldsStr != "" {
 		logAdditionalFields, err := strconv.ParseBool(logFieldsStr)
 		if err != nil {
@@ -94,6 +97,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		cfg.LogAdditionalFields = logAdditionalFields
 	}
 
+	// Infer the check type
 	if cfg.CheckType == "" {
 		checkType, err := checker.InferCheckType(cfg.TargetAddress)
 		if err != nil {
@@ -102,6 +106,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		cfg.CheckType = checkType
 	}
 
+	// Validate the check type
 	if !checker.IsValidCheckType(cfg.CheckType) {
 		return Config{}, fmt.Errorf("unsupported check type: %s", cfg.CheckType)
 	}
