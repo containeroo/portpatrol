@@ -50,7 +50,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 	expectedStatusCodes, err := parseExpectedStatuses(statusCodes)
 	if err != nil {
-		return nil, fmt.Errorf("invalid EXPECTED_STATUSES value: %w", err)
+		return nil, fmt.Errorf("invalid %s value: %w", envExpectedStatuses, err)
 	}
 
 	// Create the HTTP client
