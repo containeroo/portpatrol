@@ -253,6 +253,124 @@ func TestRunLoop(t *testing.T) {
 		}
 	})
 
+	t.Run("Successful HTTP target run after 3 wrong responses", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := config.Config{
+			TargetName:          "HTTPServer",
+			TargetAddress:       "http://localhost:2081/wrong",
+			Interval:            500 * time.Millisecond,
+			DialTimeout:         500 * time.Millisecond,
+			CheckType:           "http",
+			LogAdditionalFields: true,
+			Version:             "1.0.0",
+		}
+
+		// Parse the URL to get the host part
+		parsedURL, err := url.Parse(cfg.TargetAddress)
+		if err != nil {
+			t.Fatalf("Failed to parse URL: %q", err)
+		}
+
+		// Extract the host:port from the URL
+		host := parsedURL.Host
+
+		// Split the host to get the port
+		_, addressPort, err := net.SplitHostPort(host)
+		if err != nil {
+			t.Fatalf("Failed to split host and port: %q", err)
+		}
+
+		counter := 0
+
+		server := &http.Server{Addr: fmt.Sprintf(":%s", addressPort)}
+		http.HandleFunc("/wrong", func(w http.ResponseWriter, r *http.Request) {
+			if counter < 3 {
+				counter++
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		})
+
+		// start listener after 3 seconds
+		go func() {
+			_ = server.ListenAndServe()
+		}()
+
+		// Shutdown server when context is canceled
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		defer cancel()
+
+		// Mock environment variables for HTTPChecker
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"METHOD":            "GET",
+				"HEADERS":           "",
+				"EXPECTED_STATUSES": "200",
+			}
+			return env[key]
+		}
+
+		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create HTTPChecker: %q", err)
+		}
+
+		var stdOut strings.Builder
+		logger := logger.SetupLogger(cfg, &stdOut)
+
+		err = RunLoop(ctx, cfg, checker, logger)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		stdOutEntries := strings.Split(strings.TrimSpace(stdOut.String()), "\n")
+		// output must be:
+		// 0: Waiting for HTTPServer to become ready...
+		// 1: HTTPServer is not ready ✗
+		// 2: HTTPServer is not ready ✗
+		// 3: HTTPServer is not ready ✗
+		// 4: HTTPServer is ready ✓
+		lenExpectedOuts := 5
+
+		if len(stdOutEntries) != lenExpectedOuts {
+			t.Errorf("Expected output to contain '%d' lines but got '%d'.", lenExpectedOuts, len(stdOutEntries))
+		}
+
+		// First log entry: "Waiting for HTTPServer to become ready..."
+		expected := fmt.Sprintf("Waiting for %s to become ready...", cfg.TargetName)
+		if !strings.Contains(stdOutEntries[0], expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOutEntries[0])
+		}
+
+		from := 1
+		to := 3
+		for i := from; i < to; i++ {
+			expected := fmt.Sprintf("%s is not ready ✗", cfg.TargetName)
+			if !strings.Contains(stdOutEntries[i], expected) {
+				t.Errorf("Expected output to contain %q but got %q", expected, stdOutEntries[i])
+			}
+
+			expected = "error=\"unexpected status code: got 500, expected one of [200]\""
+			if !strings.Contains(stdOutEntries[i], expected) {
+				t.Errorf("Expected output to contain %q but got %q", expected, stdOutEntries[i])
+			}
+		}
+
+		// Last log entry: "HTTPServer is ready ✓"
+		expected = fmt.Sprintf("%s is ready ✓", cfg.TargetName)
+		if !strings.Contains(stdOutEntries[lenExpectedOuts-1], expected) { // lenExpectedOuts -1 = last element
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOutEntries[1])
+		}
+
+		// Check version in the last entry
+		expected = fmt.Sprintf("version=%s", cfg.Version)
+		if !strings.Contains(stdOutEntries[lenExpectedOuts-1], expected) { // lenExpectedOuts -1 = last element
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOutEntries[1])
+		}
+	})
+
 	t.Run("TCP Target is ready", func(t *testing.T) {
 		t.Parallel()
 
