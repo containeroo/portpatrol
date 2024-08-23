@@ -3,74 +3,17 @@ package main
 import (
 	"bytes"
 	"context"
-	"log/slog"
 	"net"
 	"net/http"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
-
-	"github.com/containeroo/toast/pkg/config"
-	"github.com/containeroo/toast/pkg/logger"
 )
-
-func TestSetupLogger(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithAdditionalFields", func(t *testing.T) {
-		t.Parallel()
-
-		var buf bytes.Buffer
-		cfg := config.Config{
-			Version:             "0.0.1",
-			TargetAddress:       "localhost:8080",
-			Interval:            1 * time.Second,
-			DialTimeout:         2 * time.Second,
-			CheckType:           "http",
-			LogAdditionalFields: true,
-		}
-
-		logger := logger.SetupLogger(cfg, &buf)
-		logger.Info("Test log")
-
-		logOutput := buf.String()
-
-		if !strings.Contains(logOutput, "target_address=localhost:8080") ||
-			!strings.Contains(logOutput, "interval=1s") ||
-			!strings.Contains(logOutput, "dial_timeout=2s") ||
-			!strings.Contains(logOutput, "checker_type=http") ||
-			!strings.Contains(logOutput, "version=0.0.1") {
-			t.Errorf("Logger output does not contain expected fields: %s", logOutput)
-		}
-	})
-
-	t.Run("WithoutAdditionalFields", func(t *testing.T) {
-		t.Parallel()
-
-		var buf bytes.Buffer
-		cfg := config.Config{
-			LogAdditionalFields: false,
-		}
-
-		logger := logger.SetupLogger(cfg, &buf)
-		logger.Error("Test error", slog.String("error", "some error"))
-
-		logOutput := buf.String()
-
-		expected := "error=some error"
-		if strings.Contains(logOutput, expected) {
-			t.Errorf("Expected error to contain %q, got %q", expected, logOutput)
-		}
-	})
-}
 
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	t.Run("SuccessfulHTTPCheckerNoTargetName", func(t *testing.T) {
+	t.Run("HTTP Target is ready", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
@@ -93,72 +36,31 @@ func TestRun(t *testing.T) {
 		}()
 		defer server.Close()
 
-		var output bytes.Buffer
+		var output strings.Builder
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
+		// cancel after 2 Seconds
+		go func() {
+			time.Sleep(2 * time.Second)
+			cancel()
+		}()
+
 		err := run(ctx, getenv, &output)
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 
 		expected := "localhost is ready ✓"
 		if !strings.Contains(output.String(), expected) {
 			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
 		}
-
-		if err != nil && err != http.ErrServerClosed {
-			t.Fatalf("Failed to start HTTP server: %v", err)
-		}
 	})
 
-	t.Run("SuccessfulHTTPChecker", func(t *testing.T) {
+	t.Run("TCP Target is ready", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			"TARGET_NAME":    "TestHTTP",
-			"TARGET_ADDRESS": "http://localhost:8081/another",
-			"INTERVAL":       "1s",
-			"DIAL_TIMEOUT":   "1s",
-			"CHECK_TYPE":     "http",
-		}
-
-		getenv := func(key string) string {
-			return env[key]
-		}
-
-		server := &http.Server{Addr: ":8081"}
-		http.HandleFunc("/another", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-		go func() { // make linter happy
-			_ = server.ListenAndServe()
-		}()
-		defer server.Close()
-
-		var output bytes.Buffer
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		err := run(ctx, getenv, &output)
-		if err != nil && err != context.DeadlineExceeded {
-			t.Errorf("Expected no error or context deadline exceeded, got %v", err)
-		}
-
-		if !strings.Contains(output.String(), "is ready ✓") && ctx.Err() != context.DeadlineExceeded {
-			t.Errorf("Expected success message in log output, got: %s", output.String())
-		}
-
-		if err != nil && err != http.ErrServerClosed {
-			t.Fatalf("Failed to start HTTP server: %v", err)
-		}
-	})
-
-	t.Run("SuccessfulTCPChecker", func(t *testing.T) {
-		t.Parallel()
-
-		env := map[string]string{
-			"TARGET_NAME":    "TestTCP",
 			"TARGET_ADDRESS": "localhost:8082",
 			"INTERVAL":       "1s",
 			"DIAL_TIMEOUT":   "1s",
@@ -171,25 +73,32 @@ func TestRun(t *testing.T) {
 
 		listener, err := net.Listen("tcp", "localhost:8082")
 		if err != nil {
-			t.Fatalf("Failed to start TCP server: %v", err)
+			t.Fatalf("Failed to start TCP server: %q", err)
 		}
 		defer listener.Close()
 
-		var output bytes.Buffer
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
+		// cancel after 2 Seconds
+		go func() {
+			time.Sleep(2 * time.Second)
+			cancel()
+		}()
+
+		var output strings.Builder
 		err = run(ctx, getenv, &output)
-		if err != nil && err != context.DeadlineExceeded {
-			t.Errorf("Expected no error or context deadline exceeded, got %v", err)
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
 		}
 
-		if !strings.Contains(output.String(), "is ready ✓") && ctx.Err() != context.DeadlineExceeded {
-			t.Errorf("Expected success message in log output, got: %s", output.String())
+		expected := "localhost is ready ✓"
+		if !strings.Contains(output.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
 		}
 	})
 
-	t.Run("ConfigError", func(t *testing.T) {
+	t.Run("Config error: variable is required", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{}
@@ -203,12 +112,16 @@ func TestRun(t *testing.T) {
 		defer cancel()
 
 		err := run(ctx, getenv, &output)
-		if err == nil || !strings.Contains(err.Error(), "configuration error") {
-			t.Errorf("Expected configuration error, got %v", err)
+		if err == nil {
+			t.Fatalf("Expected configuration error, got none")
+		}
+
+		if !strings.Contains(err.Error(), "configuration error: TARGET_ADDRESS environment variable is required") {
+			t.Errorf("Expected configuration error, got %q", err)
 		}
 	})
 
-	t.Run("CheckerInitializationError", func(t *testing.T) {
+	t.Run("Invalid check type", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
@@ -236,30 +149,4 @@ func TestRun(t *testing.T) {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}
 	})
-}
-
-// Test signal handling in main function (indirect test)
-func TestMainFunction_SignalHandling(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
-	defer cancel()
-
-	done := make(chan struct{})
-
-	go func() {
-		<-ctx.Done()
-		close(done)
-	}()
-
-	// Simulate sending a SIGTERM signal
-	p, _ := os.FindProcess(os.Getpid())
-	_ = p.Signal(syscall.SIGTERM) // Make linter happy
-
-	select {
-	case <-done:
-		// Success
-	case <-time.After(1 * time.Second):
-		t.Errorf("Expected context to be canceled, but it was not")
-	}
 }

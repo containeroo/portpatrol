@@ -8,7 +8,7 @@ import (
 func TestParseConfig_ValidConfig(t *testing.T) {
 	t.Parallel()
 
-	t.Run("valid config with defaults", func(t *testing.T) {
+	t.Run("Valid config with defaults", func(t *testing.T) {
 		getenv := func(key string) string {
 			env := map[string]string{
 				"TARGET_ADDRESS": "http://example.com",
@@ -26,7 +26,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		cfg, err := ParseConfig(getenv)
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 
 		if cfg != expectedCfg {
@@ -34,7 +34,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("valid config with www as scheme", func(t *testing.T) {
+	t.Run("Valid config with www as scheme", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -57,14 +57,15 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		cfg, err := ParseConfig(getenv)
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 
 		if cfg != expectedCfg {
 			t.Fatalf("expected config %+v, got %+v", expectedCfg, cfg)
 		}
 	})
-	t.Run("valid config with kubernetes service", func(t *testing.T) {
+
+	t.Run("Valid config with kubernetes service", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -87,7 +88,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		cfg, err := ParseConfig(getenv)
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 
 		if cfg != expectedCfg {
@@ -95,7 +96,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("valid config with custom values", func(t *testing.T) {
+	t.Run("Valid config with custom values", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -118,7 +119,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		cfg, err := ParseConfig(getenv)
 		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
+			t.Fatalf("expected no error, got %q", err)
 		}
 
 		if cfg != expectedCfg {
@@ -130,7 +131,7 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 func TestParseConfig_Invalid(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid interval", func(t *testing.T) {
+	t.Run("Invalid interval", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -147,7 +148,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 		}
 	})
 
-	t.Run("zero interval", func(t *testing.T) {
+	t.Run("Zero interval", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -164,7 +165,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid dial timeout", func(t *testing.T) {
+	t.Run("Invalid dial timeout", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -181,7 +182,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 		}
 	})
 
-	t.Run("zero dial timeout", func(t *testing.T) {
+	t.Run("Zero dial timeout", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -198,7 +199,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid check type", func(t *testing.T) {
+	t.Run("Invalid check type", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
@@ -215,7 +216,7 @@ func TestParseConfig_Invalid(t *testing.T) {
 		}
 	})
 
-	t.Run("missing target address", func(t *testing.T) {
+	t.Run("Missing target address", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {

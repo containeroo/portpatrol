@@ -13,7 +13,7 @@ import (
 func TestSetupLogger(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithAdditionalFields", func(t *testing.T) {
+	t.Run("Log with additional fields", func(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer
@@ -40,7 +40,7 @@ func TestSetupLogger(t *testing.T) {
 		}
 	})
 
-	t.Run("WithoutAdditionalFields", func(t *testing.T) {
+	t.Run("Log without additional fields", func(t *testing.T) {
 		t.Parallel()
 
 		var buf bytes.Buffer

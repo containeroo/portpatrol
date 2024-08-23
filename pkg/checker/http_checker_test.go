@@ -13,7 +13,7 @@ import (
 func TestHTTPChecker(t *testing.T) {
 	t.Parallel()
 
-	t.Run("valid HTTP check", func(t *testing.T) {
+	t.Run("Valid HTTP check", func(t *testing.T) {
 		t.Parallel()
 
 		// Set up a test HTTP server
@@ -46,7 +46,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
-	t.Run("unexpected status code", func(t *testing.T) {
+	t.Run("Unexpected status code", func(t *testing.T) {
 		t.Parallel()
 
 		// Set up a test HTTP server with a different status code
@@ -84,7 +84,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
-	t.Run("cancel HTTP check", func(t *testing.T) {
+	t.Run("Cancel HTTP check", func(t *testing.T) {
 		t.Parallel()
 
 		// Set up a test HTTP server that deliberately delays the response
@@ -127,7 +127,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
-	t.Run("header parsing error", func(t *testing.T) {
+	t.Run("Header parsing error", func(t *testing.T) {
 		t.Parallel()
 
 		// Mock environment variables with an invalid header
@@ -275,7 +275,7 @@ func TestParseHeaders(t *testing.T) {
 func TestParseExpectedStatuses(t *testing.T) {
 	t.Parallel()
 
-	t.Run("single status code", func(t *testing.T) {
+	t.Run("Single status code", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200")
@@ -288,7 +288,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("multiple status codes", func(t *testing.T) {
+	t.Run("Multiple status codes", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200,404,500")
@@ -301,7 +301,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("status code range", func(t *testing.T) {
+	t.Run("Status code range", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200-202")
@@ -314,7 +314,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("multipl status code range", func(t *testing.T) {
+	t.Run("Multipl status code range", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200-202,300-301,500")
@@ -328,7 +328,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid status code", func(t *testing.T) {
+	t.Run("Invalid status code", func(t *testing.T) {
 		t.Parallel()
 
 		_, err := parseExpectedStatuses("abc")
@@ -337,7 +337,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid status range", func(t *testing.T) {
+	t.Run("Invalid status range", func(t *testing.T) {
 		t.Parallel()
 
 		_, err := parseExpectedStatuses("202-200")
