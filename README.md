@@ -21,13 +21,13 @@
 ### Common Variables
 
 - `TARGET_ADDRESS`: The address of the target in the following format:
-  - **TCP**: `host:port` (required).
+  - **TCP**: `host:port` (required). If `tcp://` is used as the scheme, the `CHECK_TYPE` can be omitted.
   - **HTTP**: `scheme://host:port` (required).
-- `TARGET_NAME`: The name of the target to check (optional, default: inferred from `TARGET_ADDRESS`). If not set, the name will be inferred from the host part of the target address as follows: `http://postgres.default.svc.cluster.local:5432` will be inferred as `postgres.default.svc.cluster.local`.
+- `TARGET_NAME`: The name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, the name will be derived from the host portion of the target address. For example, `http://postgres.default.svc.cluster.local:5432` would be inferred as `postgres.default.svc.cluster.local`.
 - `INTERVAL`: The interval between connection attempts (optional, default: `2s`).
-- `DIAL_TIMEOUT`: The timeout for each connection attempt (optional, default: `1s`).
-- `CHECK_TYPE`: The type of check to perform, either `tcp` or `http` (optional, default: inferred from `TARGET_ADDRESS`).
-- `LOG_ADDITIONAL_FIELDS`: Log additional fields (optional, default: `false`).
+- `DIAL_TIMEOUT`: The maximum time allowed for each connection attempt (optional, default: `1s`).
+- `CHECK_TYPE`: Specifies the type of check to perform: `tcp` or `http` (optional, default: inferred from `TARGET_ADDRESS`).
+- `LOG_ADDITIONAL_FIELDS`: Enables logging of additional fields (optional, default: `false`).
 
 ### HTTP-Specific Variables
 
