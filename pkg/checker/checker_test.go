@@ -17,8 +17,10 @@ func TestNewChecker(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
-		if check.String() != "example" {
-			t.Fatalf("expected name to be 'example', got %q", check.String())
+
+		expected := "example"
+		if check.String() != expected {
+			t.Fatalf("expected name to be %q got %q", expected, check.String())
 		}
 	})
 
@@ -31,8 +33,10 @@ func TestNewChecker(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
-		if check.String() != "example" {
-			t.Fatalf("expected name to be 'example', got %q", check.String())
+
+		expected := "example"
+		if check.String() != expected {
+			t.Fatalf("expected name to be %q got %q", expected, check.String())
 		}
 	})
 
@@ -45,6 +49,10 @@ func TestNewChecker(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
+		expected := "invalid check type: invalid"
+		if err.Error() != expected {
+			t.Errorf("expected error to be %q, got %q", expected, err.Error())
+		}
 	})
 }
 
@@ -53,6 +61,7 @@ func TestIsValidCheckType(t *testing.T) {
 
 	t.Run("Valid TCP Check Type", func(t *testing.T) {
 		t.Parallel()
+
 		if isValid := IsValidCheckType("tcp"); !isValid {
 			t.Errorf("expected true for check type 'tcp', got false")
 		}
@@ -60,6 +69,7 @@ func TestIsValidCheckType(t *testing.T) {
 
 	t.Run("Valid HTTP Check Type", func(t *testing.T) {
 		t.Parallel()
+
 		if isValid := IsValidCheckType("http"); !isValid {
 			t.Errorf("expected true for check type 'http', got false")
 		}
@@ -67,6 +77,7 @@ func TestIsValidCheckType(t *testing.T) {
 
 	t.Run("Invalid Check Type", func(t *testing.T) {
 		t.Parallel()
+
 		if isValid := IsValidCheckType("invalid"); isValid {
 			t.Errorf("expected false for check type 'invalid', got true")
 		}
@@ -74,6 +85,7 @@ func TestIsValidCheckType(t *testing.T) {
 
 	t.Run("Empty Check Type", func(t *testing.T) {
 		t.Parallel()
+
 		if isValid := IsValidCheckType(""); isValid {
 			t.Errorf("expected false for empty check type, got true")
 		}
@@ -81,6 +93,7 @@ func TestIsValidCheckType(t *testing.T) {
 
 	t.Run("Random String Check Type", func(t *testing.T) {
 		t.Parallel()
+
 		if isValid := IsValidCheckType("random"); isValid {
 			t.Errorf("expected false for check type 'random', got true")
 		}
@@ -132,6 +145,11 @@ func TestInferCheckType(t *testing.T) {
 		_, err := InferCheckType("ftp://example.com")
 		if err == nil {
 			t.Fatal("expected an error, got none")
+		}
+
+		expected := "unsupported scheme: ftp"
+		if err.Error() != expected {
+			t.Errorf("expected error to be %q, got %q", expected, err.Error())
 		}
 	})
 }

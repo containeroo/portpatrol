@@ -39,8 +39,11 @@ func TestHTTPChecker(t *testing.T) {
 			t.Fatalf("failed to create HTTPChecker: %q", err)
 		}
 
+		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		defer cancel()
+
 		// Perform the check
-		err = checker.Check(context.Background())
+		err = checker.Check(ctx)
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
@@ -72,14 +75,17 @@ func TestHTTPChecker(t *testing.T) {
 			t.Fatalf("failed to create HTTPChecker: %q", err)
 		}
 
-		// Perform the check, expecting an error due to the unexpected status code
-		err = checker.Check(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		defer cancel()
+
+		// Perform the check
+		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 
 		expected := "unexpected status code: got 404, expected one of [200]"
-		if !strings.Contains(err.Error(), expected) {
+		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
@@ -147,7 +153,7 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		expected := "invalid HEADERS value: invalid header format: Authorization Bearer token"
-		if !strings.Contains(err.Error(), expected) {
+		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
@@ -211,7 +217,7 @@ func TestParseHeaders(t *testing.T) {
 		}
 
 		expected := "invalid header format: AuthorizationBearer token"
-		if !strings.Contains(err.Error(), expected) {
+		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
@@ -241,7 +247,7 @@ func TestParseHeaders(t *testing.T) {
 		}
 
 		expected := "header key cannot be empty: =value"
-		if !strings.Contains(err.Error(), expected) {
+		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
@@ -282,6 +288,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
 		expected := []int{200}
 		if !reflect.DeepEqual(statuses, expected) {
 			t.Fatalf("expected %q, got %q", expected, statuses)
@@ -295,6 +302,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
 		expected := []int{200, 404, 500}
 		if !reflect.DeepEqual(statuses, expected) {
 			t.Fatalf("expected %q, got %q", expected, statuses)
@@ -308,6 +316,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
 		expected := []int{200, 201, 202}
 		if !reflect.DeepEqual(statuses, expected) {
 			t.Fatalf("expected %q, got %q", expected, statuses)
@@ -335,6 +344,11 @@ func TestParseExpectedStatuses(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
+
+		expected := "invalid status code: abc"
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
 	})
 
 	t.Run("Invalid status range", func(t *testing.T) {
@@ -343,6 +357,11 @@ func TestParseExpectedStatuses(t *testing.T) {
 		_, err := parseExpectedStatuses("202-200")
 		if err == nil {
 			t.Fatal("expected an error, got none")
+		}
+
+		expected := "invalid status range: 202-200"
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
 }

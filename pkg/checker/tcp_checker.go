@@ -3,6 +3,7 @@ package checker
 import (
 	"context"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,8 @@ func (c *TCPChecker) String() string {
 
 // NewTCPChecker initializes a new TCPChecker.
 func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
+	address = strings.TrimPrefix(address, "tcp://")
+
 	dialer := &net.Dialer{
 		Timeout: timeout,
 	}

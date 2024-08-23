@@ -31,12 +31,14 @@ func TestRun(t *testing.T) {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
+
 		go func() { // make linter happy
 			_ = server.ListenAndServe()
 		}()
 		defer server.Close()
 
 		var output strings.Builder
+
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
@@ -64,7 +66,6 @@ func TestRun(t *testing.T) {
 			"TARGET_ADDRESS": "localhost:8082",
 			"INTERVAL":       "1s",
 			"DIAL_TIMEOUT":   "1s",
-			"CHECK_TYPE":     "tcp",
 		}
 
 		getenv := func(key string) string {
@@ -87,6 +88,7 @@ func TestRun(t *testing.T) {
 		}()
 
 		var output strings.Builder
+
 		err = run(ctx, getenv, &output)
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
@@ -107,9 +109,10 @@ func TestRun(t *testing.T) {
 			return env[key]
 		}
 
-		var output bytes.Buffer
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
+
+		var output bytes.Buffer
 
 		err := run(ctx, getenv, &output)
 		if err == nil {
@@ -136,14 +139,16 @@ func TestRun(t *testing.T) {
 			return env[key]
 		}
 
-		var output bytes.Buffer
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
+
+		var output bytes.Buffer
 
 		err := run(ctx, getenv, &output)
 		if err == nil {
 			t.Error("Expected error, got none")
 		}
+
 		expected := "unsupported check type: invalid"
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
