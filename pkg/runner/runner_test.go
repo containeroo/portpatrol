@@ -38,7 +38,6 @@ func TestRunLoop(t *testing.T) {
 			TargetAddress: "http://localhost:9082/",
 			Interval:      50 * time.Millisecond,
 			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "http",
 		}
 
 		// Mock environment variables for HTTPChecker
@@ -59,7 +58,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
 		err = RunLoop(ctx, cfg, checker, logger)
@@ -91,7 +90,6 @@ func TestRunLoop(t *testing.T) {
 			TargetAddress: "http://localhost:9081/ping",
 			Interval:      50 * time.Millisecond,
 			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "http",
 		}
 
 		// Mock environment variables for HTTPChecker
@@ -112,7 +110,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
 		err = RunLoop(ctx, cfg, checker, logger)
@@ -258,7 +256,7 @@ func TestRunLoop(t *testing.T) {
 	t.Run("TCP Target is ready", func(t *testing.T) {
 		t.Parallel()
 
-		listener, err := net.Listen("tcp", "localhost:7082")
+		listener, err := net.Listen("tcp", "localhost:5082")
 		if err != nil {
 			t.Fatalf("Failed to start TCP server: %q", err)
 		}
@@ -266,7 +264,7 @@ func TestRunLoop(t *testing.T) {
 
 		cfg := config.Config{
 			TargetName:    "TCPServer",
-			TargetAddress: "localhost:7082",
+			TargetAddress: listener.Addr().String(),
 			Interval:      50 * time.Millisecond,
 			DialTimeout:   50 * time.Millisecond,
 			CheckType:     "tcp",
@@ -285,7 +283,50 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		defer cancel()
+
+		err = RunLoop(ctx, cfg, checker, logger)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		expected := "TCPServer is ready ✓"
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+	})
+
+	t.Run("TCP Target is ready without Type", func(t *testing.T) {
+		t.Parallel()
+
+		listener, err := net.Listen("tcp", "localhost:7082")
+		if err != nil {
+			t.Fatalf("Failed to start TCP server: %q", err)
+		}
+		defer listener.Close()
+
+		cfg := config.Config{
+			TargetName:    "TCPServer",
+			TargetAddress: fmt.Sprintf("tcp://%s", listener.Addr().String()),
+			Interval:      50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+		}
+
+		// Mock environment variables for TCPChecker
+		mockEnv := func(key string) string {
+			return ""
+		}
+
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create TCPChecker: %q", err)
+		}
+
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
 		err = RunLoop(ctx, cfg, checker, logger)
@@ -430,7 +471,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 
 		go func() {
 			time.Sleep(100 * time.Millisecond)
@@ -477,7 +518,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 
 		go func() {
 			time.Sleep(100 * time.Millisecond)
