@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+func init() {
+	RegisterChecker("tcp", NewTCPChecker, "tcp")
+}
+
 // TCPChecker implements the Checker interface for TCP checks.
 type TCPChecker struct {
 	Name    string      // The name of the checker.
@@ -19,7 +23,7 @@ func (c *TCPChecker) String() string {
 }
 
 // NewTCPChecker initializes a new TCPChecker.
-func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
+func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	dialer := &net.Dialer{
 		Timeout: timeout,
 	}

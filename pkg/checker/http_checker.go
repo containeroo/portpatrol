@@ -16,6 +16,10 @@ const (
 	defaultExpectedStatus = "200"
 )
 
+func init() {
+	RegisterChecker("http", NewHTTPChecker, "http", "https")
+}
+
 // HTTPChecker implements the Checker interface for HTTP checks.
 type HTTPChecker struct {
 	Name                string            // The name of the checker.
@@ -33,7 +37,7 @@ func (c *HTTPChecker) String() string {
 }
 
 // NewHTTPChecker initializes a new HTTPChecker with its specific configuration.
-func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*HTTPChecker, error) {
+func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	// Parse method
 	method := getEnv(envMethod)
 	if method == "" {
