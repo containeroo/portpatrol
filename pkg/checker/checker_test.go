@@ -49,7 +49,8 @@ func TestNewChecker(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
-		expected := "invalid check type: invalid"
+
+		expected := "unknown check type: invalid"
 		if err.Error() != expected {
 			t.Errorf("expected error to be %q, got %q", expected, err.Error())
 		}

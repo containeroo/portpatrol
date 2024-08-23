@@ -3,8 +3,25 @@ package checker
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
+
+// CheckerConstructor is a function type for creating Checkers.
+type CheckerConstructor func(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error)
+
+// CheckerFactories is a map that stores the different Checker factories.
+var CheckerFactories = map[string]CheckerConstructor{
+	"http":  NewHTTPChecker,
+	"https": NewHTTPChecker,
+	"tcp":   NewTCPChecker,
+}
+
+// SupportedCheckTypes maps check types to their supported schemes.
+var SupportedCheckTypes = map[string][]string{
+	"http": {"http", "https"},
+	"tcp":  {"tcp"},
+}
 
 // Checker is an interface that defines methods to perform a check.
 type Checker interface {
@@ -12,36 +29,39 @@ type Checker interface {
 	String() string                  // String returns the name of the checker.
 }
 
-// NewChecker creates a new Checker based on the check type.
+// NewChecker creates a Checker based on the provided check type.
 func NewChecker(checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	switch checkType {
-	case "http":
-		return NewHTTPChecker(name, address, timeout, getEnv)
-	case "tcp":
-		return NewTCPChecker(name, address, timeout, getEnv)
-	default:
-		return nil, fmt.Errorf("invalid check type: %s", checkType)
+	factory, found := CheckerFactories[checkType]
+	if !found {
+		return nil, fmt.Errorf("unknown check type: %s", checkType)
 	}
+	return factory(name, address, timeout, getEnv)
 }
 
 // IsValidCheckType validates if the check type is supported.
 func IsValidCheckType(checkType string) bool {
-	return checkType == "tcp" || checkType == "http"
+	_, exists := SupportedCheckTypes[checkType]
+	return exists
 }
 
-// InferCheckType infers the check type based on the scheme of the target address. If no scheme is provided, it defaults to TCP.
+// InferCheckType infers the check type based on the scheme of the target address.
+// If no scheme is provided, it defaults to TCP.
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
+	scheme = strings.ToLower(scheme) // Normalize the scheme to lowercase
 
-	switch scheme {
-	case "http", "https":
-		return "http", nil
-	case "tcp":
-		return "tcp", nil
-	case "":
-		// If no scheme is provided, default to TCP.
-		return "tcp", nil
-	default:
-		return "", fmt.Errorf("unsupported scheme: %s", scheme)
+	for checkType, schemes := range SupportedCheckTypes {
+		for _, s := range schemes {
+			if s == scheme {
+				return checkType, nil
+			}
+		}
 	}
+
+	// Default to TCP if no scheme is provided or recognized
+	if scheme == "" {
+		return "tcp", nil
+	}
+
+	return "", fmt.Errorf("unsupported scheme: %s", scheme)
 }

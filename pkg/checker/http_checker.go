@@ -32,8 +32,8 @@ func (c *HTTPChecker) String() string {
 	return c.Name
 }
 
-// NewHTTPChecker initializes a new HTTPChecker with its specific configuration.
-func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*HTTPChecker, error) {
+// NewHTTPChecker creates a new HTTPChecker.
+func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	// Parse method
 	method := getEnv(envMethod)
 	if method == "" {

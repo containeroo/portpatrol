@@ -19,8 +19,9 @@ func (c *TCPChecker) String() string {
 	return c.Name
 }
 
-// NewTCPChecker initializes a new TCPChecker.
-func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (*TCPChecker, error) {
+// NewTCPChecker creates a new TCPChecker.
+
+func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	address = strings.TrimPrefix(address, "tcp://")
 
 	dialer := &net.Dialer{
