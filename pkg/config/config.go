@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containeroo/toast/pkg/checker"
+	"github.com/containeroo/thor/pkg/checker"
 )
 
 const (

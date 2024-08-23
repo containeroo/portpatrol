@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/containeroo/toast/pkg/checker"
-	"github.com/containeroo/toast/pkg/config"
+	"github.com/containeroo/thor/pkg/checker"
+	"github.com/containeroo/thor/pkg/config"
 )
 
 // RunLoop continuously attempts to connect to the specified target until it becomes available or the context is canceled.

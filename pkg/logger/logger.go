@@ -4,7 +4,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/containeroo/toast/pkg/config"
+	"github.com/containeroo/thor/pkg/config"
 )
 
 // SetupLogger configures the logger based on the configuration

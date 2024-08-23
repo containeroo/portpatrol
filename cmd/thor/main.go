@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/containeroo/toast/pkg/checker"
-	"github.com/containeroo/toast/pkg/config"
-	"github.com/containeroo/toast/pkg/logger"
-	"github.com/containeroo/toast/pkg/runner"
+	"github.com/containeroo/thor/pkg/checker"
+	"github.com/containeroo/thor/pkg/config"
+	"github.com/containeroo/thor/pkg/logger"
+	"github.com/containeroo/thor/pkg/runner"
 )
 
 const version = "0.0.7"

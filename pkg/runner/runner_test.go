@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/toast/pkg/checker"
-	"github.com/containeroo/toast/pkg/config"
-	"github.com/containeroo/toast/pkg/logger"
+	"github.com/containeroo/thor/pkg/checker"
+	"github.com/containeroo/thor/pkg/config"
+	"github.com/containeroo/thor/pkg/logger"
 )
 
 func TestRunLoop(t *testing.T) {

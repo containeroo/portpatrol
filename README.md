@@ -1,22 +1,22 @@
-# TOAST - Trigger Operations After Successful Test
+# THOR - TCP and HTTP ObserveR
 
-`TOAST` is a simple Go application with zero external dependencies that checks if a specified `TCP` or `HTTP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
+`THOR` is a simple Go application with zero external dependencies that checks if a specified `TCP` or `HTTP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
 
 ## How It Works
 
-`TOAST` performs the following steps:
+`THOR` performs the following steps:
 
 - **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
 - **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP` or `HTTP` target based on the configured `INTERVAL` and `DIAL_TIMEOUT`.
-- **Logging**: `TOAST` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
+- **Logging**: `THOR` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
 - **Exit Status**:
 
-  - If the target becomes available, `TOAST` exits with a status code of `0` (success).
+  - If the target becomes available, `THOR` exits with a status code of `0` (success).
   - If the program is terminated before the target is ready, it exits with a non-zero status code, typically `1`, indicating failure or interruption.
 
 ## Environment Variables
 
-`TOAST` accepts the following environment variables:
+`THOR` accepts the following environment variables:
 
 ### Common Variables
 
@@ -37,7 +37,7 @@
   - `Authorization=Bearer token`
   - `Content-Type=application/json,Accept=application/json`
 - `EXPECTED_STATUSES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
-  `TOAST` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
+  `THOR` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
 
   - Individual status codes: `200,301,404`
   - Ranges of status codes: `200,300-302`
@@ -92,12 +92,12 @@ Configure your Kubernetes deployment to use this init container:
 ```yaml
 initContainers:
   - name: wait-for-valkey
-    image: ghcr.io/containeroo/toast:latest
+    image: ghcr.io/containeroo/thor:latest
     env:
       - name: TARGET_ADDRESS
         value: valkey.default.svc.cluster.local:6379
   - name: wait-for-postgres
-    image: ghcr.io/containeroo/toast:latest
+    image: ghcr.io/containeroo/thor:latest
     env:
       - name: TARGET_NAME
         value: PostgreSQL
@@ -112,7 +112,7 @@ initContainers:
       - name: LOG_ADDITIONAL_FIELDS
         value: "true"
   - name: wait-for-webapp
-    image: ghcr.io/containeroo/toast:latest
+    image: ghcr.io/containeroo/thor:latest
     env:
       - name: TARGET_NAME
         value: webapp
@@ -136,6 +136,6 @@ initContainers:
 
 ## Usage Scenarios
 
-- Kubernetes initContainers: Use `TOAST` to delay the start of a service until its dependencies are ready, ensuring reliable startup sequences.
-- Startup Scripts: Include `TOAST` in deployment scripts to ensure that services wait for dependencies before proceeding.
-- CI/CD Pipelines: Use `TOAST` in CI/CD pipelines to wait for services to be ready before running integration tests.
+- Kubernetes initContainers: Use `THOR` to delay the start of a service until its dependencies are ready, ensuring reliable startup sequences.
+- Startup Scripts: Include `THOR` in deployment scripts to ensure that services wait for dependencies before proceeding.
+- CI/CD Pipelines: Use `THOR` in CI/CD pipelines to wait for services to be ready before running integration tests.

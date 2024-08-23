@@ -1,8 +1,8 @@
 FROM golang:1.23-alpine AS builder
 COPY . .
-RUN CGO_ENABLED=0 GO111MODULE=on go build -a -installsuffix nocgo -o /toast ./cmd/toast
+RUN CGO_ENABLED=0 GO111MODULE=on go build -a -installsuffix nocgo -o /thor ./cmd/thor
 
 FROM scratch
-COPY --from=builder /toast /toast
-ENTRYPOINT ["/toast"]
+COPY --from=builder /thor /thor
+ENTRYPOINT ["/thor"]
 

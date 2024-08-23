@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/toast/pkg/config"
+	"github.com/containeroo/thor/pkg/config"
 )
 
 func TestSetupLogger(t *testing.T) {
