@@ -40,7 +40,6 @@ func TestRunLoop(t *testing.T) {
 			DialTimeout:   50 * time.Millisecond,
 		}
 
-		// Mock environment variables for HTTPChecker
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
@@ -91,7 +90,6 @@ func TestRunLoop(t *testing.T) {
 			DialTimeout:   50 * time.Millisecond,
 		}
 
-		// Mock environment variables for HTTPChecker
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
@@ -180,7 +178,6 @@ func TestRunLoop(t *testing.T) {
 			_ = server.Shutdown(context.Background()) // Gracefully shutdown the server
 		}()
 
-		// Mock environment variables for HTTPChecker
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
@@ -299,7 +296,6 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		// Mock environment variables for HTTPChecker
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
@@ -384,7 +380,6 @@ func TestRunLoop(t *testing.T) {
 			CheckType:     "tcp",
 		}
 
-		// Mock environment variables for TCPChecker
 		mockEnv := func(key string) string {
 			return ""
 		}
@@ -427,7 +422,6 @@ func TestRunLoop(t *testing.T) {
 			DialTimeout:   50 * time.Millisecond,
 		}
 
-		// Mock environment variables for TCPChecker
 		mockEnv := func(key string) string {
 			return ""
 		}
@@ -489,7 +483,6 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		// Mock environment variables for HTTPChecker
 		mockEnv := func(key string) string {
 			return ""
 		}
@@ -567,7 +560,6 @@ func TestRunLoop(t *testing.T) {
 			CheckType:     "http",
 		}
 
-		// Mock environment variables for HTTPChecker
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
@@ -618,7 +610,6 @@ func TestRunLoop(t *testing.T) {
 			CheckType:     "tcp",
 		}
 
-		// Mock environment variables for TCPChecker
 		mockEnv := func(key string) string {
 			return ""
 		}
@@ -665,7 +656,6 @@ func TestRunLoop(t *testing.T) {
 			CheckType:     "tcp",
 		}
 
-		// Mock environment variables for TCPChecker
 		mockEnv := func(key string) string {
 			return ""
 		}

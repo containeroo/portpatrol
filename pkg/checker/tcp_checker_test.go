@@ -20,7 +20,6 @@ func TestTCPChecker(t *testing.T) {
 		}
 		defer ln.Close()
 
-		// Mock environment variables (if any needed in the future)
 		mockEnv := func(s string) string {
 			return ""
 		}
@@ -41,7 +40,6 @@ func TestTCPChecker(t *testing.T) {
 	t.Run("Failed TCP check", func(t *testing.T) {
 		t.Parallel()
 
-		// Mock environment variables (if any needed in the future)
 		mockEnv := func(s string) string {
 			return ""
 		}
@@ -56,6 +54,11 @@ func TestTCPChecker(t *testing.T) {
 		err = checker.Check(context.Background())
 		if err == nil {
 			t.Fatal("expected an error, got none")
+		}
+
+		expected := "dial tcp [::1]:7090: connect: connection refused"
+		if err.Error() != expected {
+			t.Errorf("expected error containing %q, got %q", expected, err)
 		}
 	})
 }

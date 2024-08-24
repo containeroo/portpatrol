@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -33,7 +34,7 @@ func TestRun(t *testing.T) {
 			envCheckType:     "http",
 		}
 
-		getenv := func(key string) string {
+		mockEnv := func(key string) string {
 			return env[key]
 		}
 
@@ -58,13 +59,16 @@ func TestRun(t *testing.T) {
 			cancel()
 		}()
 
-		err := run(ctx, getenv, &output)
+		err := run(ctx, mockEnv, &output)
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
 
+		outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
+		last := len(outputEntries) - 1
+
 		expected := "localhost is ready ✓"
-		if !strings.Contains(output.String(), expected) {
+		if !strings.Contains(outputEntries[last], expected) {
 			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
 		}
 	})
@@ -78,7 +82,7 @@ func TestRun(t *testing.T) {
 			envDialTimeout:   "1s",
 		}
 
-		getenv := func(key string) string {
+		mockEnv := func(key string) string {
 			return env[key]
 		}
 
@@ -99,13 +103,16 @@ func TestRun(t *testing.T) {
 
 		var output strings.Builder
 
-		err = run(ctx, getenv, &output)
+		err = run(ctx, mockEnv, &output)
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
 
+		outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
+		last := len(outputEntries) - 1
+
 		expected := "localhost is ready ✓"
-		if !strings.Contains(output.String(), expected) {
+		if !strings.Contains(outputEntries[last], expected) {
 			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
 		}
 	})
@@ -115,7 +122,7 @@ func TestRun(t *testing.T) {
 
 		env := map[string]string{}
 
-		getenv := func(key string) string {
+		mockEnv := func(key string) string {
 			return env[key]
 		}
 
@@ -124,12 +131,13 @@ func TestRun(t *testing.T) {
 
 		var output bytes.Buffer
 
-		err := run(ctx, getenv, &output)
+		err := run(ctx, mockEnv, &output)
 		if err == nil {
 			t.Fatalf("Expected configuration error, got none")
 		}
 
-		if !strings.Contains(err.Error(), "configuration error: TARGET_ADDRESS environment variable is required") {
+		expected := fmt.Sprintf("configuration error: %s environment variable is required", envTargetAddress)
+		if err.Error() != expected {
 			t.Errorf("Expected configuration error, got %q", err)
 		}
 	})
@@ -145,7 +153,7 @@ func TestRun(t *testing.T) {
 			envCheckType:     "invalid",
 		}
 
-		getenv := func(key string) string {
+		mockEnv := func(key string) string {
 			return env[key]
 		}
 
@@ -154,13 +162,44 @@ func TestRun(t *testing.T) {
 
 		var output bytes.Buffer
 
-		err := run(ctx, getenv, &output)
+		err := run(ctx, mockEnv, &output)
 		if err == nil {
 			t.Error("Expected error, got none")
 		}
 
 		expected := "configuration error: unsupported check type: invalid"
-		if !strings.Contains(err.Error(), expected) {
+		if err.Error() != expected {
+			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("Inizalize error: unknown check type", func(t *testing.T) {
+		t.Parallel()
+
+		env := map[string]string{
+			envTargetName:    "TestService",
+			envTargetAddress: "htp://localhost:8080",
+			envInterval:      "1s",
+			envDialTimeout:   "1s",
+			envHeaders:       "Authorization Bearer token",
+		}
+
+		mockEnv := func(key string) string {
+			return env[key]
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var output bytes.Buffer
+
+		err := run(ctx, mockEnv, &output)
+		if err == nil {
+			t.Error("Expected error, got none")
+		}
+
+		expected := "configuration error: could not infer check type for address htp://localhost:8080: unsupported scheme: htp"
+		if err.Error() != expected {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}
 	})
@@ -176,7 +215,7 @@ func TestRun(t *testing.T) {
 			envHeaders:       "Authorization Bearer token",
 		}
 
-		getenv := func(key string) string {
+		mockEnv := func(key string) string {
 			return env[key]
 		}
 
@@ -185,13 +224,13 @@ func TestRun(t *testing.T) {
 
 		var output bytes.Buffer
 
-		err := run(ctx, getenv, &output)
+		err := run(ctx, mockEnv, &output)
 		if err == nil {
 			t.Error("Expected error, got none")
 		}
 
-		expected := "failed to initialize checker: invalid HEADERS value: invalid header format: Authorization Bearer token"
-		if !strings.Contains(err.Error(), expected) {
+		expected := fmt.Sprintf("failed to initialize checker: invalid %s value: invalid header format: Authorization Bearer token", envHeaders)
+		if err.Error() != expected {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}
 	})

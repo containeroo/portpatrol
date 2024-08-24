@@ -24,7 +24,6 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		// Mock environment variables
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envMethod:           "GET",
@@ -60,7 +59,6 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		// Mock environment variables
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envMethod:           "GET",
@@ -101,7 +99,6 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		// Mock environment variables
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envMethod:           "GET",
@@ -134,7 +131,6 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		// Mock environment variables
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envMethod:           "GET",
@@ -169,7 +165,6 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Invalid HTTP check (malformed URL)", func(t *testing.T) {
 		t.Parallel()
 
-		// Mock environment variables
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET", // Use a valid method
@@ -195,8 +190,8 @@ func TestHTTPChecker(t *testing.T) {
 			t.Fatalf("expected an error, got none")
 		}
 
-		expected := "failed to create request" // This should match the error message in your function
-		if !strings.Contains(err.Error(), expected) {
+		expected := "failed to create request: parse \"://invalid-url\": missing protocol scheme"
+		if err.Error() != expected {
 			t.Errorf("expected error containing %q, got %q", expected, err)
 		}
 	})
@@ -204,7 +199,6 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Header parsing error", func(t *testing.T) {
 		t.Parallel()
 
-		// Mock environment variables with an invalid header
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envMethod:           "GET",
@@ -335,13 +329,18 @@ func TestParseHeaders(t *testing.T) {
 		}
 	})
 
-	t.Run("Malformed header (empty pair)", func(t *testing.T) {
+	t.Run("Trailing comma", func(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,"
-		_, err := parseHeaders(headers)
+		result, err := parseHeaders(headers)
 		if err != nil {
-			t.Error("Expected error, got nil")
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		expected := map[string]string{"Content-Type": "application/json"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("expected %v, got %v", expected, result)
 		}
 	})
 }
