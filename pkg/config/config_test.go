@@ -1,17 +1,18 @@
 package config
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
 
-func TestParseConfig_ValidConfig(t *testing.T) {
+func TestParseConfig(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Valid config with defaults", func(t *testing.T) {
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://example.com",
+				envTargetAddress: "http://example.com",
 			}
 			return env[key]
 		}
@@ -39,10 +40,10 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "www.example.com:80",
-				"INTERVAL":       "5s",
-				"DIAL_TIMEOUT":   "10s",
-				"CHECK_TYPE":     "http",
+				envTargetAddress: "www.example.com:80",
+				envInterval:      "5s",
+				envDialTimeout:   "10s",
+				envCheckType:     "http",
 			}
 			return env[key]
 		}
@@ -70,10 +71,10 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://postgres.postgres.svc.cluster.local:80",
-				"INTERVAL":       "5s",
-				"DIAL_TIMEOUT":   "10s",
-				"CHECK_TYPE":     "http",
+				envTargetAddress: "http://postgres.postgres.svc.cluster.local:80",
+				envInterval:      "5s",
+				envDialTimeout:   "10s",
+				envCheckType:     "http",
 			}
 			return env[key]
 		}
@@ -101,10 +102,10 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "tcp://example.com:80",
-				"INTERVAL":       "5s",
-				"DIAL_TIMEOUT":   "10s",
-				"CHECK_TYPE":     "tcp",
+				envTargetAddress: "tcp://example.com:80",
+				envInterval:      "5s",
+				envDialTimeout:   "10s",
+				envCheckType:     "tcp",
 			}
 			return env[key]
 		}
@@ -126,18 +127,14 @@ func TestParseConfig_ValidConfig(t *testing.T) {
 			t.Fatalf("expected config %+v, got %+v", expectedCfg, cfg)
 		}
 	})
-}
-
-func TestParseConfig_Invalid(t *testing.T) {
-	t.Parallel()
 
 	t.Run("Invalid interval", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://example.com",
-				"INTERVAL":       "invalid",
+				envTargetAddress: "http://example.com",
+				envInterval:      "invalid",
 			}
 			return env[key]
 		}
@@ -153,8 +150,8 @@ func TestParseConfig_Invalid(t *testing.T) {
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://example.com",
-				"INTERVAL":       "0s",
+				envTargetAddress: "http://example.com",
+				envInterval:      "0s",
 			}
 			return env[key]
 		}
@@ -170,8 +167,8 @@ func TestParseConfig_Invalid(t *testing.T) {
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://example.com",
-				"DIAL_TIMEOUT":   "invalid",
+				envTargetAddress: "http://example.com",
+				envDialTimeout:   "invalid",
 			}
 			return env[key]
 		}
@@ -187,8 +184,8 @@ func TestParseConfig_Invalid(t *testing.T) {
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://example.com",
-				"DIAL_TIMEOUT":   "0s",
+				envTargetAddress: "http://example.com",
+				envDialTimeout:   "0s",
 			}
 			return env[key]
 		}
@@ -199,13 +196,117 @@ func TestParseConfig_Invalid(t *testing.T) {
 		}
 	})
 
+	t.Run("Invalid address", func(t *testing.T) {
+		t.Parallel()
+
+		getenv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress: "http://exam ple.com",
+			}
+			return env[key]
+		}
+
+		_, err := ParseConfig(getenv)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "could not parse target address: parse \"http://exam ple.com\": invalid character \" \" in host name"
+		if err.Error() != expected {
+			t.Fatalf("expected error to contain %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid hostname", func(t *testing.T) {
+		t.Parallel()
+
+		getenv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress: "http://:8080",
+			}
+			return env[key]
+		}
+
+		_, err := ParseConfig(getenv)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "could not extract hostname from target address: http://:8080"
+		if err.Error() != expected {
+			t.Fatalf("expected error to contain %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid LOG_ADDITIONAL_FIELDS", func(t *testing.T) {
+		t.Parallel()
+
+		getenv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress:       "http://example.com",
+				envLogAdditionalFields: "invalid",
+			}
+			return env[key]
+		}
+
+		_, err := ParseConfig(getenv)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+	})
+
+	t.Run("Valid LOG_ADDITIONAL_FIELDS", func(t *testing.T) {
+		t.Parallel()
+
+		getenv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress:       "http://example.com",
+				envLogAdditionalFields: "true",
+			}
+			return env[key]
+		}
+
+		result, err := ParseConfig(getenv)
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		expected := Config{
+			TargetName:          "example.com",
+			TargetAddress:       "http://example.com",
+			CheckType:           "http",
+			Interval:            2 * time.Second,
+			DialTimeout:         1 * time.Second,
+			LogAdditionalFields: true,
+		}
+		if !reflect.DeepEqual(result, expected) {
+			t.Fatalf("expected %v, got %v", expected, result)
+		}
+	})
+
 	t.Run("Invalid check type", func(t *testing.T) {
 		t.Parallel()
 
 		getenv := func(key string) string {
 			env := map[string]string{
-				"TARGET_ADDRESS": "http://example.com",
-				"CHECK_TYPE":     "invalid",
+				envTargetAddress: "http://example.com",
+				envCheckType:     "invalid",
+			}
+			return env[key]
+		}
+
+		_, err := ParseConfig(getenv)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+	})
+
+	t.Run("Infer invalid check type", func(t *testing.T) {
+		t.Parallel()
+
+		getenv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress: "htp://example.com",
 			}
 			return env[key]
 		}

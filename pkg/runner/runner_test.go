@@ -44,7 +44,6 @@ func TestRunLoop(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
-				"HEADERS":           "",
 				"EXPECTED_STATUSES": "200",
 			}
 			return env[key]
@@ -96,7 +95,6 @@ func TestRunLoop(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
-				"HEADERS":           "",
 				"EXPECTED_STATUSES": "200",
 			}
 			return env[key]
@@ -186,7 +184,6 @@ func TestRunLoop(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
-				"HEADERS":           "",
 				"EXPECTED_STATUSES": "200",
 			}
 			return env[key]
@@ -306,7 +303,6 @@ func TestRunLoop(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
-				"HEADERS":           "",
 				"EXPECTED_STATUSES": "200",
 			}
 			return env[key]
@@ -575,7 +571,6 @@ func TestRunLoop(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
-				"HEADERS":           "",
 				"EXPECTED_STATUSES": "200",
 			}
 			return env[key]
@@ -656,6 +651,39 @@ func TestRunLoop(t *testing.T) {
 		expected = fmt.Sprintf("%s is not ready ✗", cfg.TargetName)
 		if !strings.Contains(stdOut.String(), expected) {
 			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+	})
+
+	t.Run("TCP target context deadline exceeded", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := config.Config{
+			TargetName:    "TCPServer",
+			TargetAddress: "localhost:7084",
+			Interval:      50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+			CheckType:     "tcp",
+		}
+
+		// Mock environment variables for TCPChecker
+		mockEnv := func(key string) string {
+			return ""
+		}
+
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create TCPChecker: %q", err)
+		}
+
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
+		defer cancel() // Ensure cancel is called to free resources
+
+		err = RunLoop(ctx, cfg, checker, logger)
+		if err != context.DeadlineExceeded {
+			t.Errorf("Expected context canceled error, got %q", err)
 		}
 	})
 }

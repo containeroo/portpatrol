@@ -11,16 +11,26 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	const (
+		envTargetName          = "TARGET_NAME"
+		envTargetAddress       = "TARGET_ADDRESS"
+		envInterval            = "INTERVAL"
+		envDialTimeout         = "DIAL_TIMEOUT"
+		envCheckType           = "CHECK_TYPE"
+		envLogAdditionalFields = "LOG_ADDITIONAL_FIELDS"
+		envHeaders             = "HEADERS"
+	)
+
 	t.Parallel()
 
 	t.Run("HTTP Target is ready", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			"TARGET_ADDRESS": "http://localhost:8081",
-			"INTERVAL":       "1s",
-			"DIAL_TIMEOUT":   "1s",
-			"CHECK_TYPE":     "http",
+			envTargetAddress: "http://localhost:8081",
+			envInterval:      "1s",
+			envDialTimeout:   "1s",
+			envCheckType:     "http",
 		}
 
 		getenv := func(key string) string {
@@ -63,9 +73,9 @@ func TestRun(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			"TARGET_ADDRESS": "localhost:8082",
-			"INTERVAL":       "1s",
-			"DIAL_TIMEOUT":   "1s",
+			envTargetAddress: "localhost:8082",
+			envInterval:      "1s",
+			envDialTimeout:   "1s",
 		}
 
 		getenv := func(key string) string {
@@ -124,15 +134,15 @@ func TestRun(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid check type", func(t *testing.T) {
+	t.Run("Config error: unsupported check type", func(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			"TARGET_NAME":    "TestService",
-			"TARGET_ADDRESS": "localhost:8080",
-			"INTERVAL":       "1s",
-			"DIAL_TIMEOUT":   "1s",
-			"CHECK_TYPE":     "invalid",
+			envTargetName:    "TestService",
+			envTargetAddress: "localhost:8080",
+			envInterval:      "1s",
+			envDialTimeout:   "1s",
+			envCheckType:     "invalid",
 		}
 
 		getenv := func(key string) string {
@@ -149,7 +159,38 @@ func TestRun(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		expected := "unsupported check type: invalid"
+		expected := "configuration error: unsupported check type: invalid"
+		if !strings.Contains(err.Error(), expected) {
+			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("Inizalize error: invalid headers", func(t *testing.T) {
+		t.Parallel()
+
+		env := map[string]string{
+			envTargetName:    "TestService",
+			envTargetAddress: "http://localhost:8080",
+			envInterval:      "1s",
+			envDialTimeout:   "1s",
+			envHeaders:       "Authorization Bearer token",
+		}
+
+		getenv := func(key string) string {
+			return env[key]
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var output bytes.Buffer
+
+		err := run(ctx, getenv, &output)
+		if err == nil {
+			t.Error("Expected error, got none")
+		}
+
+		expected := "failed to initialize checker: invalid HEADERS value: invalid header format: Authorization Bearer token"
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}

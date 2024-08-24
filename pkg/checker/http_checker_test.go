@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -90,6 +91,38 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
+	t.Run("Invalid status code", func(t *testing.T) {
+		t.Parallel()
+
+		// Set up a test HTTP server with a different status code
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		})
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Mock environment variables
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envMethod:           "GET",
+				envHeaders:          "Authorization=Bearer token",
+				envExpectedStatuses: "202-200",
+			}
+			return env[key]
+		}
+
+		// Create the HTTP checker using the mock environment variables
+		_, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := fmt.Sprintf("invalid %s value: invalid status range: 202-200", envExpectedStatuses)
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
 	t.Run("Cancel HTTP check", func(t *testing.T) {
 		t.Parallel()
 
@@ -128,6 +161,41 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		expected := "context deadline exceeded"
+		if !strings.Contains(err.Error(), expected) {
+			t.Errorf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid HTTP check (malformed URL)", func(t *testing.T) {
+		t.Parallel()
+
+		// Mock environment variables
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"METHOD":            "GET", // Use a valid method
+				"HEADERS":           "Authorization=Bearer token",
+				"EXPECTED_STATUSES": "200",
+			}
+			return env[key]
+		}
+
+		// Use a malformed URL to trigger an error in creating the request
+		checker, err := NewHTTPChecker("example", "://invalid-url", 5*time.Second, mockEnv)
+		if err != nil {
+			t.Fatalf("failed to create HTTPChecker: %q", err)
+		}
+
+		// Cancel the context after a very short time
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// Perform the check, expecting an error due to malformed URL
+		err = checker.Check(ctx)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "failed to create request" // This should match the error message in your function
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("expected error containing %q, got %q", expected, err)
 		}
@@ -351,7 +419,21 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid status range", func(t *testing.T) {
+	t.Run("Invalid status range double dash", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := parseExpectedStatuses("200--202")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "invalid status range: 200--202"
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid status range (start > end)", func(t *testing.T) {
 		t.Parallel()
 
 		_, err := parseExpectedStatuses("202-200")
