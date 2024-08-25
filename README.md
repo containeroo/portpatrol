@@ -61,7 +61,7 @@
 ```mermaid
 graph TD;
     A[Start] --> B[Create HTTP request for TARGET_ADDRESS];
-    B --> C[Add headers from ENV_HEADERS];
+    B --> C[Add headers from HEADERS];
     C --> D[Send HTTP request];
     D -->|Request successful| E[Check HTTP status code];
     D -->|Request failed| F[Log error and wait for retry INTERVAL];
