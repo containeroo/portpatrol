@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -425,6 +426,39 @@ func TestParseExpectedStatuses(t *testing.T) {
 		expected := "invalid status range: 202-200"
 		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+}
+
+func TestIsValidCheckTypeWithProxy(t *testing.T) {
+	t.Run("Invalid HTTP check (invalid proxy)", func(t *testing.T) {
+		// Do not use t.Parallel here since we're modifying global state (environment variables)
+		// t.Parallel()
+
+		// Set the HTTP_PROXY environment variable to an invalid proxy
+		err := os.Setenv("HTTP_PROXY", "http://invalid-proxy:8080")
+		if err != nil {
+			t.Fatalf("Failed to set HTTP_PROXY environment variable: %v", err)
+		}
+		defer os.Unsetenv("HTTP_PROXY") // Clean up after the test
+
+		// Create the HTTPChecker instance
+		checker, err := NewHTTPChecker("example", "http://example.com", 1*time.Second, os.Getenv)
+		if err != nil {
+			t.Errorf("Expected no error, got %q", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err = checker.Check(ctx)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "Get \"http://example.com\": proxyconnect tcp: dial tcp: lookup invalid-proxy: no such host"
+		if err.Error() != expected {
+			t.Errorf("expected error containing %q, got %q", expected, err.Error())
 		}
 	})
 }
