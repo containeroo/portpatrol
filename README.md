@@ -56,6 +56,24 @@
 
 ## Behavior Flowchart
 
+### HTTP Check
+
+```mermaid
+graph TD;
+    A[Start] --> B[Create HTTP request for TARGET_ADDRESS];
+    B --> C[Add headers from ENV_HEADERS];
+    C --> D[Send HTTP request];
+    D -->|Request successful| E[Check HTTP status code];
+    D -->|Request failed| F[Log error and wait for retry INTERVAL];
+    F --> D;
+    E -->|Status code matches EXPECTED_STATUSES| G[Target is ready];
+    E -->|Status code does not match| F;
+    G --> H[End];
+    I[Program terminated or canceled] --> H;
+```
+
+### TCP Check
+
 ```mermaid
 graph TD;
     A[Start] --> B[Attempt to connect to TARGET_ADDRESS];
