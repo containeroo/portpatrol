@@ -43,6 +43,10 @@
   - Ranges of status codes: `200,300-302`
   - Combination of both: `200,301-302,404,500-502`
 
+- `HTTP_PROXY`: The HTTP proxy to use (optional).
+- `HTTPS_PROXY`: The HTTPS proxy to use (optional).
+- `NO_PROXY`: A comma-separated list of domains to exclude from proxying (optional).
+
   Examples:
 
   - `200,301-302,404`: The check will be considered successful if the target responds with `200`, `301`, `302`, or `404`.
