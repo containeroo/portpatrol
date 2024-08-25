@@ -456,8 +456,9 @@ func TestIsValidCheckTypeWithProxy(t *testing.T) {
 			t.Fatalf("expected an error, got none")
 		}
 
-		expected := "Get \"http://example.com\": proxyconnect tcp: dial tcp: lookup invalid-proxy: no such host"
-		if err.Error() != expected {
+		// Github throws a different error message than on my local machine, so check with contains
+		expected := "Get \"http://example.com\": proxyconnect tcp: dial tcp: lookup invalid-proxy"
+		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("expected error containing %q, got %q", expected, err.Error())
 		}
 	})
