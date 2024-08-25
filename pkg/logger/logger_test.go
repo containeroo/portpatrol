@@ -16,7 +16,6 @@ func TestSetupLogger(t *testing.T) {
 	t.Run("Log with additional fields", func(t *testing.T) {
 		t.Parallel()
 
-		var buf bytes.Buffer
 		cfg := config.Config{
 			Version:             "0.0.1",
 			TargetAddress:       "localhost:8080",
@@ -25,28 +24,46 @@ func TestSetupLogger(t *testing.T) {
 			CheckType:           "http",
 			LogAdditionalFields: true,
 		}
+		var buf bytes.Buffer
 
 		logger := SetupLogger(cfg, &buf)
 		logger.Info("Test log")
 
 		logOutput := buf.String()
 
-		if !strings.Contains(logOutput, "target_address=localhost:8080") ||
-			!strings.Contains(logOutput, "interval=1s") ||
-			!strings.Contains(logOutput, "dial_timeout=2s") ||
-			!strings.Contains(logOutput, "checker_type=http") ||
-			!strings.Contains(logOutput, "version=0.0.1") {
-			t.Errorf("Logger output does not contain expected fields: %s", logOutput)
+		expected := "target_address=localhost:8080"
+		if !strings.Contains(logOutput, expected) {
+			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		}
+
+		expected = "interval=1s"
+		if !strings.Contains(logOutput, expected) {
+			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		}
+
+		expected = "dial_timeout=2s"
+		if !strings.Contains(logOutput, expected) {
+			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		}
+
+		expected = "checker_type=http"
+		if !strings.Contains(logOutput, expected) {
+			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		}
+
+		expected = "version=0.0.1"
+		if !strings.Contains(logOutput, expected) {
+			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
 		}
 	})
 
 	t.Run("Log without additional fields", func(t *testing.T) {
 		t.Parallel()
 
-		var buf bytes.Buffer
 		cfg := config.Config{
 			LogAdditionalFields: false,
 		}
+		var buf bytes.Buffer
 
 		logger := SetupLogger(cfg, &buf)
 		logger.Error("Test error", slog.String("error", "some error"))

@@ -17,7 +17,6 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Valid HTTP check", func(t *testing.T) {
 		t.Parallel()
 
-		// Set up a test HTTP server
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
@@ -33,7 +32,6 @@ func TestHTTPChecker(t *testing.T) {
 			return env[key]
 		}
 
-		// Create the HTTP checker using the mock environment variables
 		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create HTTPChecker: %q", err)
@@ -42,7 +40,6 @@ func TestHTTPChecker(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 		defer cancel()
 
-		// Perform the check
 		err = checker.Check(ctx)
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
@@ -52,7 +49,7 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Unexpected status code", func(t *testing.T) {
 		t.Parallel()
 
-		// Set up a test HTTP server with a different status code
+		// Set up a test HTTP server with a unexpected status code
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 		})
@@ -68,7 +65,6 @@ func TestHTTPChecker(t *testing.T) {
 			return env[key]
 		}
 
-		// Create the HTTP checker using the mock environment variables
 		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create HTTPChecker: %q", err)
@@ -77,7 +73,6 @@ func TestHTTPChecker(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 		defer cancel()
 
-		// Perform the check
 		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatal("expected an error, got none")
@@ -89,41 +84,9 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid status code", func(t *testing.T) {
-		t.Parallel()
-
-		// Set up a test HTTP server with a different status code
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		})
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envMethod:           "GET",
-				envHeaders:          "Authorization=Bearer token",
-				envExpectedStatuses: "202-200",
-			}
-			return env[key]
-		}
-
-		// Create the HTTP checker using the mock environment variables
-		_, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: invalid status range: 202-200", envExpectedStatuses)
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
 	t.Run("Cancel HTTP check", func(t *testing.T) {
 		t.Parallel()
 
-		// Set up a test HTTP server that deliberately delays the response
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(1 * time.Second) // Delay to ensure the context has time to be canceled
 			w.WriteHeader(http.StatusOK)
@@ -140,7 +103,6 @@ func TestHTTPChecker(t *testing.T) {
 			return env[key]
 		}
 
-		// Create the HTTP checker using the mock environment variables
 		checker, err := NewHTTPChecker("example", server.URL, 5*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create HTTPChecker: %q", err)
@@ -167,7 +129,7 @@ func TestHTTPChecker(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				"METHOD":            "GET", // Use a valid method
+				"METHOD":            "GET",
 				"HEADERS":           "Authorization=Bearer token",
 				"EXPECTED_STATUSES": "200",
 			}
@@ -180,11 +142,9 @@ func TestHTTPChecker(t *testing.T) {
 			t.Fatalf("failed to create HTTPChecker: %q", err)
 		}
 
-		// Cancel the context after a very short time
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// Perform the check, expecting an error due to malformed URL
 		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatalf("expected an error, got none")
@@ -196,7 +156,30 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
-	t.Run("Header parsing error", func(t *testing.T) {
+	t.Run("Invalid HTTP check (malformed status range)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envMethod:           "GET",
+				envHeaders:          "Authorization=Bearer token",
+				envExpectedStatuses: "202-200",
+			}
+			return env[key]
+		}
+
+		_, err := NewHTTPChecker("example", "localhost:7654", 1*time.Second, mockEnv)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := fmt.Sprintf("invalid %s value: invalid status range: 202-200", envExpectedStatuses)
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid HTTP check (malformed header)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -208,7 +191,6 @@ func TestHTTPChecker(t *testing.T) {
 			return env[key]
 		}
 
-		// Attempt to create the HTTP checker using the mock environment variables
 		_, err := NewHTTPChecker("example", "http://example.com", 1*time.Second, mockEnv)
 		if err == nil {
 			t.Errorf("expected an error, got none")
@@ -348,7 +330,7 @@ func TestParseHeaders(t *testing.T) {
 func TestParseExpectedStatuses(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Single status code", func(t *testing.T) {
+	t.Run("Valid status code", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200")
@@ -362,7 +344,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("Multiple status codes", func(t *testing.T) {
+	t.Run("Valid multiple status codes", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200,404,500")
@@ -376,7 +358,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("Status code range", func(t *testing.T) {
+	t.Run("Valid status code range", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200-202")
@@ -390,7 +372,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 		}
 	})
 
-	t.Run("Multipl status code range", func(t *testing.T) {
+	t.Run("Valid multiple status code ranges", func(t *testing.T) {
 		t.Parallel()
 
 		statuses, err := parseExpectedStatuses("200-202,300-301,500")

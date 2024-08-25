@@ -28,6 +28,7 @@ func TestRunLoop(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		go func() {
+			// Run the server in a goroutine so that it does not block the test
 			_ = server.ListenAndServe()
 		}()
 
@@ -78,9 +79,9 @@ func TestRunLoop(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		go func() {
+			// Run the server in a goroutine so that it does not block the test
 			_ = server.ListenAndServe()
 		}()
-
 		defer server.Close()
 
 		cfg := config.Config{
@@ -133,16 +134,13 @@ func TestRunLoop(t *testing.T) {
 			Version:             "1.0.0",
 		}
 
-		// Parse the URL to get the host part
 		parsedURL, err := url.Parse(cfg.TargetAddress)
 		if err != nil {
 			t.Fatalf("Failed to parse URL: %q", err)
 		}
 
-		// Extract the host:port from the URL
 		host := parsedURL.Host
 
-		// Split the host to get the port
 		_, addressPort, err := net.SplitHostPort(host)
 		if err != nil {
 			t.Fatalf("Failed to split host and port: %q", err)
@@ -156,8 +154,9 @@ func TestRunLoop(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 
-		// start listener after 3 seconds
 		go func() {
+			// Run the server in a goroutine so that it does not block the test
+			// Wait 3 times the interval before starting the server
 			defer wg.Done() // Mark the WaitGroup as done when the goroutine completes
 			time.Sleep(cfg.Interval * 3)
 			err := server.ListenAndServe()
@@ -168,12 +167,11 @@ func TestRunLoop(t *testing.T) {
 			time.Sleep(200 * time.Millisecond) // Ensure runloop get a successful attempt
 		}()
 
-		// Shutdown server when context is canceled
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		// Shutdown server when context is canceled
 		go func() {
+			// Wait for the context to be canceled
 			<-ctx.Done()
 			_ = server.Shutdown(context.Background()) // Gracefully shutdown the server
 		}()
@@ -260,16 +258,13 @@ func TestRunLoop(t *testing.T) {
 			Version:             "1.0.0",
 		}
 
-		// Parse the URL to get the host part
 		parsedURL, err := url.Parse(cfg.TargetAddress)
 		if err != nil {
 			t.Fatalf("Failed to parse URL: %q", err)
 		}
 
-		// Extract the host:port from the URL
 		host := parsedURL.Host
 
-		// Split the host to get the port
 		_, addressPort, err := net.SplitHostPort(host)
 		if err != nil {
 			t.Fatalf("Failed to split host and port: %q", err)
@@ -287,12 +282,11 @@ func TestRunLoop(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 
-		// start listener after 3 seconds
 		go func() {
+			// Run the server in a goroutine so that it does not block the test
 			_ = server.ListenAndServe()
 		}()
 
-		// Shutdown server when context is canceled
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
@@ -363,6 +357,57 @@ func TestRunLoop(t *testing.T) {
 		}
 	})
 
+	t.Run("HTTP target context cancled", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := config.Config{
+			TargetName:    "HTTPServer",
+			TargetAddress: "http://localhost:7083/fail",
+			Interval:      50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+			CheckType:     "http",
+		}
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"METHOD":            "GET",
+				"EXPECTED_STATUSES": "200",
+			}
+			return env[key]
+		}
+
+		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create HTTPChecker: %q", err)
+		}
+
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+
+		go func() {
+			// Wait for the context to be canceled
+			time.Sleep(100 * time.Millisecond)
+			cancel()
+		}()
+
+		err = RunLoop(ctx, cfg, checker, logger)
+		if err != nil && err != context.Canceled {
+			t.Errorf("Expected context canceled error, got %q", err)
+		}
+
+		expected := fmt.Sprintf("Waiting for %s to become ready...", cfg.TargetName)
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+
+		expected = fmt.Sprintf("%s is not ready ✗", cfg.TargetName)
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+	})
+
 	t.Run("TCP Target is ready", func(t *testing.T) {
 		t.Parallel()
 
@@ -406,7 +451,7 @@ func TestRunLoop(t *testing.T) {
 		}
 	})
 
-	t.Run("TCP Target is ready without Type", func(t *testing.T) {
+	t.Run("TCP Target is ready without type", func(t *testing.T) {
 		t.Parallel()
 
 		listener, err := net.Listen("tcp", "localhost:7082")
@@ -467,8 +512,10 @@ func TestRunLoop(t *testing.T) {
 		wg.Add(1)
 
 		var lis net.Listener
-		// start listener after 3 seconds
+
 		go func() {
+			// Run the server in a goroutine so that it does not block the test
+			// Wait 3 times the interval before starting the server
 			defer wg.Done() // Mark the WaitGroup as done when the goroutine completes
 			time.Sleep(cfg.Interval * 3)
 			var err error
@@ -479,7 +526,6 @@ func TestRunLoop(t *testing.T) {
 			time.Sleep(200 * time.Millisecond) // Ensure runloop get a successful attempt
 		}()
 
-		// Shutdown server when context is canceled
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
@@ -546,56 +592,6 @@ func TestRunLoop(t *testing.T) {
 		expected = fmt.Sprintf("version=%s", cfg.Version)
 		if !strings.Contains(stdOutEntries[lenExpectedOuts-1], expected) { // lenExpectedOuts -1 = last element
 			t.Errorf("Expected output to contain %q but got %q", expected, stdOutEntries[1])
-		}
-	})
-
-	t.Run("HTTP target context cancled", func(t *testing.T) {
-		t.Parallel()
-
-		cfg := config.Config{
-			TargetName:    "HTTPServer",
-			TargetAddress: "http://localhost:7083/fail",
-			Interval:      50 * time.Millisecond,
-			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "http",
-		}
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				"METHOD":            "GET",
-				"EXPECTED_STATUSES": "200",
-			}
-			return env[key]
-		}
-
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
-		if err != nil {
-			t.Fatalf("Failed to create HTTPChecker: %q", err)
-		}
-
-		var stdOut strings.Builder
-		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
-
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
-
-		go func() {
-			time.Sleep(100 * time.Millisecond)
-			cancel()
-		}()
-
-		err = RunLoop(ctx, cfg, checker, logger)
-		if err != nil && err != context.Canceled {
-			t.Errorf("Expected context canceled error, got %q", err)
-		}
-
-		expected := fmt.Sprintf("Waiting for %s to become ready...", cfg.TargetName)
-		if !strings.Contains(stdOut.String(), expected) {
-			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
-		}
-
-		expected = fmt.Sprintf("%s is not ready ✗", cfg.TargetName)
-		if !strings.Contains(stdOut.String(), expected) {
-			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
 		}
 	})
 

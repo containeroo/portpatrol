@@ -111,6 +111,7 @@ func TestInferCheckType(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
 		if checkType != "http" {
 			t.Fatalf("expected 'http', got %q", checkType)
 		}
@@ -123,6 +124,7 @@ func TestInferCheckType(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
 		if checkType != "tcp" {
 			t.Fatalf("expected 'tcp', got %q", checkType)
 		}
@@ -135,6 +137,7 @@ func TestInferCheckType(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
 		if checkType != "tcp" {
 			t.Fatalf("expected 'tcp', got %q", checkType)
 		}

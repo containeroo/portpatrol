@@ -13,7 +13,6 @@ func TestTCPChecker(t *testing.T) {
 	t.Run("Valid TCP check", func(t *testing.T) {
 		t.Parallel()
 
-		// Start a test TCP server
 		ln, err := net.Listen("tcp", "127.0.0.1:7080")
 		if err != nil {
 			t.Fatalf("failed to start TCP server: %q", err)
@@ -24,7 +23,6 @@ func TestTCPChecker(t *testing.T) {
 			return ""
 		}
 
-		// Create the TCP checker using the mock environment variables
 		checker, err := NewTCPChecker("example", ln.Addr().String(), 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create TCPChecker: %q", err)
@@ -44,13 +42,11 @@ func TestTCPChecker(t *testing.T) {
 			return ""
 		}
 
-		// Create the TCP checker using the mock environment variables
 		checker, err := NewTCPChecker("example", "localhost:7090", 1*time.Second, mockEnv)
 		if err != nil {
 			t.Fatalf("failed to create TCPChecker: %q", err)
 		}
 
-		// Perform the check, expecting an error due to a non-existent server
 		err = checker.Check(context.Background())
 		if err == nil {
 			t.Fatal("expected an error, got none")

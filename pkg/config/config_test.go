@@ -56,7 +56,7 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:    "www.example.com",
+			TargetName:    "www.example.com", // Extracted from TargetAddress
 			TargetAddress: "www.example.com:80",
 			Interval:      5 * time.Second,
 			DialTimeout:   10 * time.Second,
@@ -127,7 +127,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid interval", func(t *testing.T) {
+	t.Run("Invalid interval (invalid)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -149,7 +149,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Zero interval", func(t *testing.T) {
+	t.Run("Invalid interval (zero)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -171,7 +171,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid dial timeout", func(t *testing.T) {
+	t.Run("Invalid dial timeout (invalid)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -193,7 +193,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Zero dial timeout", func(t *testing.T) {
+	t.Run("Invalid dial timeout (zero)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -210,7 +210,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid address", func(t *testing.T) {
+	t.Run("Invalid address (invalid address)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -231,7 +231,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid hostname", func(t *testing.T) {
+	t.Run("Invalid hostname (missing address)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -247,28 +247,6 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := "could not extract hostname from target address: http://:8080"
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid LOG_ADDITIONAL_FIELDS", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:       "http://example.com",
-				envLogAdditionalFields: "invalid",
-			}
-			return env[key]
-		}
-
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: invalid", envLogAdditionalFields)
 		if err.Error() != expected {
 			t.Fatalf("expected error to contain %q, got %q", expected, err)
 		}
@@ -303,7 +281,29 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid check type", func(t *testing.T) {
+	t.Run("Invalid LOG_ADDITIONAL_FIELDS (not boolean)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress:       "http://example.com",
+				envLogAdditionalFields: "invalid",
+			}
+			return env[key]
+		}
+
+		_, err := ParseConfig(mockEnv)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := fmt.Sprintf("invalid %s value: invalid", envLogAdditionalFields)
+		if err.Error() != expected {
+			t.Fatalf("expected error to contain %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid check type (invalid)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
@@ -325,7 +325,7 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Infer invalid check type", func(t *testing.T) {
+	t.Run("Invalid check type (infer invalid)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {

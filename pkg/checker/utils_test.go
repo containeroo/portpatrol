@@ -7,7 +7,7 @@ import (
 func TestExtractScheme(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid address with scheme", func(t *testing.T) {
+	t.Run("Valid address with http scheme", func(t *testing.T) {
 		t.Parallel()
 
 		scheme, err := extractScheme("http://example.com")
@@ -20,7 +20,7 @@ func TestExtractScheme(t *testing.T) {
 		}
 	})
 
-	t.Run("Valid address with another scheme", func(t *testing.T) {
+	t.Run("Valid address with https scheme", func(t *testing.T) {
 		t.Parallel()
 
 		scheme, err := extractScheme("https://example.com")
@@ -48,7 +48,7 @@ func TestExtractScheme(t *testing.T) {
 		}
 	})
 
-	t.Run("Address with scheme only", func(t *testing.T) {
+	t.Run("Invalid address with scheme only", func(t *testing.T) {
 		t.Parallel()
 
 		scheme, err := extractScheme("ftp://")
