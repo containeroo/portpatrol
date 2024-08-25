@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	envMethod             = "METHOD"
-	envHeaders            = "HEADERS"
-	envExpectedStatuses   = "EXPECTED_STATUSES"
-	defaultExpectedStatus = "200"
+	envHTTPMethod              = "HTTP_METHOD"
+	envHTTPHeaders             = "HTTP_HEADERS"
+	envHTTPExpectedStatusCodes = "HTTP_EXPECTED_STATUS_CODES"
+
+	defaultHTTPExpectedStatus = "200"
 )
 
 // HTTPChecker implements the Checker interface for HTTP checks.
@@ -35,25 +36,25 @@ func (c *HTTPChecker) String() string {
 // NewHTTPChecker creates a new HTTPChecker.
 func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	// Parse method
-	method := getEnv(envMethod)
+	method := getEnv(envHTTPMethod)
 	if method == "" {
 		method = http.MethodGet
 	}
 
 	// Parse headers
-	headers, err := parseHeaders(getEnv(envHeaders))
+	headers, err := parseHeaders(getEnv(envHTTPHeaders))
 	if err != nil {
-		return nil, fmt.Errorf("invalid %s value: %w", envHeaders, err)
+		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
 	}
 
 	// Parse expected status codes
-	statusCodes := getEnv(envExpectedStatuses)
+	statusCodes := getEnv(envHTTPExpectedStatusCodes)
 	if statusCodes == "" {
-		statusCodes = defaultExpectedStatus
+		statusCodes = defaultHTTPExpectedStatus
 	}
 	expectedStatusCodes, err := parseExpectedStatuses(statusCodes)
 	if err != nil {
-		return nil, fmt.Errorf("invalid %s value: %w", envExpectedStatuses, err)
+		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
 	}
 
 	// Create the HTTP client

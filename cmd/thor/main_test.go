@@ -19,7 +19,7 @@ func TestRun(t *testing.T) {
 		envDialTimeout         = "DIAL_TIMEOUT"
 		envCheckType           = "CHECK_TYPE"
 		envLogAdditionalFields = "LOG_ADDITIONAL_FIELDS"
-		envHeaders             = "HEADERS"
+		envHTTPHeaders         = "HTTP_HEADERS"
 	)
 
 	t.Parallel()
@@ -181,7 +181,7 @@ func TestRun(t *testing.T) {
 			envTargetAddress: "htp://localhost:8080",
 			envInterval:      "1s",
 			envDialTimeout:   "1s",
-			envHeaders:       "Authorization Bearer token",
+			envHTTPHeaders:   "Authorization Bearer token",
 		}
 
 		mockEnv := func(key string) string {
@@ -212,7 +212,7 @@ func TestRun(t *testing.T) {
 			envTargetAddress: "http://localhost:8080",
 			envInterval:      "1s",
 			envDialTimeout:   "1s",
-			envHeaders:       "Authorization Bearer token",
+			envHTTPHeaders:   "Authorization Bearer token",
 		}
 
 		mockEnv := func(key string) string {
@@ -229,7 +229,7 @@ func TestRun(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		expected := fmt.Sprintf("failed to initialize checker: invalid %s value: invalid header format: Authorization Bearer token", envHeaders)
+		expected := fmt.Sprintf("failed to initialize checker: invalid %s value: invalid header format: Authorization Bearer token", envHTTPHeaders)
 		if err.Error() != expected {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}

@@ -31,12 +31,12 @@
 
 ### HTTP-Specific Variables
 
-- `METHOD`: The HTTP method to use (optional, default: `GET`).
-- `HEADERS`: Comma-separated list of HTTP headers to include in the request (optional).
+- `HTTP_METHOD`: The HTTP method to use (optional, default: `GET`).
+- `HTTP_HEADERS`: Comma-separated list of HTTP headers to include in the request (optional).
   For Example:
   - `Authorization=Bearer token`
   - `Content-Type=application/json,Accept=application/json`
-- `EXPECTED_STATUSES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
+- `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
   `THOR` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
 
   - Individual status codes: `200,301,404`
@@ -142,11 +142,11 @@ initContainers:
         value: webapp.default.svc.cluster.local:8080
       - name: CHECK_TYPE
         value: http # Specify the type of check, either tcp or http
-      - name: METHOD
+      - name: HTTP_METHOD
         value: "GET"
-      - name: HEADERS
+      - name: HTTP_HEADERS
         value: "Authorization=Bearer token"
-      - name: EXPECTED_STATUSES
+      - name: HTTP_EXPECTED_STATUS_CODES
         value: "200,202"
       - name: INTERVAL
         value: "2s" # Specify the interval duration, e.g., 2 seconds

@@ -26,9 +26,9 @@ func TestHTTPChecker(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envMethod:           "GET",
-				envHeaders:          "Authorization=Bearer token",
-				envExpectedStatuses: "200",
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
 		}
@@ -59,9 +59,9 @@ func TestHTTPChecker(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envMethod:           "GET",
-				envHeaders:          "Authorization=Bearer token",
-				envExpectedStatuses: "200",
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
 		}
@@ -97,9 +97,9 @@ func TestHTTPChecker(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envMethod:           "GET",
-				envHeaders:          "Authorization=Bearer token",
-				envExpectedStatuses: "200",
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
 		}
@@ -162,9 +162,9 @@ func TestHTTPChecker(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envMethod:           "GET",
-				envHeaders:          "Authorization=Bearer token",
-				envExpectedStatuses: "202-200",
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPExpectedStatusCodes: "202-200",
 			}
 			return env[key]
 		}
@@ -174,7 +174,7 @@ func TestHTTPChecker(t *testing.T) {
 			t.Fatalf("expected an error, got none")
 		}
 
-		expected := fmt.Sprintf("invalid %s value: invalid status range: 202-200", envExpectedStatuses)
+		expected := fmt.Sprintf("invalid %s value: invalid status range: 202-200", envHTTPExpectedStatusCodes)
 		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
@@ -185,9 +185,9 @@ func TestHTTPChecker(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envMethod:           "GET",
-				envHeaders:          "Authorization Bearer token", // Missing '=' in the header
-				envExpectedStatuses: "200",
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Authorization Bearer token", // Missing '=' in the header
+				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
 		}
@@ -197,7 +197,7 @@ func TestHTTPChecker(t *testing.T) {
 			t.Errorf("expected an error, got none")
 		}
 
-		expected := "invalid HEADERS value: invalid header format: Authorization Bearer token"
+		expected := fmt.Sprintf("invalid %s value: invalid header format: Authorization Bearer token", envHTTPHeaders)
 		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}

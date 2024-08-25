@@ -14,7 +14,7 @@ import (
 	"github.com/containeroo/thor/pkg/runner"
 )
 
-const version = "0.0.8"
+const version = "0.0.9"
 
 // run is the main function of the application
 func run(ctx context.Context, getenv func(string) string, output io.Writer) error {
