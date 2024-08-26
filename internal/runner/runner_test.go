@@ -17,7 +17,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/logger"
 )
 
-func TestRunLoop(t *testing.T) {
+func TestLoopUntilReady(t *testing.T) {
 	t.Parallel()
 
 	t.Run("HTTP target is ready", func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -110,7 +110,7 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -192,7 +192,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -306,7 +306,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -392,7 +392,7 @@ func TestRunLoop(t *testing.T) {
 			cancel()
 		}()
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil && err != context.Canceled {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}
@@ -440,7 +440,7 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -482,7 +482,7 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
 		defer cancel()
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -541,7 +541,7 @@ func TestRunLoop(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -625,7 +625,7 @@ func TestRunLoop(t *testing.T) {
 			cancel()
 		}()
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != nil && err != context.Canceled {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}
@@ -667,7 +667,7 @@ func TestRunLoop(t *testing.T) {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
 		defer cancel() // Ensure cancel is called to free resources
 
-		err = RunLoop(ctx, cfg, checker, logger)
+		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
 		if err != context.DeadlineExceeded {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}

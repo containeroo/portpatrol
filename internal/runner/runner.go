@@ -7,11 +7,10 @@ import (
 	"time"
 
 	"github.com/containeroo/portpatrol/internal/checker"
-	"github.com/containeroo/portpatrol/internal/config"
 )
 
-// RunLoop continuously attempts to connect to the specified target until it becomes available or the context is canceled.
-func RunLoop(ctx context.Context, cfg config.Config, checker checker.Checker, logger *slog.Logger) error {
+// LoopUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
+func LoopUntilReady(ctx context.Context, interval time.Duration, checker checker.Checker, logger *slog.Logger) error {
 	logger.Info(fmt.Sprintf("Waiting for %s to become ready...", checker))
 
 	for {
@@ -24,7 +23,7 @@ func RunLoop(ctx context.Context, cfg config.Config, checker checker.Checker, lo
 		logger.Warn(fmt.Sprintf("%s is not ready ✗", checker), slog.String("error", err.Error()))
 
 		select {
-		case <-time.After(cfg.Interval):
+		case <-time.After(interval):
 			// Continue to the next connection attempt after the interval
 		case <-ctx.Done():
 			if ctx.Err() == context.Canceled {

@@ -29,12 +29,12 @@ func run(ctx context.Context, getenv func(string) string, output io.Writer) erro
 
 	logger := logger.SetupLogger(cfg, output)
 
-	checkerInstance, err := checker.NewChecker(cfg.CheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getenv)
+	targetChecker, err := checker.NewChecker(cfg.CheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getenv)
 	if err != nil {
 		return fmt.Errorf("failed to initialize checker: %w", err)
 	}
 
-	return runner.RunLoop(ctx, cfg, checkerInstance, logger)
+	return runner.LoopUntilReady(ctx, cfg.Interval, targetChecker, logger)
 }
 
 func main() {
