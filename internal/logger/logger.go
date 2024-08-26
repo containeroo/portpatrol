@@ -23,6 +23,7 @@ func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
 	}
 
 	// If logAdditionalFields is false, remove the error attribute from the handler
+	// The error attribute is unwanted when no additional fields is set to true
 	handlerOpts.ReplaceAttr = func(groups []string, a slog.Attr) slog.Attr {
 		if a.Key == "error" {
 			return slog.Attr{}
@@ -30,6 +31,6 @@ func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
 		return a
 	}
 
-	// Return a logger without the additional fields and with the error attribute
+	// Return a logger without the additional fields and with a function to remove the error attribute
 	return slog.New(slog.NewTextHandler(output, handlerOpts))
 }
