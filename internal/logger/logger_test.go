@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/thor/pkg/config"
+	"github.com/containeroo/portpatrol/internal/config"
 )
 
 func TestSetupLogger(t *testing.T) {

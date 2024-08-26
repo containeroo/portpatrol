@@ -1,22 +1,26 @@
-# THOR - TCP and HTTP ObserveR
+<p align="center">
+  <img src=".github/assets/portpatrol.svg" />
+</p>
 
-`THOR` is a simple Go application with zero external dependencies that checks if a specified `TCP` or `HTTP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
+# PortPatrol
+
+`PortPatrol` is a simple Go application with zero external dependencies that checks if a specified `TCP` or `HTTP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
 
 ## How It Works
 
-`THOR` performs the following steps:
+`PortPatrol` performs the following steps:
 
 - **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
 - **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP` or `HTTP` target based on the configured `INTERVAL` and `DIAL_TIMEOUT`.
-- **Logging**: `THOR` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
+- **Logging**: `PortPatrol` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
 - **Exit Status**:
 
-  - If the target becomes available, `THOR` exits with a status code of `0` (success).
+  - If the target becomes available, `PortPatrol` exits with a status code of `0` (success).
   - If the program is terminated before the target is ready, it exits with a non-zero status code, typically `1`, indicating failure or interruption.
 
 ## Environment Variables
 
-`THOR` accepts the following environment variables:
+`PortPatrol` accepts the following environment variables:
 
 ### Common Variables
 
@@ -34,10 +38,10 @@
 - `HTTP_METHOD`: The HTTP method to use (optional, default: `GET`).
 - `HTTP_HEADERS`: Comma-separated list of HTTP headers to include in the request (optional).
   For Example:
-  - `Authorization=Bearer token`
+  - `AuPortPatrolization=Bearer token`
   - `Content-Type=application/json,Accept=application/json`
 - `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
-  `THOR` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
+  `PortPatrol` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
 
   - Individual status codes: `200,301,404`
   - Ranges of status codes: `200,300-302`
@@ -114,12 +118,12 @@ Configure your Kubernetes deployment to use this init container:
 ```yaml
 initContainers:
   - name: wait-for-valkey
-    image: ghcr.io/containeroo/thor:latest
+    image: ghcr.io/containeroo/portpatrol:latest
     env:
       - name: TARGET_ADDRESS
         value: valkey.default.svc.cluster.local:6379
   - name: wait-for-postgres
-    image: ghcr.io/containeroo/thor:latest
+    image: ghcr.io/containeroo/portpatrol:latest
     env:
       - name: TARGET_NAME
         value: PostgreSQL
@@ -134,7 +138,7 @@ initContainers:
       - name: LOG_ADDITIONAL_FIELDS
         value: "true"
   - name: wait-for-webapp
-    image: ghcr.io/containeroo/thor:latest
+    image: ghcr.io/containeroo/portpatrol:latest
     env:
       - name: TARGET_NAME
         value: webapp
@@ -145,7 +149,7 @@ initContainers:
       - name: HTTP_METHOD
         value: "GET"
       - name: HTTP_HEADERS
-        value: "Authorization=Bearer token"
+        value: "AuPortPatrolization=Bearer token"
       - name: HTTP_EXPECTED_STATUS_CODES
         value: "200,202"
       - name: INTERVAL
@@ -158,6 +162,6 @@ initContainers:
 
 ## Usage Scenarios
 
-- Kubernetes initContainers: Use `THOR` to delay the start of a service until its dependencies are ready, ensuring reliable startup sequences.
-- Startup Scripts: Include `THOR` in deployment scripts to ensure that services wait for dependencies before proceeding.
-- CI/CD Pipelines: Use `THOR` in CI/CD pipelines to wait for services to be ready before running integration tests.
+- Kubernetes initContainers: Use `PortPatrol` to delay the start of a service until its dependencies are ready, ensuring reliable startup sequences.
+- Startup Scripts: Include `PortPatrol` in deployment scripts to ensure that services wait for dependencies before proceeding.
+- CI/CD Pipelines: Use `PortPatrol` in CI/CD pipelines to wait for services to be ready before running integration tests.

@@ -4,7 +4,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/containeroo/thor/pkg/config"
+	"github.com/containeroo/portpatrol/internal/config"
 )
 
 // SetupLogger configures the logger based on the configuration

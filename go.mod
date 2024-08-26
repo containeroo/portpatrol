@@ -1,3 +1,3 @@
-module github.com/containeroo/thor
+module github.com/containeroo/portpatrol
 
 go 1.22.4
