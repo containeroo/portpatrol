@@ -98,6 +98,7 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	// Check the response status code
 	for _, code := range c.ExpectedStatusCodes {
 		if resp.StatusCode == code {
+			// Return nil if the status code matches
 			return nil
 		}
 	}

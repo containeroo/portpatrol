@@ -12,6 +12,7 @@ func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
 	handlerOpts := &slog.HandlerOptions{}
 
 	if cfg.LogAdditionalFields {
+		// Return a logger with the additional fields
 		return slog.New(slog.NewTextHandler(output, handlerOpts)).With(
 			slog.String("target_address", cfg.TargetAddress),
 			slog.String("interval", cfg.Interval.String()),
@@ -29,5 +30,6 @@ func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
 		return a
 	}
 
+	// Return a logger without the additional fields and with the error attribute
 	return slog.New(slog.NewTextHandler(output, handlerOpts))
 }

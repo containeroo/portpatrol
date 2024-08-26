@@ -18,7 +18,7 @@ func RunLoop(ctx context.Context, cfg config.Config, checker checker.Checker, lo
 		err := checker.Check(ctx)
 		if err == nil {
 			logger.Info(fmt.Sprintf("%s is ready ✓", checker))
-			return nil
+			return nil // Successfully connected to the target
 		}
 
 		logger.Warn(fmt.Sprintf("%s is not ready ✗", checker), slog.String("error", err.Error()))

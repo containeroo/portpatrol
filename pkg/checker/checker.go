@@ -35,12 +35,14 @@ func NewChecker(checkType, name, address string, timeout time.Duration, getEnv f
 	if !found {
 		return nil, fmt.Errorf("unknown check type: %s", checkType)
 	}
+
 	return factory(name, address, timeout, getEnv)
 }
 
 // IsValidCheckType validates if the check type is supported.
 func IsValidCheckType(checkType string) bool {
 	_, exists := SupportedCheckTypes[checkType]
+
 	return exists
 }
 
@@ -53,13 +55,14 @@ func InferCheckType(address string) (string, error) {
 	for checkType, schemes := range SupportedCheckTypes {
 		for _, s := range schemes {
 			if s == scheme {
+				// Return the check type if the scheme matches
 				return checkType, nil
 			}
 		}
 	}
 
-	// Default to TCP if no scheme is provided or recognized
 	if scheme == "" {
+		// Default to TCP if no scheme is provided or recognized
 		return "tcp", nil
 	}
 
