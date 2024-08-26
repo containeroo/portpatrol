@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/containeroo/thor/pkg/checker"
-	"github.com/containeroo/thor/pkg/config"
-	"github.com/containeroo/thor/pkg/logger"
-	"github.com/containeroo/thor/pkg/runner"
+	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/portpatrol/internal/config"
+	"github.com/containeroo/portpatrol/internal/logger"
+	"github.com/containeroo/portpatrol/internal/runner"
 )
 
-const version = "0.0.9"
+const version = "0.0.10"
 
 // run is the main function of the application
 func run(ctx context.Context, getenv func(string) string, output io.Writer) error {

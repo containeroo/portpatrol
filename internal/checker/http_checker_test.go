@@ -27,7 +27,7 @@ func TestHTTPChecker(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPHeaders:             "Auportpatrolization=Bearer token",
 				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
@@ -60,7 +60,7 @@ func TestHTTPChecker(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPHeaders:             "Auportpatrolization=Bearer token",
 				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
@@ -98,7 +98,7 @@ func TestHTTPChecker(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPHeaders:             "Auportpatrolization=Bearer token",
 				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
@@ -131,7 +131,7 @@ func TestHTTPChecker(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				"METHOD":            "GET",
-				"HEADERS":           "Authorization=Bearer token",
+				"HEADERS":           "Auportpatrolization=Bearer token",
 				"EXPECTED_STATUSES": "200",
 			}
 			return env[key]
@@ -163,7 +163,7 @@ func TestHTTPChecker(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Authorization=Bearer token",
+				envHTTPHeaders:             "Auportpatrolization=Bearer token",
 				envHTTPExpectedStatusCodes: "202-200",
 			}
 			return env[key]
@@ -186,7 +186,7 @@ func TestHTTPChecker(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Authorization Bearer token", // Missing '=' in the header
+				envHTTPHeaders:             "Auportpatrolization Bearer token", // Missing '=' in the header
 				envHTTPExpectedStatusCodes: "200",
 			}
 			return env[key]
@@ -197,7 +197,7 @@ func TestHTTPChecker(t *testing.T) {
 			t.Errorf("expected an error, got none")
 		}
 
-		expected := fmt.Sprintf("invalid %s value: invalid header format: Authorization Bearer token", envHTTPHeaders)
+		expected := fmt.Sprintf("invalid %s value: invalid header format: Auportpatrolization Bearer token", envHTTPHeaders)
 		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
@@ -210,13 +210,13 @@ func TestParseHeaders(t *testing.T) {
 	t.Run("Valid headers", func(t *testing.T) {
 		t.Parallel()
 
-		headers := "Content-Type=application/json,Authorization=Bearer token"
+		headers := "Content-Type=application/json,Auportpatrolization=Bearer token"
 		result, err := parseHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
 
-		expected := map[string]string{"Content-Type": "application/json", "Authorization": "Bearer token"}
+		expected := map[string]string{"Content-Type": "application/json", "Auportpatrolization": "Bearer token"}
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("Expected result: %q, got: %q", expected, result)
 		}
@@ -255,13 +255,13 @@ func TestParseHeaders(t *testing.T) {
 	t.Run("Malformed header (missing =)", func(t *testing.T) {
 		t.Parallel()
 
-		headers := "Content-Type=application/json,AuthorizationBearer token"
+		headers := "Content-Type=application/json,AuportpatrolizationBearer token"
 		_, err := parseHeaders(headers)
 		if err == nil {
 			t.Error("Expected error, got nil")
 		}
 
-		expected := "invalid header format: AuthorizationBearer token"
+		expected := "invalid header format: AuportpatrolizationBearer token"
 		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
@@ -270,13 +270,13 @@ func TestParseHeaders(t *testing.T) {
 	t.Run("Header with spaces", func(t *testing.T) {
 		t.Parallel()
 
-		headers := "  Content-Type = application/json  , Authorization = Bearer token  "
+		headers := "  Content-Type = application/json  , Auportpatrolization = Bearer token  "
 		result, err := parseHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
 
-		expected := map[string]string{"Content-Type": "application/json", "Authorization": "Bearer token"}
+		expected := map[string]string{"Content-Type": "application/json", "Auportpatrolization": "Bearer token"}
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("Expected result: %q, got: %q", expected, result)
 		}
