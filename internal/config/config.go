@@ -18,8 +18,9 @@ const (
 	envCheckType           = "CHECK_TYPE"
 	envLogAdditionalFields = "LOG_ADDITIONAL_FIELDS"
 
-	defaultInterval    = 2 * time.Second
-	defaultDialTimeout = 1 * time.Second
+	defaultInterval            = 2 * time.Second
+	defaultDialTimeout         = 1 * time.Second
+	defaultLogAdditionalFields = false
 )
 
 // Config holds the required environment variables.
@@ -42,7 +43,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		Interval:            defaultInterval,
 		DialTimeout:         defaultDialTimeout,
 		CheckType:           getenv(envCheckType),
-		LogAdditionalFields: false,
+		LogAdditionalFields: defaultLogAdditionalFields,
 	}
 
 	if cfg.TargetAddress == "" {
