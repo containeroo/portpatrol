@@ -10,8 +10,8 @@ import (
 // CheckerConstructor is a function type for creating Checkers.
 type CheckerConstructor func(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error)
 
-// CheckerFactories is a map that stores the different Checker factories.
-var CheckerFactories = map[string]CheckerConstructor{
+// CheckerFactory is a map that stores the different Checker factories.
+var CheckerFactory = map[string]CheckerConstructor{
 	"http":  NewHTTPChecker,
 	"https": NewHTTPChecker,
 	"tcp":   NewTCPChecker,
@@ -31,7 +31,7 @@ type Checker interface {
 
 // NewChecker creates a Checker based on the provided check type.
 func NewChecker(checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	factory, found := CheckerFactories[checkType]
+	factory, found := CheckerFactory[checkType]
 	if !found {
 		return nil, fmt.Errorf("unknown check type: %s", checkType)
 	}
