@@ -20,7 +20,6 @@ func (c *TCPChecker) String() string {
 }
 
 // NewTCPChecker creates a new TCPChecker.
-
 func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	address = strings.TrimPrefix(address, "tcp://")
 

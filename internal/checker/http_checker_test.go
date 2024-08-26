@@ -445,7 +445,7 @@ func TestIsValidCheckTypeWithProxy(t *testing.T) {
 		// Create the HTTPChecker instance
 		checker, err := NewHTTPChecker("example", "http://example.com", 1*time.Second, os.Getenv)
 		if err != nil {
-			t.Errorf("Expected no error, got %q", err)
+			t.Errorf("expected no error, got %q", err)
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
