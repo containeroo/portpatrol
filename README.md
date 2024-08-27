@@ -40,6 +40,7 @@
   For Example:
   - `AuPortPatrolization=Bearer token`
   - `Content-Type=application/json,Accept=application/json`
+- `HTTP_ALLOW_DUPLICATE_HEADERS`: Allows duplicate headers in `HTTP_HEADERS` (optional, default: `false`).
 - `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
   `PortPatrol` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
 

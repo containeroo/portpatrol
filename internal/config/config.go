@@ -37,13 +37,13 @@ type Config struct {
 
 // ParseConfig retrieves and parses the required environment variables.
 // Provides default values if the environment variables are not set.
-func ParseConfig(getenv func(string) string) (Config, error) {
+func ParseConfig(getEnv func(string) string) (Config, error) {
 	cfg := Config{
-		TargetName:          getenv(envTargetName),
-		TargetAddress:       getenv(envTargetAddress),
+		TargetName:          getEnv(envTargetName),
+		TargetAddress:       getEnv(envTargetAddress),
 		Interval:            defaultInterval,
 		DialTimeout:         defaultDialTimeout,
-		CheckType:           getenv(envCheckType),
+		CheckType:           getEnv(envCheckType),
 		LogAdditionalFields: defaultLogAdditionalFields,
 	}
 
@@ -73,7 +73,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 	}
 
 	// Parse the interval
-	if intervalStr := getenv(envInterval); intervalStr != "" {
+	if intervalStr := getEnv(envInterval); intervalStr != "" {
 		interval, err := time.ParseDuration(intervalStr)
 		if err != nil || interval <= 0 {
 			return Config{}, fmt.Errorf("invalid %s value: %s", envInterval, intervalStr)
@@ -82,7 +82,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 	}
 
 	// Parse the dial timeout
-	if dialTimeoutStr := getenv(envDialTimeout); dialTimeoutStr != "" {
+	if dialTimeoutStr := getEnv(envDialTimeout); dialTimeoutStr != "" {
 		dialTimeout, err := time.ParseDuration(dialTimeoutStr)
 		if err != nil || dialTimeout <= 0 {
 			return Config{}, fmt.Errorf("invalid %s value: %s", envDialTimeout, dialTimeoutStr)
@@ -91,7 +91,7 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 	}
 
 	// Parse the log additional fields
-	if logFieldsStr := getenv(envLogAdditionalFields); logFieldsStr != "" {
+	if logFieldsStr := getEnv(envLogAdditionalFields); logFieldsStr != "" {
 		logAdditionalFields, err := strconv.ParseBool(logFieldsStr)
 		if err != nil {
 			return Config{}, fmt.Errorf("invalid %s value: %s", envLogAdditionalFields, logFieldsStr)

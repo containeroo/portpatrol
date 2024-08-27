@@ -157,6 +157,58 @@ func TestHTTPChecker(t *testing.T) {
 		}
 	})
 
+	t.Run("Valid HTTP check (duplicate headers)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envHTTPAllowDuplicateHeaders: "true",
+				envHTTPMethod:                "GET",
+				envHTTPHeaders:               "Content-Type=application/json,Content-Type=application/json",
+				envHTTPExpectedStatusCodes:   "200",
+			}
+			return env[key]
+		}
+
+		checker, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		c := checker.(*HTTPChecker) // Cast the checker to HTTPChecker
+
+		expectedHeaders := map[string]string{
+			"Content-Type": "application/json",
+		}
+
+		if !reflect.DeepEqual(c.Headers, expectedHeaders) {
+			t.Fatalf("expected headers %v, got %v", expectedHeaders, c.Headers)
+		}
+	})
+
+	t.Run("Invalid HTTP check (duplicate headers)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Content-Type=application/json,Content-Type=application/json",
+				envHTTPExpectedStatusCodes: "200",
+			}
+			return env[key]
+		}
+
+		_, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "invalid HTTP_HEADERS value: duplicate header key found: Content-Type"
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
 	t.Run("Invalid HTTP check (malformed status range)", func(t *testing.T) {
 		t.Parallel()
 
@@ -202,16 +254,40 @@ func TestHTTPChecker(t *testing.T) {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
+
+	t.Run("Invalid HTTP check (malformed HTTP_ALLOW_DUPLICATE_HEADERS)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envHTTPMethod:                "GET",
+				envHTTPHeaders:               "Content-Type=application/json,Content-Type=application/json",
+				envHTTPAllowDuplicateHeaders: "invalid",
+				envHTTPExpectedStatusCodes:   "200",
+			}
+			return env[key]
+		}
+
+		_, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := fmt.Sprintf("invalid %s value: strconv.ParseBool: parsing \"invalid\": invalid syntax", envHTTPAllowDuplicateHeaders)
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
 }
 
-func TestParseHeaders(t *testing.T) {
+func TestParseHTTPHeaders(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Valid headers", func(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,Auportpatrolization=Bearer token"
-		result, err := parseHTTPHeaders(headers)
+		result, err := parseHTTPHeaders(headers, true)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -226,7 +302,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json"
-		result, err := parseHTTPHeaders(headers)
+		result, err := parseHTTPHeaders(headers, true)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -241,7 +317,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := ""
-		result, err := parseHTTPHeaders(headers)
+		result, err := parseHTTPHeaders(headers, true)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -256,7 +332,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,AuportpatrolizationBearer token"
-		_, err := parseHTTPHeaders(headers)
+		_, err := parseHTTPHeaders(headers, true)
 		if err == nil {
 			t.Error("Expected error, got nil")
 		}
@@ -271,7 +347,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "  Content-Type = application/json  , Auportpatrolization = Bearer token  "
-		result, err := parseHTTPHeaders(headers)
+		result, err := parseHTTPHeaders(headers, true)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -286,7 +362,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "=value"
-		_, err := parseHTTPHeaders(headers)
+		_, err := parseHTTPHeaders(headers, true)
 		if err == nil {
 			t.Error("Expected error, got nil")
 		}
@@ -301,7 +377,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "key="
-		result, err := parseHTTPHeaders(headers)
+		result, err := parseHTTPHeaders(headers, true)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -316,7 +392,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,"
-		result, err := parseHTTPHeaders(headers)
+		result, err := parseHTTPHeaders(headers, true)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -326,9 +402,40 @@ func TestParseHeaders(t *testing.T) {
 			t.Errorf("expected %v, got %v", expected, result)
 		}
 	})
+
+	t.Run("Valid header with duplicate headers (allowDuplicates=true)", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "Content-Type=application/json,Content-Type=application/json"
+		h, err := parseHTTPHeaders(headers, true)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		expected := map[string]string{"Content-Type": "application/json"}
+
+		if !reflect.DeepEqual(h, expected) {
+			t.Fatalf("expected %v, got %v", expected, h)
+		}
+	})
+
+	t.Run("Invalid header with duplicate headers (allowDuplicates=false)", func(t *testing.T) {
+		t.Parallel()
+
+		headers := "Content-Type=application/json,Content-Type=application/json"
+		_, err := parseHTTPHeaders(headers, false)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "duplicate header key found: Content-Type"
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
 }
 
-func TestParseExpectedStatuses(t *testing.T) {
+func TestParseHTTPStatusCodes(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Valid status code", func(t *testing.T) {

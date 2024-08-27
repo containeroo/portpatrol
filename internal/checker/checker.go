@@ -47,8 +47,8 @@ func IsValidCheckType(checkType string) bool {
 }
 
 // InferCheckType infers the check type based on the scheme of the target address.
-// If no scheme is provided, it returns an empty string and no error.
-// If an invalid scheme is provided, it returns an error.
+// It returns an empty string and no error if no scheme is provided.
+// If an unsupported scheme is provided, it returns an error.
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
 	if scheme == "" {

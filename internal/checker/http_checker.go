@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	envHTTPMethod              = "HTTP_METHOD"
-	envHTTPHeaders             = "HTTP_HEADERS"
-	envHTTPExpectedStatusCodes = "HTTP_EXPECTED_STATUS_CODES"
+	envHTTPMethod                = "HTTP_METHOD"
+	envHTTPHeaders               = "HTTP_HEADERS"
+	envHTTPAllowDuplicateHeaders = "HTTP_ALLOW_DUPLICATE_HEADERS"
+	envHTTPExpectedStatusCodes   = "HTTP_EXPECTED_STATUS_CODES"
 
-	defaultHTTPExpectedStatus = "200"
+	defaultHTTPExpectedStatus        = "200"
+	defaultHTTPAllowDuplicateHeaders = "false"
 )
 
 // HTTPChecker implements the Checker interface for HTTP checks.
@@ -35,29 +37,41 @@ func (c *HTTPChecker) String() string {
 
 // NewHTTPChecker creates a new HTTPChecker.
 func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	// Parse method
-	method := getEnv(envHTTPMethod)
-	if method == "" {
-		method = http.MethodGet
+	// Determine the HTTP method
+	httpMethod := getEnv(envHTTPMethod)
+	if httpMethod == "" {
+		httpMethod = http.MethodGet
+	}
+
+	// Determine if duplicate headers are allowed
+	allowDupHeaderStr := getEnv(envHTTPAllowDuplicateHeaders)
+	if allowDupHeaderStr == "" {
+		allowDupHeaderStr = defaultHTTPAllowDuplicateHeaders
+	}
+
+	// Parse the boolean value for allowDuplicates
+	allowDupHeaders, err := strconv.ParseBool(allowDupHeaderStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s value: %w", envHTTPAllowDuplicateHeaders, err)
 	}
 
 	// Parse headers
-	headers, err := parseHTTPHeaders(getEnv(envHTTPHeaders))
+	parsedHeaders, err := parseHTTPHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
 	}
 
-	// Parse expected status codes
-	statusCodes := getEnv(envHTTPExpectedStatusCodes)
-	if statusCodes == "" {
-		statusCodes = defaultHTTPExpectedStatus
+	// Determine the expected status codes
+	expectedStatusStr := getEnv(envHTTPExpectedStatusCodes)
+	if expectedStatusStr == "" {
+		expectedStatusStr = defaultHTTPExpectedStatus
 	}
-	expectedStatusCodes, err := parseHTTPStatusCodes(statusCodes)
+	expectedStatusCodes, err := parseHTTPStatusCodes(expectedStatusStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
 	}
 
-	// Create the HTTP client
+	// Create the HTTP client with the given timeout
 	client := &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
@@ -69,8 +83,8 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 		Name:                name,
 		Address:             address,
 		ExpectedStatusCodes: expectedStatusCodes,
-		Method:              method,
-		Headers:             headers,
+		Method:              httpMethod,
+		Headers:             parsedHeaders,
 		client:              client,
 	}, nil
 }
@@ -155,8 +169,9 @@ func parseHTTPStatusCodes(statusRanges string) ([]int, error) {
 // and returns a map of the headers. It supports multiple headers, including combinations
 // like "Content-Type=application/json, Authorization=Bearer token". The value can be
 // empty (e.g., "X-Empty-Header="), but the key must not be empty.
-// Returns an error if any header is not properly formatted.
-func parseHTTPHeaders(headers string) (map[string]string, error) {
+// If allowDuplicates is false, the function will return an error if a duplicate header is encountered.
+// If allowDuplicates is true, the function will override the previous value with the new one.
+func parseHTTPHeaders(headers string, allowDuplicates bool) (map[string]string, error) {
 	headerMap := make(map[string]string)
 	if headers == "" {
 		return headerMap, nil
@@ -181,6 +196,10 @@ func parseHTTPHeaders(headers string) (map[string]string, error) {
 
 		if key == "" {
 			return nil, fmt.Errorf("header key cannot be empty: %s", pair)
+		}
+
+		if _, exists := headerMap[key]; exists && !allowDuplicates {
+			return nil, fmt.Errorf("duplicate header key found: %s", key)
 		}
 
 		headerMap[key] = value
