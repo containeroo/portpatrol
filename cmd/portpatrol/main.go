@@ -14,7 +14,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/runner"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 // run is the main function of the application
 func run(ctx context.Context, getEnv func(string) string, output io.Writer) error {
@@ -29,12 +29,12 @@ func run(ctx context.Context, getEnv func(string) string, output io.Writer) erro
 
 	logger := logger.SetupLogger(cfg, output)
 
-	targetChecker, err := checker.NewChecker(cfg.CheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getEnv)
+	targetChecker, err := checker.NewChecker(cfg.TargetCheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getEnv)
 	if err != nil {
 		return fmt.Errorf("failed to initialize checker: %w", err)
 	}
 
-	return runner.LoopUntilReady(ctx, cfg.Interval, targetChecker, logger)
+	return runner.LoopUntilReady(ctx, cfg.CheckInterval, targetChecker, logger)
 }
 
 func main() {

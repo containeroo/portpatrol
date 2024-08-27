@@ -37,7 +37,7 @@ func TestLoopUntilReady(t *testing.T) {
 		cfg := config.Config{
 			TargetName:    "HTTPServer",
 			TargetAddress: "http://localhost:9082/",
-			Interval:      50 * time.Millisecond,
+			CheckInterval: 50 * time.Millisecond,
 			DialTimeout:   50 * time.Millisecond,
 		}
 
@@ -57,10 +57,10 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -87,7 +87,7 @@ func TestLoopUntilReady(t *testing.T) {
 		cfg := config.Config{
 			TargetName:    "HTTPServer",
 			TargetAddress: "http://localhost:9081/ping",
-			Interval:      50 * time.Millisecond,
+			CheckInterval: 50 * time.Millisecond,
 			DialTimeout:   50 * time.Millisecond,
 		}
 
@@ -107,10 +107,10 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -125,13 +125,13 @@ func TestLoopUntilReady(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:          "HTTPServer",
-			TargetAddress:       "http://localhost:6081/success",
-			Interval:            500 * time.Millisecond,
-			DialTimeout:         500 * time.Millisecond,
-			CheckType:           "http",
-			LogAdditionalFields: true,
-			Version:             "1.0.0",
+			TargetName:      "HTTPServer",
+			TargetAddress:   "http://localhost:6081/success",
+			CheckInterval:   500 * time.Millisecond,
+			DialTimeout:     500 * time.Millisecond,
+			TargetCheckType: "http",
+			LogExtraFields:  true,
+			Version:         "1.0.0",
 		}
 
 		parsedURL, err := url.Parse(cfg.TargetAddress)
@@ -158,7 +158,7 @@ func TestLoopUntilReady(t *testing.T) {
 			// Run the server in a goroutine so that it does not block the test
 			// Wait 3 times the interval before starting the server
 			defer wg.Done() // Mark the WaitGroup as done when the goroutine completes
-			time.Sleep(cfg.Interval * 3)
+			time.Sleep(cfg.CheckInterval * 3)
 			err := server.ListenAndServe()
 
 			if err != nil && err != http.ErrServerClosed { // After Server.Shutdown the returned error is ErrServerClosed.
@@ -167,7 +167,7 @@ func TestLoopUntilReady(t *testing.T) {
 			time.Sleep(200 * time.Millisecond) // Ensure runloop get a successful attempt
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
 		go func() {
@@ -192,7 +192,7 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -249,13 +249,13 @@ func TestLoopUntilReady(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:          "HTTPServer",
-			TargetAddress:       "http://localhost:2081/wrong",
-			Interval:            500 * time.Millisecond,
-			DialTimeout:         500 * time.Millisecond,
-			CheckType:           "http",
-			LogAdditionalFields: true,
-			Version:             "1.0.0",
+			TargetName:      "HTTPServer",
+			TargetAddress:   "http://localhost:2081/wrong",
+			CheckInterval:   500 * time.Millisecond,
+			DialTimeout:     500 * time.Millisecond,
+			TargetCheckType: "http",
+			LogExtraFields:  true,
+			Version:         "1.0.0",
 		}
 
 		parsedURL, err := url.Parse(cfg.TargetAddress)
@@ -287,7 +287,7 @@ func TestLoopUntilReady(t *testing.T) {
 			_ = server.ListenAndServe()
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
 		mockEnv := func(key string) string {
@@ -306,7 +306,7 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -361,11 +361,11 @@ func TestLoopUntilReady(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:    "HTTPServer",
-			TargetAddress: "http://localhost:7083/fail",
-			Interval:      50 * time.Millisecond,
-			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "http",
+			TargetName:      "HTTPServer",
+			TargetAddress:   "http://localhost:7083/fail",
+			CheckInterval:   50 * time.Millisecond,
+			DialTimeout:     50 * time.Millisecond,
+			TargetCheckType: "http",
 		}
 
 		mockEnv := func(key string) string {
@@ -384,7 +384,7 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 
 		go func() {
 			// Wait for the context to be canceled
@@ -392,7 +392,7 @@ func TestLoopUntilReady(t *testing.T) {
 			cancel()
 		}()
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil && err != context.Canceled {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}
@@ -418,11 +418,11 @@ func TestLoopUntilReady(t *testing.T) {
 		defer listener.Close()
 
 		cfg := config.Config{
-			TargetName:    "TCPServer",
-			TargetAddress: listener.Addr().String(),
-			Interval:      50 * time.Millisecond,
-			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "tcp",
+			TargetName:      "TCPServer",
+			TargetAddress:   listener.Addr().String(),
+			CheckInterval:   50 * time.Millisecond,
+			DialTimeout:     50 * time.Millisecond,
+			TargetCheckType: "tcp",
 		}
 
 		mockEnv := func(key string) string {
@@ -437,10 +437,10 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -463,7 +463,7 @@ func TestLoopUntilReady(t *testing.T) {
 		cfg := config.Config{
 			TargetName:    "TCPServer",
 			TargetAddress: fmt.Sprintf("tcp://%s", listener.Addr().String()),
-			Interval:      50 * time.Millisecond,
+			CheckInterval: 50 * time.Millisecond,
 			DialTimeout:   50 * time.Millisecond,
 		}
 
@@ -479,10 +479,10 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -497,13 +497,13 @@ func TestLoopUntilReady(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:          "TCPServer",
-			TargetAddress:       "localhost:5081",
-			Interval:            500 * time.Millisecond,
-			DialTimeout:         500 * time.Millisecond,
-			CheckType:           "tcp",
-			LogAdditionalFields: true,
-			Version:             "1.0.0",
+			TargetName:      "TCPServer",
+			TargetAddress:   "localhost:5081",
+			CheckInterval:   500 * time.Millisecond,
+			DialTimeout:     500 * time.Millisecond,
+			TargetCheckType: "tcp",
+			LogExtraFields:  true,
+			Version:         "1.0.0",
 		}
 
 		addressPort := strings.Split(cfg.TargetAddress, ":")[1]
@@ -517,7 +517,7 @@ func TestLoopUntilReady(t *testing.T) {
 			// Run the server in a goroutine so that it does not block the test
 			// Wait 3 times the interval before starting the server
 			defer wg.Done() // Mark the WaitGroup as done when the goroutine completes
-			time.Sleep(cfg.Interval * 3)
+			time.Sleep(cfg.CheckInterval * 3)
 			var err error
 			lis, err = net.Listen("tcp", cfg.TargetAddress)
 			if err != nil {
@@ -526,7 +526,7 @@ func TestLoopUntilReady(t *testing.T) {
 			time.Sleep(200 * time.Millisecond) // Ensure runloop get a successful attempt
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
 		mockEnv := func(key string) string {
@@ -541,7 +541,7 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -599,11 +599,11 @@ func TestLoopUntilReady(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:    "TCPServer",
-			TargetAddress: "localhost:7084",
-			Interval:      50 * time.Millisecond,
-			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "tcp",
+			TargetName:      "TCPServer",
+			TargetAddress:   "localhost:7084",
+			CheckInterval:   50 * time.Millisecond,
+			DialTimeout:     50 * time.Millisecond,
+			TargetCheckType: "tcp",
 		}
 
 		mockEnv := func(key string) string {
@@ -618,14 +618,14 @@ func TestLoopUntilReady(t *testing.T) {
 		var stdOut strings.Builder
 		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Interval*4)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 
 		go func() {
 			time.Sleep(100 * time.Millisecond)
 			cancel()
 		}()
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil && err != context.Canceled {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}
@@ -645,11 +645,11 @@ func TestLoopUntilReady(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:    "TCPServer",
-			TargetAddress: "localhost:7084",
-			Interval:      50 * time.Millisecond,
-			DialTimeout:   50 * time.Millisecond,
-			CheckType:     "tcp",
+			TargetName:      "TCPServer",
+			TargetAddress:   "localhost:7084",
+			CheckInterval:   50 * time.Millisecond,
+			DialTimeout:     50 * time.Millisecond,
+			TargetCheckType: "tcp",
 		}
 
 		mockEnv := func(key string) string {
@@ -667,7 +667,7 @@ func TestLoopUntilReady(t *testing.T) {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
 		defer cancel() // Ensure cancel is called to free resources
 
-		err = LoopUntilReady(ctx, cfg.Interval, checker, logger)
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != context.DeadlineExceeded {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}

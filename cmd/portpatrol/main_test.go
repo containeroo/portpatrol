@@ -15,10 +15,10 @@ func TestRun(t *testing.T) {
 	const (
 		envTargetName          = "TARGET_NAME"
 		envTargetAddress       = "TARGET_ADDRESS"
-		envInterval            = "INTERVAL"
+		envTargetCheckType     = "TARGET_CHECK_TYPE"
+		envCheckInterval       = "CHECK_INTERVAL"
 		envDialTimeout         = "DIAL_TIMEOUT"
-		envCheckType           = "CHECK_TYPE"
-		envLogAdditionalFields = "LOG_ADDITIONAL_FIELDS"
+		envLogAdditionalFields = "LOG_EXTRA_FIELDS"
 		envHTTPHeaders         = "HTTP_HEADERS"
 	)
 
@@ -28,10 +28,10 @@ func TestRun(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			envTargetAddress: "http://localhost:8081",
-			envInterval:      "1s",
-			envDialTimeout:   "1s",
-			envCheckType:     "http",
+			envTargetAddress:   "http://localhost:8081",
+			envCheckInterval:   "1s",
+			envDialTimeout:     "1s",
+			envTargetCheckType: "http",
 		}
 
 		mockEnv := func(key string) string {
@@ -78,7 +78,7 @@ func TestRun(t *testing.T) {
 
 		env := map[string]string{
 			envTargetAddress: "localhost:8082",
-			envInterval:      "1s",
+			envCheckInterval: "1s",
 			envDialTimeout:   "1s",
 		}
 
@@ -146,11 +146,11 @@ func TestRun(t *testing.T) {
 		t.Parallel()
 
 		env := map[string]string{
-			envTargetName:    "TestService",
-			envTargetAddress: "localhost:8080",
-			envInterval:      "1s",
-			envDialTimeout:   "1s",
-			envCheckType:     "invalid",
+			envTargetName:      "TestService",
+			envTargetAddress:   "localhost:8080",
+			envCheckInterval:   "1s",
+			envDialTimeout:     "1s",
+			envTargetCheckType: "invalid",
 		}
 
 		mockEnv := func(key string) string {
@@ -179,7 +179,7 @@ func TestRun(t *testing.T) {
 		env := map[string]string{
 			envTargetName:    "TestService",
 			envTargetAddress: "htp://localhost:8080",
-			envInterval:      "1s",
+			envCheckInterval: "1s",
 			envDialTimeout:   "1s",
 			envHTTPHeaders:   "Auportpatrolization Bearer token",
 		}
@@ -210,7 +210,7 @@ func TestRun(t *testing.T) {
 		env := map[string]string{
 			envTargetName:    "TestService",
 			envTargetAddress: "http://localhost:8080",
-			envInterval:      "1s",
+			envCheckInterval: "1s",
 			envDialTimeout:   "1s",
 			envHTTPHeaders:   "Auportpatrolization Bearer token",
 		}

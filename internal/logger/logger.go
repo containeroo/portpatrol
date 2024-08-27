@@ -11,13 +11,13 @@ import (
 func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
 	handlerOpts := &slog.HandlerOptions{}
 
-	if cfg.LogAdditionalFields {
+	if cfg.LogExtraFields {
 		// Return a logger with the additional fields
 		return slog.New(slog.NewTextHandler(output, handlerOpts)).With(
 			slog.String("target_address", cfg.TargetAddress),
-			slog.String("interval", cfg.Interval.String()),
+			slog.String("interval", cfg.CheckInterval.String()),
 			slog.String("dial_timeout", cfg.DialTimeout.String()),
-			slog.String("checker_type", cfg.CheckType),
+			slog.String("checker_type", cfg.TargetCheckType),
 			slog.String("version", cfg.Version),
 		)
 	}

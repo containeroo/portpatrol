@@ -17,12 +17,12 @@ func TestSetupLogger(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			Version:             "0.0.1",
-			TargetAddress:       "localhost:8080",
-			Interval:            1 * time.Second,
-			DialTimeout:         2 * time.Second,
-			CheckType:           "http",
-			LogAdditionalFields: true,
+			Version:         "0.0.1",
+			TargetAddress:   "localhost:8080",
+			CheckInterval:   1 * time.Second,
+			DialTimeout:     2 * time.Second,
+			TargetCheckType: "http",
+			LogExtraFields:  true,
 		}
 		var buf bytes.Buffer
 
@@ -61,7 +61,7 @@ func TestSetupLogger(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			LogAdditionalFields: false,
+			LogExtraFields: false,
 		}
 		var buf bytes.Buffer
 

@@ -11,7 +11,7 @@
 `PortPatrol` performs the following steps:
 
 - **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
-- **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP` or `HTTP` target based on the configured `INTERVAL` and `DIAL_TIMEOUT`.
+- **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP` or `HTTP` target based on the configured `CHECK_INTERVAL` and `DIAL_TIMEOUT`.
 - **Logging**: `PortPatrol` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
 - **Exit Status**:
 
@@ -25,13 +25,13 @@
 ### Common Variables
 
 - `TARGET_ADDRESS`: The address of the target in the following format:
-  - **TCP**: `host:port` (required). If `tcp://` is used as the scheme, the `CHECK_TYPE` can be omitted.
+  - **TCP**: `host:port` (required). If `tcp://` is used as the scheme, the `TARGET_CHECK_TYPE` can be omitted.
   - **HTTP**: `scheme://host:port` (required).
-- `TARGET_NAME`: The name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, the name will be derived from the host portion of the target address. For example, `http://postgres.default.svc.cluster.local:5432` would be inferred as `postgres.default.svc.cluster.local`.
-- `INTERVAL`: The interval between connection attempts (optional, default: `2s`).
+  - `TARGET_NAME`: The name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, the name will be derived from the host portion of the target address. For example, `http://postgres.default.svc.cluster.local:5432` would be inferred as `postgres.default.svc.cluster.local`.
+- `TARGET_CHECK_TYPE`: Specifies the type of check to perform: `tcp` or `http` (optional, default: inferred from `TARGET_ADDRESS`).
+- `CHECK_INTERVAL`: The interval between connection attempts (optional, default: `2s`).
 - `DIAL_TIMEOUT`: The maximum time allowed for each connection attempt (optional, default: `1s`).
-- `CHECK_TYPE`: Specifies the type of check to perform: `tcp` or `http` (optional, default: inferred from `TARGET_ADDRESS`).
-- `LOG_ADDITIONAL_FIELDS`: Enables logging of additional fields (optional, default: `false`).
+- `LOG_EXTRA_FIELDS`: Enables logging of additional fields (optional, default: `false`).
 
 ### HTTP-Specific Variables
 
@@ -69,7 +69,7 @@ graph TD;
     B --> C[Add headers from HTTP_HEADERS];
     C --> D[Send HTTP request];
     D -->|Request successful| E[Check HTTP status code];
-    D -->|Request failed| F[Log error and wait for retry INTERVAL];
+    D -->|Request failed| F[Log error and wait for retry CHECK_INTERVAL];
     F --> D;
     E -->|Status code matches HTTP_EXPECTED_STATUS_CODES| G[Target is ready];
     E -->|Status code does not match| F;
@@ -83,7 +83,7 @@ graph TD;
 graph TD;
     A[Start] --> B[Attempt to connect to TARGET_ADDRESS];
     B -->|Connection successful| C[Target is ready];
-    B -->|Connection failed| D[Wait for retry INTERVAL];
+    B -->|Connection failed| D[Wait for retry CHECK_INTERVAL];
     D --> B;
     C --> E[End];
     F[Program terminated or canceled] --> E;
@@ -91,7 +91,7 @@ graph TD;
 
 ## Logging
 
-With the `LOG_ADDITIONAL_FIELDS` environment variable set to true, additional fields will be logged.
+With the `LOG_EXTRA_FIELDS` environment variable set to true, additional fields will be logged.
 
 ### With additional fields
 
@@ -130,13 +130,13 @@ initContainers:
         value: PostgreSQL
       - name: TARGET_ADDRESS
         value: postgres.default.svc.cluster.local:5432
-      - name: CHECK_TYPE
+      - name: TARGET_CHECK_TYPE
         value: tcp # Specify the type of check, either tcp or http
-      - name: INTERVAL
+      - name: CHECK_INTERVAL
         value: "5s" # Specify the interval duration, e.g., 2 seconds
       - name: DIAL_TIMEOUT
         value: "5s" # Specify the dial timeout duration, e.g., 2 seconds
-      - name: LOG_ADDITIONAL_FIELDS
+      - name: LOG_EXTRA_FIELDS
         value: "true"
   - name: wait-for-webapp
     image: ghcr.io/containeroo/portpatrol:latest
@@ -145,7 +145,7 @@ initContainers:
         value: webapp
       - name: TARGET_ADDRESS
         value: webapp.default.svc.cluster.local:8080
-      - name: CHECK_TYPE
+      - name: TARGET_CHECK_TYPE
         value: http # Specify the type of check, either tcp or http
       - name: HTTP_METHOD
         value: "GET"
@@ -153,11 +153,11 @@ initContainers:
         value: "AuPortPatrolization=Bearer token"
       - name: HTTP_EXPECTED_STATUS_CODES
         value: "200,202"
-      - name: INTERVAL
+      - name: CHECK_INTERVAL
         value: "2s" # Specify the interval duration, e.g., 2 seconds
       - name: DIAL_TIMEOUT
         value: "2s" # Specify the dial timeout duration, e.g., 2 seconds
-      - name: LOG_ADDITIONAL_FIELDS
+      - name: LOG_EXTRA_FIELDS
         value: "true"
 ```
 

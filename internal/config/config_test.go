@@ -26,11 +26,11 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:    "example.com", // Extracted from TargetAddress
-			TargetAddress: "http://example.com",
-			Interval:      2 * time.Second,
-			DialTimeout:   1 * time.Second,
-			CheckType:     "http",
+			TargetName:      "example.com", // Extracted from TargetAddress
+			TargetAddress:   "http://example.com",
+			TargetCheckType: "http",
+			CheckInterval:   2 * time.Second,
+			DialTimeout:     1 * time.Second,
 		}
 		if !reflect.DeepEqual(cfg, expected) {
 			t.Fatalf("expected config %+v, got %+v", expected, cfg)
@@ -42,10 +42,10 @@ func TestParseConfig(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress: "www.example.com:80",
-				envInterval:      "5s",
-				envDialTimeout:   "10s",
-				envCheckType:     "http",
+				envTargetAddress:   "www.example.com:80",
+				envTargetCheckType: "http",
+				envCheckInterval:   "5s",
+				envDialTimeout:     "10s",
 			}
 			return env[key]
 		}
@@ -56,11 +56,11 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:    "www.example.com", // Extracted from TargetAddress
-			TargetAddress: "www.example.com:80",
-			Interval:      5 * time.Second,
-			DialTimeout:   10 * time.Second,
-			CheckType:     "http",
+			TargetName:      "www.example.com", // Extracted from TargetAddress
+			TargetAddress:   "www.example.com:80",
+			TargetCheckType: "http",
+			CheckInterval:   5 * time.Second,
+			DialTimeout:     10 * time.Second,
 		}
 		if !reflect.DeepEqual(cfg, expected) {
 			t.Fatalf("expected config %+v, got %+v", expected, cfg)
@@ -72,10 +72,10 @@ func TestParseConfig(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress: "http://postgres.postgres.svc.cluster.local:80",
-				envInterval:      "5s",
-				envDialTimeout:   "10s",
-				envCheckType:     "http",
+				envTargetAddress:   "http://postgres.postgres.svc.cluster.local:80",
+				envTargetCheckType: "http",
+				envCheckInterval:   "5s",
+				envDialTimeout:     "10s",
 			}
 			return env[key]
 		}
@@ -86,11 +86,11 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:    "postgres.postgres.svc.cluster.local", // Extracted from TargetAddress
-			TargetAddress: "http://postgres.postgres.svc.cluster.local:80",
-			Interval:      5 * time.Second,
-			DialTimeout:   10 * time.Second,
-			CheckType:     "http",
+			TargetName:      "postgres.postgres.svc.cluster.local", // Extracted from TargetAddress
+			TargetAddress:   "http://postgres.postgres.svc.cluster.local:80",
+			TargetCheckType: "http",
+			CheckInterval:   5 * time.Second,
+			DialTimeout:     10 * time.Second,
 		}
 		if !reflect.DeepEqual(cfg, expected) {
 			t.Fatalf("expected config %+v, got %+v", expected, cfg)
@@ -102,10 +102,10 @@ func TestParseConfig(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress: "tcp://example.com:80",
-				envInterval:      "5s",
-				envDialTimeout:   "10s",
-				envCheckType:     "tcp",
+				envTargetAddress:   "tcp://example.com:80",
+				envTargetCheckType: "tcp",
+				envCheckInterval:   "5s",
+				envDialTimeout:     "10s",
 			}
 			return env[key]
 		}
@@ -116,11 +116,11 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:    "example.com", // Extracted from TargetAddress
-			TargetAddress: "tcp://example.com:80",
-			Interval:      5 * time.Second,
-			DialTimeout:   10 * time.Second,
-			CheckType:     "tcp",
+			TargetName:      "example.com", // Extracted from TargetAddress
+			TargetAddress:   "tcp://example.com:80",
+			TargetCheckType: "tcp",
+			CheckInterval:   5 * time.Second,
+			DialTimeout:     10 * time.Second,
 		}
 		if !reflect.DeepEqual(cfg, expected) {
 			t.Fatalf("expected config %+v, got %+v", expected, cfg)
@@ -133,7 +133,7 @@ func TestParseConfig(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envTargetAddress: "http://example.com",
-				envInterval:      "invalid",
+				envCheckInterval: "invalid",
 			}
 			return env[key]
 		}
@@ -143,7 +143,7 @@ func TestParseConfig(t *testing.T) {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := fmt.Sprintf("invalid %s value: invalid", envInterval)
+		expected := fmt.Sprintf("invalid %s value: invalid", envCheckInterval)
 		if err.Error() != expected {
 			t.Fatalf("expected error to contain %q, got %q", expected, err)
 		}
@@ -155,7 +155,7 @@ func TestParseConfig(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
 				envTargetAddress: "http://example.com",
-				envInterval:      "0s",
+				envCheckInterval: "0s",
 			}
 			return env[key]
 		}
@@ -165,7 +165,7 @@ func TestParseConfig(t *testing.T) {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := fmt.Sprintf("invalid %s value: 0s", envInterval)
+		expected := fmt.Sprintf("invalid %s value: 0s", envCheckInterval)
 		if err.Error() != expected {
 			t.Fatalf("expected error to contain %q, got %q", expected, err)
 		}
@@ -252,13 +252,13 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("Valid LOG_ADDITIONAL_FIELDS", func(t *testing.T) {
+	t.Run("Valid LOG_EXTRA_FIELDS", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress:       "http://example.com",
-				envLogAdditionalFields: "true",
+				envTargetAddress:  "http://example.com",
+				envLogExtraFields: "true",
 			}
 			return env[key]
 		}
@@ -269,25 +269,25 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:          "example.com",
-			TargetAddress:       "http://example.com",
-			CheckType:           "http",
-			Interval:            2 * time.Second,
-			DialTimeout:         1 * time.Second,
-			LogAdditionalFields: true,
+			TargetName:      "example.com",
+			TargetAddress:   "http://example.com",
+			TargetCheckType: "http",
+			CheckInterval:   2 * time.Second,
+			DialTimeout:     1 * time.Second,
+			LogExtraFields:  true,
 		}
 		if !reflect.DeepEqual(result, expected) {
 			t.Fatalf("expected %v, got %v", expected, result)
 		}
 	})
 
-	t.Run("Invalid LOG_ADDITIONAL_FIELDS (not boolean)", func(t *testing.T) {
+	t.Run("Invalid LOG_EXTRA_FIELDS (not boolean)", func(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress:       "http://example.com",
-				envLogAdditionalFields: "invalid",
+				envTargetAddress:  "http://example.com",
+				envLogExtraFields: "invalid",
 			}
 			return env[key]
 		}
@@ -297,7 +297,7 @@ func TestParseConfig(t *testing.T) {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := fmt.Sprintf("invalid %s value: invalid", envLogAdditionalFields)
+		expected := fmt.Sprintf("invalid %s value: invalid", envLogExtraFields)
 		if err.Error() != expected {
 			t.Fatalf("expected error to contain %q, got %q", expected, err)
 		}
@@ -319,12 +319,12 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		expected := Config{
-			TargetName:          "example.com",
-			TargetAddress:       "example.com:80",
-			CheckType:           "tcp",
-			Interval:            2 * time.Second,
-			DialTimeout:         1 * time.Second,
-			LogAdditionalFields: false,
+			TargetName:      "example.com",
+			TargetAddress:   "example.com:80",
+			TargetCheckType: "tcp",
+			CheckInterval:   2 * time.Second,
+			DialTimeout:     1 * time.Second,
+			LogExtraFields:  false,
 		}
 		if !reflect.DeepEqual(result, expected) {
 			t.Fatalf("expected %v, got %v", expected, result)
@@ -336,8 +336,8 @@ func TestParseConfig(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress: "http://example.com",
-				envCheckType:     "invalid",
+				envTargetAddress:   "http://example.com",
+				envTargetCheckType: "invalid",
 			}
 			return env[key]
 		}
