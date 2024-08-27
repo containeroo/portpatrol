@@ -24,40 +24,29 @@
 
 ### Common Variables
 
-- `TARGET_ADDRESS`: The address of the target in the following format:
-  - **TCP**: `host:port` (required). If `tcp://` is used as the scheme, the `TARGET_CHECK_TYPE` can be omitted.
+- `TARGET_NAME`: Name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, it's derived from the target address. For example, `http://postgres.default.svc.cluster.local:5432` is inferred as `postgres.default.svc.cluster.local`.
+- `TARGET_ADDRESS`: The target's address in the following formats:
+  - **TCP**: `host:port` (required). If using the `tcp://` scheme, `TARGET_CHECK_TYPE` can be omitted.
   - **HTTP**: `scheme://host:port` (required).
-  - `TARGET_NAME`: The name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, the name will be derived from the host portion of the target address. For example, `http://postgres.default.svc.cluster.local:5432` would be inferred as `postgres.default.svc.cluster.local`.
-- `TARGET_CHECK_TYPE`: Specifies the type of check to perform: `tcp` or `http` (optional, default: inferred from `TARGET_ADDRESS`).
-- `CHECK_INTERVAL`: The interval between connection attempts (optional, default: `2s`).
-- `DIAL_TIMEOUT`: The maximum time allowed for each connection attempt (optional, default: `1s`).
-- `LOG_EXTRA_FIELDS`: Enables logging of additional fields (optional, default: `false`).
+- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp` or `http`). The check type is inferred from the scheme in `TARGET_ADDRESS`. If no scheme is provided, it defaults to `tcp`.
+- `CHECK_INTERVAL`: Time between connection attempts (optional, default: `2s`).
+- `DIAL_TIMEOUT`: Maximum allowed time for each connection attempt (optional, default: `1s`).
+- `LOG_EXTRA_FIELDS`: Enable logging of additional fields (optional, default: `false`).
 
 ### HTTP-Specific Variables
 
-- `HTTP_METHOD`: The HTTP method to use (optional, default: `GET`).
-- `HTTP_HEADERS`: Comma-separated list of HTTP headers to include in the request (optional).
-  For Example:
-  - `AuPortPatrolization=Bearer token`
+- `HTTP_METHOD`: HTTP method to use (optional, default: `GET`).
+- `HTTP_HEADERS`: Comma-separated list of HTTP headers in `key=value` format (optional). Examples:
+  - `Authorization=Bearer token`
   - `Content-Type=application/json,Accept=application/json`
-- `HTTP_ALLOW_DUPLICATE_HEADERS`: Allows duplicate headers in `HTTP_HEADERS` (optional, default: `false`).
-- `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`).
-  `PortPatrol` considers the check successful if the target returns any status code listed in `EXPECTED_STATUSES`. You can specify individual status codes or ranges of codes. For example:
-
-  - Individual status codes: `200,301,404`
-  - Ranges of status codes: `200,300-302`
-  - Combination of both: `200,301-302,404,500-502`
-
-- `HTTP_PROXY`: The HTTP proxy to use (optional).
-- `HTTPS_PROXY`: The HTTPS proxy to use (optional).
-- `NO_PROXY`: A comma-separated list of domains to exclude from proxying (optional).
-
-  Examples:
-
-  - `200,301-302,404`: The check will be considered successful if the target responds with `200`, `301`, `302`, or `404`.
-  - `200,300-302,500-502`: The check will succeed if the target responds with `200`, any status in the range `300-302`, or any status in the range `500-502`.
-
-    This flexibility allows you to precisely define what HTTP responses are acceptable for your service, ensuring that the application only proceeds when the target is in the desired state.
+- `HTTP_ALLOW_DUPLICATE_HEADERS`: Allow duplicate headers (optional, default: `false`).
+- `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`). You can specify individual status codes or ranges:
+  - `200,301,404`
+  - `200,300-302`
+  - `200,301-302,404,500-502`
+- `HTTP_PROXY`: HTTP proxy to use (optional).
+- `HTTPS_PROXY`: HTTPS proxy to use (optional).
+- `NO_PROXY`: Comma-separated list of domains to exclude from proxying (optional).
 
 ## Behavior Flowchart
 
