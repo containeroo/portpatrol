@@ -14,10 +14,12 @@ import (
 	"github.com/containeroo/portpatrol/internal/runner"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 // run is the main function of the application
 func run(ctx context.Context, getEnv func(string) string, output io.Writer) error {
+	// Create a new context that listens for interrupt signals (e.g., Ctrl+C)
+	// and cancels the context when received. Ensures proper resource cleanup.
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
@@ -38,6 +40,8 @@ func run(ctx context.Context, getEnv func(string) string, output io.Writer) erro
 }
 
 func main() {
+	// Create a root context with no cancellation or deadline. This is the top-level context
+	// that all other contexts will derive from in the application.
 	ctx := context.Background()
 
 	if err := run(ctx, os.Getenv, os.Stdout); err != nil {

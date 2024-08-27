@@ -99,7 +99,7 @@ func ParseConfig(getEnv func(string) string) (Config, error) {
 		cfg.LogExtraFields = logAdditionalFields
 	}
 
-	// Infer the check type
+	// Infer TargetCheckType if not provided
 	if cfg.TargetCheckType == "" {
 		checkType, err := checker.InferCheckType(cfg.TargetAddress)
 		if err != nil {
