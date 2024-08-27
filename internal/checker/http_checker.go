@@ -42,7 +42,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 
 	// Parse headers
-	headers, err := parseHeaders(getEnv(envHTTPHeaders))
+	headers, err := parseHTTPHeaders(getEnv(envHTTPHeaders))
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
 	}
@@ -52,7 +52,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	if statusCodes == "" {
 		statusCodes = defaultHTTPExpectedStatus
 	}
-	expectedStatusCodes, err := parseExpectedStatuses(statusCodes)
+	expectedStatusCodes, err := parseHTTPStatusCodes(statusCodes)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
 	}
@@ -106,47 +106,57 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.ExpectedStatusCodes)
 }
 
-// parseExpectedStatuses parses a string of expected statuses into a slice of acceptable status codes.
-func parseExpectedStatuses(statuses string) ([]int, error) {
+// parseHTTPStatusCodes parses a comma-separated string of HTTP status codes and ranges
+// into a slice of individual status codes. It supports combinations of single codes
+// (e.g., "200") and ranges (e.g., "200-204"), including mixed combinations like "200,300-301,404".
+// Returns an error if any code or range is invalid.
+func parseHTTPStatusCodes(statusRanges string) ([]int, error) {
 	var statusCodes []int
 
-	ranges := strings.Split(statuses, ",")
+	ranges := strings.Split(statusRanges, ",")
 	for _, r := range ranges {
-		// Check if the range is a single status code
-		if !strings.Contains(r, "-") {
-			code, err := strconv.Atoi(r) // Parse the status code
+		trimmed := strings.TrimSpace(r)
+
+		if !strings.Contains(trimmed, "-") {
+			// Handle individual status codes like "200"
+			code, err := strconv.Atoi(trimmed)
 			if err != nil {
-				return nil, fmt.Errorf("invalid status code: %s", r)
+				return nil, fmt.Errorf("invalid status code: %s", trimmed)
 			}
 			statusCodes = append(statusCodes, code)
 			continue
 		}
 
-		// Split the range into start and end
-		parts := strings.Split(r, "-")
+		// Handle ranges like "200-204"
+		parts := strings.Split(trimmed, "-") // Split the range into start and end
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid status range: %s", r)
+			return nil, fmt.Errorf("invalid status range: %s", trimmed)
 		}
 
 		// Parse the start and end status codes
-		start, err1 := strconv.Atoi(parts[0])
-		end, err2 := strconv.Atoi(parts[1])
+		start, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
+		end, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
+
 		// Check if parsing failed or if the start is greater than the end
 		if err1 != nil || err2 != nil || start > end {
-			return nil, fmt.Errorf("invalid status range: %s", r)
+			return nil, fmt.Errorf("invalid status range: %s", trimmed)
 		}
 
 		// Generate a slice of status codes in the range
 		for i := start; i <= end; i++ {
 			statusCodes = append(statusCodes, i)
 		}
-
 	}
+
 	return statusCodes, nil
 }
 
-// parseHeaders parses the HTTP headers from a comma-separated key=value list.
-func parseHeaders(headers string) (map[string]string, error) {
+// parseHTTPHeaders parses a comma-separated list of HTTP headers in key=value format
+// and returns a map of the headers. It supports multiple headers, including combinations
+// like "Content-Type=application/json, Authorization=Bearer token". The value can be
+// empty (e.g., "X-Empty-Header="), but the key must not be empty.
+// Returns an error if any header is not properly formatted.
+func parseHTTPHeaders(headers string) (map[string]string, error) {
 	headerMap := make(map[string]string)
 	if headers == "" {
 		return headerMap, nil
@@ -155,20 +165,24 @@ func parseHeaders(headers string) (map[string]string, error) {
 	// Split the headers into key=value pairs
 	pairs := strings.Split(headers, ",")
 	for _, pair := range pairs {
-		if strings.TrimSpace(pair) == "" {
+		trimmedPair := strings.TrimSpace(pair)
+		if trimmedPair == "" {
 			continue // Skip any empty parts resulting from trailing commas
 		}
 
 		// Split the pair into key and value
-		parts := strings.SplitN(pair, "=", 2)
+		parts := strings.SplitN(trimmedPair, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid header format: %s", pair)
 		}
+
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
+
 		if key == "" {
 			return nil, fmt.Errorf("header key cannot be empty: %s", pair)
 		}
+
 		headerMap[key] = value
 	}
 

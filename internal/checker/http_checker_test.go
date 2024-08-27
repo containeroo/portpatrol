@@ -211,7 +211,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,Auportpatrolization=Bearer token"
-		result, err := parseHeaders(headers)
+		result, err := parseHTTPHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -226,7 +226,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json"
-		result, err := parseHeaders(headers)
+		result, err := parseHTTPHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -241,7 +241,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := ""
-		result, err := parseHeaders(headers)
+		result, err := parseHTTPHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -256,7 +256,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,AuportpatrolizationBearer token"
-		_, err := parseHeaders(headers)
+		_, err := parseHTTPHeaders(headers)
 		if err == nil {
 			t.Error("Expected error, got nil")
 		}
@@ -271,7 +271,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "  Content-Type = application/json  , Auportpatrolization = Bearer token  "
-		result, err := parseHeaders(headers)
+		result, err := parseHTTPHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -286,7 +286,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "=value"
-		_, err := parseHeaders(headers)
+		_, err := parseHTTPHeaders(headers)
 		if err == nil {
 			t.Error("Expected error, got nil")
 		}
@@ -301,7 +301,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "key="
-		result, err := parseHeaders(headers)
+		result, err := parseHTTPHeaders(headers)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -316,7 +316,7 @@ func TestParseHeaders(t *testing.T) {
 		t.Parallel()
 
 		headers := "Content-Type=application/json,"
-		result, err := parseHeaders(headers)
+		result, err := parseHTTPHeaders(headers)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -334,7 +334,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Valid status code", func(t *testing.T) {
 		t.Parallel()
 
-		statuses, err := parseExpectedStatuses("200")
+		statuses, err := parseHTTPStatusCodes("200")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
@@ -348,7 +348,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Valid multiple status codes", func(t *testing.T) {
 		t.Parallel()
 
-		statuses, err := parseExpectedStatuses("200,404,500")
+		statuses, err := parseHTTPStatusCodes("200,404,500")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
@@ -362,7 +362,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Valid status code range", func(t *testing.T) {
 		t.Parallel()
 
-		statuses, err := parseExpectedStatuses("200-202")
+		statuses, err := parseHTTPStatusCodes("200-202")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
@@ -376,7 +376,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Valid multiple status code ranges", func(t *testing.T) {
 		t.Parallel()
 
-		statuses, err := parseExpectedStatuses("200-202,300-301,500")
+		statuses, err := parseHTTPStatusCodes("200-202,300-301,500")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
@@ -390,7 +390,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Invalid status code", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := parseExpectedStatuses("abc")
+		_, err := parseHTTPStatusCodes("abc")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -404,7 +404,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Invalid status range double dash", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := parseExpectedStatuses("200--202")
+		_, err := parseHTTPStatusCodes("200--202")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -418,7 +418,7 @@ func TestParseExpectedStatuses(t *testing.T) {
 	t.Run("Invalid status range (start > end)", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := parseExpectedStatuses("202-200")
+		_, err := parseHTTPStatusCodes("202-200")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
