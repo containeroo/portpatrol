@@ -12,6 +12,8 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	t.Parallel()
+
 	const (
 		envTargetName          = "TARGET_NAME"
 		envTargetAddress       = "TARGET_ADDRESS"
@@ -21,8 +23,6 @@ func TestRun(t *testing.T) {
 		envLogAdditionalFields = "LOG_EXTRA_FIELDS"
 		envHTTPHeaders         = "HTTP_HEADERS"
 	)
-
-	t.Parallel()
 
 	t.Run("HTTP Target is ready", func(t *testing.T) {
 		t.Parallel()
