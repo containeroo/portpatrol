@@ -47,23 +47,22 @@ func IsValidCheckType(checkType string) bool {
 }
 
 // InferCheckType infers the check type based on the scheme of the target address.
-// If no scheme is provided, it defaults to TCP.
+// If no scheme is provided, it returns an empty string and no error.
+// If an invalid scheme is provided, it returns an error.
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
+	if scheme == "" {
+		return "", nil // No scheme provided, return an empty string and no error
+	}
+
 	scheme = strings.ToLower(scheme) // Normalize the scheme to lowercase
 
 	for checkType, schemes := range SupportedCheckTypes {
 		for _, s := range schemes {
 			if s == scheme {
-				// Return the check type if the scheme matches
 				return checkType, nil
 			}
 		}
-	}
-
-	if scheme == "" {
-		// Default to TCP if no scheme is provided or recognized
-		return "tcp", nil
 	}
 
 	return "", fmt.Errorf("unsupported scheme: %s", scheme)

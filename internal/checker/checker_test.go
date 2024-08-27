@@ -138,7 +138,7 @@ func TestInferCheckType(t *testing.T) {
 			t.Fatalf("expected no error, got %q", err)
 		}
 
-		if checkType != "tcp" {
+		if checkType != "" {
 			t.Fatalf("expected 'tcp', got %q", checkType)
 		}
 	})

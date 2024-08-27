@@ -21,6 +21,7 @@ const (
 	defaultInterval            = 2 * time.Second
 	defaultDialTimeout         = 1 * time.Second
 	defaultLogAdditionalFields = false
+	defaultCheckType           = "tcp"
 )
 
 // Config holds the required environment variables.
@@ -103,6 +104,9 @@ func ParseConfig(getenv func(string) string) (Config, error) {
 		checkType, err := checker.InferCheckType(cfg.TargetAddress)
 		if err != nil {
 			return Config{}, fmt.Errorf("could not infer check type for address %s: %w", cfg.TargetAddress, err)
+		}
+		if checkType == "" {
+			checkType = defaultCheckType
 		}
 		cfg.CheckType = checkType
 	}

@@ -303,6 +303,34 @@ func TestParseConfig(t *testing.T) {
 		}
 	})
 
+	t.Run("Valid check type (defaults to tcp)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envTargetAddress: "example.com:80",
+			}
+			return env[key]
+		}
+
+		result, err := ParseConfig(mockEnv)
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		expected := Config{
+			TargetName:          "example.com",
+			TargetAddress:       "example.com:80",
+			CheckType:           "tcp",
+			Interval:            2 * time.Second,
+			DialTimeout:         1 * time.Second,
+			LogAdditionalFields: false,
+		}
+		if !reflect.DeepEqual(result, expected) {
+			t.Fatalf("expected %v, got %v", expected, result)
+		}
+	})
+
 	t.Run("Invalid check type (invalid)", func(t *testing.T) {
 		t.Parallel()
 
