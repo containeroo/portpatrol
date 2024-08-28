@@ -52,6 +52,9 @@
 
 ### HTTP Check
 
+<details>
+  <summary>Click here to see the flowchart</summary>
+
 ```mermaid
 graph TD;
     A[Start] --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
@@ -73,7 +76,12 @@ graph TD;
     K[Program terminated or canceled] --> J;
 ```
 
+</details>
+
 ### TCP Check
+
+<details>
+  <summary>Click here to see the flowchart</summary>
 
 ```mermaid
 graph TD;
@@ -88,6 +96,8 @@ graph TD;
     C --> E[End];
     F[Program terminated or canceled] --> E;
 ```
+
+</details>
 
 ## Logging
 
