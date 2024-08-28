@@ -61,7 +61,7 @@ flowchart TD;
     classDef violet stroke:#9775fa;
     classDef green stroke:#2f9e44;
     classDef error stroke:#fa5252;
-    classDef decision fill:#1971c2;
+    classDef decision stroke:#1971c2;
     classDef padding stroke:none,font-size:20px;
 
     A((Start)) --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
