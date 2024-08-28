@@ -56,7 +56,7 @@
   <summary>Click here to see the flowchart</summary>
 
 ```mermaid
-graph TD;
+flowchart TD;
     A[Start] --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
     B --> C[Add headers from <font color=orange>HTTP_HEADERS</font>];
     C --> D[Send HTTP request];
