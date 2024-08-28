@@ -55,51 +55,7 @@
 <details>
   <summary>Click here to see the flowchart</summary>
 
-```mermaid
-flowchart TD;
-    classDef noFill fill:none;
-    classDef violet stroke:#9775fa;
-    classDef green stroke:#2f9e44;
-    classDef error stroke:#fa5252;
-    classDef decision stroke:#1971c2;
-    classDef padding stroke:none,font-size:20px;
-
-    A((Start)) --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
-    class A violet;
-
-    B --> C[Add headers from <font color=orange>HTTP_HEADERS</font>];
-
-    subgraph loop[Retry Loop]
-        subgraph inner[ ]
-            C --> D[Send HTTP request];
-            D --> E{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
-            class E decision;
-            E -->|Yes| F[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
-            F --> H{Matches?};
-            class H decision;
-
-            H -->|Yes| I[Target is ready];
-            class I success;
-
-            H -->|No| G[Target is not ready];
-            class G error;
-            G --> J[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
-            J --> C;
-        end
-    end
-
-    J --> Z((End));
-    class Z violet;
-    I --> Z;
-
-
-
-    K[Program terminated or canceled] --> Z;
-    class K error;
-
-class A,B,C,D,E,F,G,H,I,J,K,Z,loop noFill;
-class loop padding;
-```
+![http check](./.github/assets/http-check.svg)
 
 </details>
 
