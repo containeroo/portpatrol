@@ -84,7 +84,7 @@ flowchart TD;
   <summary>Click here to see the flowchart</summary>
 
 ```mermaid
-graph TD;
+flowchart TD;
     A[Start] --> B[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
 
     subgraph Retry Loop
