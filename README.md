@@ -84,6 +84,7 @@ graph TD;
   <summary>Click here to see the flowchart</summary>
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'edgeLabelBackground':'white'}, 'flowchart': {'useMaxWidth':false, 'curve':'linear','sketch':{'fillStyle':'hachure','bowing':4}}}}%%
 graph TD;
     A[Start] --> B[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
 
