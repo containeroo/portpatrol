@@ -57,23 +57,48 @@
 
 ```mermaid
 flowchart TD;
-    A[Start] --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
+    classDef noFill fill:none;
+    classDef violet stroke:#9775fa;
+    classDef green stroke:#2f9e44;
+    classDef error stroke:#fa5252;
+    classDef decision fill:#1971c2;
+    classDef padding stroke:none,font-size:20px;
+
+    A((Start)) --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
+    class A violet;
+
     B --> C[Add headers from <font color=orange>HTTP_HEADERS</font>];
-    C --> D[Send HTTP request];
 
-    E -->|Yes| F[Check HTTP status code];
-    E -->|No| G[Log error and wait for retry <font color=orange>CHECK_INTERVAL</font>];
+    subgraph loop[Retry Loop]
+        subgraph inner[ ]
+            C --> D[Send HTTP request];
+            D --> E{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
+            class E decision;
+            E -->|Yes| F[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
+            F --> H{Matches?};
+            class H decision;
 
-    subgraph Retry Loop
-        G --> D;
-           D --> E{Request successful?};
-        F --> H{Status code matches <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>?};
-    H -->|Yes| I[Target is ready];
-    H -->|No| G;
-    I --> J[End];
+            H -->|Yes| I[Target is ready];
+            class I success;
+
+            H -->|No| G[Target is not ready];
+            class G error;
+            G --> J[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+            J --> C;
+        end
     end
 
-    K[Program terminated or canceled] --> J;
+    J --> Z((End));
+    class Z violet;
+    I --> Z;
+
+
+
+    K[Program terminated or canceled] --> Z;
+    class K error;
+
+class A,B,C,D,E,F,G,H,I,J,K,Z,loop noFill;
+class loop padding;
 ```
 
 </details>
