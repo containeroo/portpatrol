@@ -55,7 +55,7 @@
 <details>
   <summary>Click here to see the flowchart</summary>
 
-  <img src="https://raw.githubusercontent.com/containeroo/portpatrol/master/.github/assets/http_check.svg" align="center" width="600px" alt="http check"/>
+  <img src="https://raw.githubusercontent.com/containeroo/portpatrol/master/.github/assets/http_check.svg" align="center" width="600px" alt="HTTP check"/>
 </details>
 
 ### TCP Check
@@ -63,20 +63,7 @@
 <details>
   <summary>Click here to see the flowchart</summary>
 
-```mermaid
-flowchart TD;
-    A[Start] --> B[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
-
-    subgraph Retry Loop
-        B -->|Connection successful| C[Target is ready];
-        B -->|Connection failed| D[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
-        D --> B;
-    end
-
-    C --> E[End];
-    F[Program terminated or canceled] --> E;
-```
-
+  <img src="https://raw.githubusercontent.com/containeroo/portpatrol/master/.github/assets/tcp_check.svg" align="center" width="600px" alt="TCP check"/>
 </details>
 
 ## Logging
