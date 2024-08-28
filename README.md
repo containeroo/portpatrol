@@ -55,8 +55,7 @@
 <details>
   <summary>Click here to see the flowchart</summary>
 
-![http check](./.github/assets/http-check.svg)
-
+  <img src="https://raw.githubusercontent.com/containeroo/portpatrol/master/.github/assets/http_check.svg" align="center" width="600px" alt="http check"/>
 </details>
 
 ### TCP Check
