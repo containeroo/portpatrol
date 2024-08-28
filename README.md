@@ -54,26 +54,37 @@
 
 ```mermaid
 graph TD;
-    A[Start] --> B[Create HTTP request for TARGET_ADDRESS];
-    B --> C[Add headers from HTTP_HEADERS];
+    A[Start] --> B[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
+    B --> C[Add headers from <font color=orange>HTTP_HEADERS</font>];
     C --> D[Send HTTP request];
-    D -->|Request successful| E[Check HTTP status code];
-    D -->|Request failed| F[Log error and wait for retry CHECK_INTERVAL];
-    F --> D;
-    E -->|Status code matches HTTP_EXPECTED_STATUS_CODES| G[Target is ready];
-    E -->|Status code does not match| F;
-    G --> H[End];
-    I[Program terminated or canceled] --> H;
+
+    E -->|Yes| F[Check HTTP status code];
+    E -->|No| G[Log error and wait for retry <font color=orange>CHECK_INTERVAL</font>];
+
+    subgraph Retry Loop
+        G --> D;
+           D --> E{Request successful?};
+        F --> H{Status code matches <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>?};
+    H -->|Yes| I[Target is ready];
+    H -->|No| G;
+    I --> J[End];
+    end
+
+    K[Program terminated or canceled] --> J;
 ```
 
 ### TCP Check
 
 ```mermaid
 graph TD;
-    A[Start] --> B[Attempt to connect to TARGET_ADDRESS];
-    B -->|Connection successful| C[Target is ready];
-    B -->|Connection failed| D[Wait for retry CHECK_INTERVAL];
-    D --> B;
+    A[Start] --> B[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
+
+    subgraph Retry Loop
+        B -->|Connection successful| C[Target is ready];
+        B -->|Connection failed| D[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+        D --> B;
+    end
+
     C --> E[End];
     F[Program terminated or canceled] --> E;
 ```
