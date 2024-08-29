@@ -17,7 +17,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/logger"
 )
 
-func TestLoopUntilReady(t *testing.T) {
+func TestLoopUntilReadyHTTP(t *testing.T) {
 	t.Parallel()
 
 	t.Run("HTTP target is ready", func(t *testing.T) {
@@ -407,6 +407,10 @@ func TestLoopUntilReady(t *testing.T) {
 			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
 		}
 	})
+}
+
+func TestLoopUntilReadyTCP(t *testing.T) {
+	t.Parallel()
 
 	t.Run("TCP Target is ready", func(t *testing.T) {
 		t.Parallel()
@@ -670,6 +674,197 @@ func TestLoopUntilReady(t *testing.T) {
 		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != context.DeadlineExceeded {
 			t.Errorf("Expected context canceled error, got %q", err)
+		}
+	})
+}
+
+func TestLoopUntilReadyICMP(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ICMP Target is ready", func(t *testing.T) {
+		t.Parallel()
+
+		// Configuration for the ICMP target
+		cfg := config.Config{
+			TargetName:    "ICMPServer",
+			TargetAddress: "icmp://8.8.8.8", // Google's public DNS server
+			CheckInterval: 50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+		}
+
+		// Set up the environment function to return a read timeout
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"ICMP_READ_TIMEOUT": "1s",
+			}
+			return env[key]
+		}
+
+		// Create a new ICMPChecker
+		checker, err := checker.NewICMPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create ICMPChecker: %q", err)
+		}
+
+		// Set up a logger to capture output
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		// Create a context with a timeout for the test run
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
+		defer cancel()
+
+		// Run the check
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		if err != nil {
+			t.Errorf("Unexpected error: %q", err)
+		}
+
+		// Check the expected output
+		expected := "ICMPServer is ready ✓"
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+	})
+
+	t.Run("ICMP Target Unreachable", func(t *testing.T) {
+		t.Parallel()
+
+		// Configuration for an unreachable ICMP target
+		cfg := config.Config{
+			TargetName:    "ICMPServerUnreachable",
+			TargetAddress: "icmp://192.0.2.1", // This is a TEST-NET IP address that should not be reachable
+			CheckInterval: 50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+		}
+
+		// Set up the environment function to return a read timeout
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"ICMP_READ_TIMEOUT": "1s",
+			}
+			return env[key]
+		}
+
+		// Create a new ICMPChecker
+		checker, err := checker.NewICMPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create ICMPChecker: %q", err)
+		}
+
+		// Set up a logger to capture output
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		// Create a context with a timeout for the test run
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
+		defer cancel()
+
+		// Run the check
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		if err == nil {
+			t.Error("Expected an error due to unreachable target, but got none")
+		}
+
+		// Check the expected output
+		expected := "ICMPServerUnreachable is not ready ✗"
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+	})
+
+	t.Run("ICMP Target Timeout", func(t *testing.T) {
+		t.Parallel()
+
+		// Configuration for a target that will time out
+		cfg := config.Config{
+			TargetName:    "ICMPServerTimeout",
+			TargetAddress: "icmp://192.0.2.1", // Using the same TEST-NET IP
+			CheckInterval: 50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+		}
+
+		// Set up the environment function to return a very short read timeout
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"ICMP_READ_TIMEOUT": "10ms", // Very short timeout to force a timeout error
+			}
+			return env[key]
+		}
+
+		// Create a new ICMPChecker
+		checker, err := checker.NewICMPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create ICMPChecker: %q", err)
+		}
+
+		// Set up a logger to capture output
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		// Create a context with a timeout for the test run
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
+		defer cancel()
+
+		// Run the check
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		if err == nil {
+			t.Error("Expected a timeout error, but got none")
+		}
+
+		// Check the expected output
+		expected := "ICMPServerTimeout is not ready ✗"
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
+		}
+	})
+
+	t.Run("ICMP Target Context Canceled", func(t *testing.T) {
+		t.Parallel()
+
+		// Configuration for an ICMP target
+		cfg := config.Config{
+			TargetName:    "ICMPServerCancel",
+			TargetAddress: "icmp://8.8.8.8", // Google's public DNS server
+			CheckInterval: 50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
+		}
+
+		// Set up the environment function to return a read timeout
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				"ICMP_READ_TIMEOUT": "1s",
+			}
+			return env[key]
+		}
+
+		// Create a new ICMPChecker
+		checker, err := checker.NewICMPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		if err != nil {
+			t.Fatalf("Failed to create ICMPChecker: %q", err)
+		}
+
+		// Set up a logger to capture output
+		var stdOut strings.Builder
+		logger := slog.New(slog.NewTextHandler(&stdOut, nil))
+
+		// Create a context with a timeout for the test run
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond) // Cancel after 100ms
+		defer cancel()
+
+		// Simulate a delay to ensure the context cancels before the check can complete
+		time.Sleep(200 * time.Millisecond)
+
+		// Run the check
+		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		if err == nil || !strings.Contains(err.Error(), "context deadline exceeded") {
+			t.Errorf("Expected context deadline exceeded error, but got: %v", err)
+		}
+
+		// Check the expected output
+		expected := "ICMPServerCancel is not ready ✗"
+		if !strings.Contains(stdOut.String(), expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, stdOut.String())
 		}
 	})
 }

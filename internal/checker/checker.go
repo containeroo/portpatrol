@@ -15,12 +15,14 @@ var CheckerFactory = map[string]CheckerConstructor{
 	"http":  NewHTTPChecker,
 	"https": NewHTTPChecker,
 	"tcp":   NewTCPChecker,
+	"icmp":  NewICMPChecker,
 }
 
 // SupportedCheckTypes maps check types to their supported schemes.
 var SupportedCheckTypes = map[string][]string{
 	"http": {"http", "https"},
 	"tcp":  {"tcp"},
+	"icmp": {"icmp"},
 }
 
 // Checker is an interface that defines methods to perform a check.

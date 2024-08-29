@@ -4,19 +4,38 @@
 
 # PortPatrol
 
-`PortPatrol` is a simple Go application with zero external dependencies that checks if a specified `TCP` or `HTTP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
+`PortPatrol` is a simple Go application with zero external dependencies that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
 
 ## How It Works
 
 `PortPatrol` performs the following steps:
 
 - **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
-- **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP` or `HTTP` target based on the configured `CHECK_INTERVAL` and `DIAL_TIMEOUT`.
+- **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP`, `HTTP` or `ICMP` target based on the configured `CHECK_INTERVAL` and `DIAL_TIMEOUT`.
 - **Logging**: `PortPatrol` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
 - **Exit Status**:
 
   - If the target becomes available, `PortPatrol` exits with a status code of `0` (success).
   - If the program is terminated before the target is ready, it exits with a non-zero status code, typically `1`, indicating failure or interruption.
+
+## Permissions
+
+When using `PortPatrol` in Kubernetes, it's important to ensure that the container has the necessary permissions to send ICMP packets.
+Since `PortPatrol` uses the `NET_RAW` capability, it requires the `CAP_NET_RAW` capability to be added to the container's security context.
+Example:
+
+```yaml
+- name: wait-for-vm
+  image: ghcr.io/containeroo/portpatrol:latest
+  env:
+    - name: TARGET_ADDRESS
+      value: hostname.domain.com:22
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      add: ["CAP_NET_RAW"]
+```
 
 ## Environment Variables
 
@@ -28,7 +47,8 @@
 - `TARGET_ADDRESS`: The target's address in the following formats:
   - **TCP**: `host:port` (required). If using the `tcp://` scheme, `TARGET_CHECK_TYPE` can be omitted.
   - **HTTP**: `scheme://host:port` (required).
-- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp` or `http`). The check type is inferred from the scheme in `TARGET_ADDRESS`. If no scheme is provided, it defaults to `tcp`.
+  - **ICMP**: `host:port` (required).
+- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http` or `icmp`). The check type is inferred from the scheme in `TARGET_ADDRESS`. If no scheme is provided, it defaults to `tcp`.
 - `CHECK_INTERVAL`: Time between connection attempts (optional, default: `2s`).
 - `DIAL_TIMEOUT`: Maximum allowed time for each connection attempt (optional, default: `1s`).
 - `LOG_EXTRA_FIELDS`: Enable logging of additional fields (optional, default: `false`).
@@ -49,7 +69,52 @@
 - `HTTPS_PROXY`: HTTPS proxy to use (optional).
 - `NO_PROXY`: Comma-separated list of domains to exclude from proxying (optional).
 
+### ICMP-Specific Variables
+
+- `ICMP_READ_TIMEOUT`: Maximum allowed time for each ICMP echo reply (optional, default: `1s`).
+
 ## Behavior Flowchart
+
+### TCP Check
+
+<details>
+  <summary>Click here to see the flowchart</summary>
+
+```mermaid
+graph TD;
+    classDef noFill fill:none;
+    classDef violet stroke:#9775fa;
+    classDef green stroke:#2f9e44;
+    classDef error stroke:#fa5252;
+    classDef transparent stroke:none,font-size:20px;
+
+    subgraph MainFlow[ ]
+        direction TB
+        start((Start)) --> attemptConnect[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
+        class start violet;
+
+        subgraph RetryLoop[Retry Loop]
+            subgraph InnerLoop[ ]
+                direction TB
+                attemptConnect -->|Connection successful| targetReady[Target is ready];
+                attemptConnect -->|Connection failed| waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+                waitRetry --> attemptConnect;
+            end
+        end
+
+        targetReady --> processEnd((End));
+        class processEnd violet;
+        waitRetry --> processEnd;
+    end
+
+    programTerminated[Program terminated or canceled] --> processEnd;
+    class programTerminated error;
+
+    class start,attemptConnect,targetReady,waitRetry,processEnd,programTerminated,MainFlow,RetryLoop noFill;
+    class MainFlow,RetryLoop transparent;
+```
+
+</details>
 
 ### HTTP Check
 
@@ -107,43 +172,49 @@ class MainFlow,RetryLoop transparent;
 
 </details>
 
-### TCP Check
+### ICMP Check
 
 <details>
   <summary>Click here to see the flowchart</summary>
 
 ```mermaid
-graph TD;
+flowchart TD;
+    direction TB
     classDef noFill fill:none;
     classDef violet stroke:#9775fa;
     classDef green stroke:#2f9e44;
     classDef error stroke:#fa5252;
+    classDef decision stroke:#1971c2;
     classDef transparent stroke:none,font-size:20px;
 
     subgraph MainFlow[ ]
         direction TB
-        start((Start)) --> attemptConnect[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
-        class start violet;
+        processStart((Start)) --> createRequest[Create ICMP request for <font color=orange>TARGET_ADDRESS</font>];
+        class start processStart;
+
+        createRequest --> sendRequest[Send ICMP request];
 
         subgraph RetryLoop[Retry Loop]
             subgraph InnerLoop[ ]
                 direction TB
-                attemptConnect -->|Connection successful| targetReady[Target is ready];
-                attemptConnect -->|Connection failed| waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
-                waitRetry --> attemptConnect;
+                sendRequest --> checkTimeout{Answers within timeouts <font color=orange>DIAL_TIMEOUT</font>/<font color=orange>ICMP_READ_TIMEOUT</font>?};
+
+                checkTimeout -->|Connection successful| targetReady[Target is ready];
+                checkTimeout -->|Connection failed| waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+                waitRetry --> sendRequest;
+
             end
         end
 
-        targetReady --> processEnd((End));
-        class processEnd violet;
-        waitRetry --> processEnd;
+    targetReady --> processEnd((End));
+    class processEnd violet;
     end
 
     programTerminated[Program terminated or canceled] --> processEnd;
     class programTerminated error;
 
-    class start,attemptConnect,targetReady,waitRetry,processEnd,programTerminated,MainFlow,RetryLoop noFill;
-    class MainFlow,RetryLoop transparent;
+class processStart,createRequest,sendRequest,checkTimeout,targetReady,waitRetry,processEnd,MainFlow,RetryLoop noFill;
+class MainFlow,RetryLoop transparent;
 ```
 
 </details>
@@ -177,6 +248,16 @@ Configure your Kubernetes deployment to use this init container:
 
 ```yaml
 initContainers:
+  - name: wait-for-vm
+    image: ghcr.io/containeroo/portpatrol:latest
+    env:
+      - name: TARGET_ADDRESS
+        value: hostname.domain.com:22
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        add: ["CAP_NET_RAW"]
   - name: wait-for-valkey
     image: ghcr.io/containeroo/portpatrol:latest
     env:
