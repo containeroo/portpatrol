@@ -58,6 +58,7 @@
 
 ```mermaid
 flowchart TD;
+    direction TB
     classDef noFill fill:none;
     classDef violet stroke:#9775fa;
     classDef green stroke:#2f9e44;
@@ -67,41 +68,40 @@ flowchart TD;
 
     subgraph MainFlow[ ]
         direction TB
-        start((Start)) --> createRequest[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
-        class start violet;
+        processStart((Start)) --> createRequest[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
+        class start processStart;
 
         createRequest --> addHeaders[Add headers from <font color=orange>HTTP_HEADERS</font>];
         addHeaders --> addSkipTLS[Add skip TLS verify if <font color=orange>HTTP_SKIP_TLS_VERIFY</font> is set];
+        addSkipTLS --> sendRequest[Send HTTP request];
 
         subgraph RetryLoop[Retry Loop]
-        subgraph InnerLoop[ ]
-            direction TB
-            addSkipTLS --> sendRequest[Send HTTP request];
-            sendRequest --> checkTimeout{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
-            class checkTimeout decision;
-            checkTimeout -->|Yes| checkStatusCode[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
-            checkStatusCode --> statusMatch{Matches?};
-            class statusMatch decision;
+            subgraph InnerLoop[ ]
+                direction TB
+                sendRequest --> checkTimeout{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
+                class checkTimeout decision;
+                checkTimeout -->|Yes| checkStatusCode[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
+                checkStatusCode --> statusMatch{Matches?};
+                class statusMatch decision;
 
-            statusMatch -->|Yes| targetReady[Target is ready];
-            class targetReady success;
+                statusMatch -->|Yes| targetReady[Target is ready];
+                class targetReady success;
 
-            statusMatch -->|No| targetNotReady[Target is not ready];
-            class targetNotReady error;
-            targetNotReady --> waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
-            waitRetry --> addHeaders;
+                statusMatch -->|No| targetNotReady[Target is not ready];
+                class targetNotReady error;
+                targetNotReady --> waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+                waitRetry --> sendRequest;
+            end
         end
-        end
 
-        waitRetry --> processEnd((End));
-        class processEnd violet;
-        targetReady --> processEnd;
+    targetReady --> processEnd((End));
+    class processEnd violet;
     end
 
     programTerminated[Program terminated or canceled] --> processEnd;
     class programTerminated error;
 
-class start,createRequest,addHeaders,addSkipTLS,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
+class processStart,createRequest,addHeaders,addSkipTLS,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
 class MainFlow,RetryLoop transparent;
 ```
 
