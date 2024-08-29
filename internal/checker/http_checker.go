@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,9 +15,11 @@ const (
 	envHTTPHeaders               = "HTTP_HEADERS"
 	envHTTPAllowDuplicateHeaders = "HTTP_ALLOW_DUPLICATE_HEADERS"
 	envHTTPExpectedStatusCodes   = "HTTP_EXPECTED_STATUS_CODES"
+	envHTTPSkipTLSVerify         = "HTTP_SKIP_TLS_VERIFY"
 
 	defaultHTTPExpectedStatus        = "200"
 	defaultHTTPAllowDuplicateHeaders = "false"
+	defaultHTTPSkipTLSVerify         = "false"
 )
 
 // HTTPChecker implements the Checker interface for HTTP checks.
@@ -71,11 +74,26 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
 	}
 
-	// Create the HTTP client with the given timeout
+	// Determine if TLS verification should be skipped
+	skipTLSVerifyStr := getEnv(envHTTPSkipTLSVerify)
+	if skipTLSVerifyStr == "" {
+		skipTLSVerifyStr = defaultHTTPSkipTLSVerify
+	}
+
+	// Parse the boolean value for skipTLSVerify
+	skipTLSVerify, err := strconv.ParseBool(skipTLSVerifyStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s value: %w", envHTTPSkipTLSVerify, err)
+	}
+
+	// Create the HTTP client with the given timeout and TLS configuration
 	client := &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: skipTLSVerify,
+			},
 		},
 	}
 

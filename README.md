@@ -44,6 +44,7 @@
   - `200,301,404`
   - `200,300-302`
   - `200,301-302,404,500-502`
+- `HTTP_SKIP_TLS_VERIFY`: Skip TLS verification (optional, default: `false`).
 - `HTTP_PROXY`: HTTP proxy to use (optional).
 - `HTTPS_PROXY`: HTTPS proxy to use (optional).
 - `NO_PROXY`: Comma-separated list of domains to exclude from proxying (optional).
@@ -70,11 +71,12 @@ flowchart TD;
         class start violet;
 
         createRequest --> addHeaders[Add headers from <font color=orange>HTTP_HEADERS</font>];
+        addHeaders --> addSkipTLS[Add skip TLS verify if <font color=orange>HTTP_SKIP_TLS_VERIFY</font> is set];
 
         subgraph RetryLoop[Retry Loop]
         subgraph InnerLoop[ ]
             direction TB
-            addHeaders --> sendRequest[Send HTTP request];
+            addSkipTLS --> sendRequest[Send HTTP request];
             sendRequest --> checkTimeout{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
             class checkTimeout decision;
             checkTimeout -->|Yes| checkStatusCode[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
@@ -99,7 +101,7 @@ flowchart TD;
     programTerminated[Program terminated or canceled] --> processEnd;
     class programTerminated error;
 
-class start,createRequest,addHeaders,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
+class start,createRequest,addHeaders,addSkipTLS,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
 class MainFlow,RetryLoop transparent;
 ```
 

@@ -14,11 +14,11 @@ import (
 	"github.com/containeroo/portpatrol/internal/runner"
 )
 
-const version = "0.2.1"
+const version = "0.3.0"
 
 // run is the main function of the application
 func run(ctx context.Context, getEnv func(string) string, output io.Writer) error {
-	// Create a new context that listens for interrupt signals (e.g., Ctrl+C)
+	// Create a new context that listens for interrupt signals
 	// and cancels the context when received. Ensures proper resource cleanup.
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()

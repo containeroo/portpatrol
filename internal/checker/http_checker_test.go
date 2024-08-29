@@ -15,6 +15,65 @@ import (
 func TestHTTPChecker(t *testing.T) {
 	t.Parallel()
 
+	t.Run("Valid HTTP check config", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envHTTPMethod:                "POST",
+				envHTTPHeaders:               "Authorization=Bearer token",
+				envHTTPExpectedStatusCodes:   "201",
+				envHTTPSkipTLSVerify:         "false",
+				envHTTPAllowDuplicateHeaders: "false",
+			}
+			return env[key]
+		}
+
+		checker, err := NewHTTPChecker("example", "http://localhost:8080", 10*time.Second, mockEnv)
+		if err != nil {
+			t.Fatalf("failed to create HTTPChecker: %q", err)
+		}
+
+		checkerConfig := checker.(*HTTPChecker) // Type assertion to *HTTPChecker
+
+		expected := "example"
+		if checkerConfig.Name != expected {
+			t.Errorf("expected Name to be '%s', got %v", expected, checkerConfig.Name)
+		}
+
+		expected = "http://localhost:8080"
+		if checkerConfig.Address != expected {
+			t.Errorf("expected Address to be '%s', got %v", expected, checkerConfig.Address)
+		}
+
+		expected = "POST"
+		if checkerConfig.Method != expected {
+			t.Errorf("expected Method to be '%s', got %v", expected, checkerConfig.Method)
+		}
+
+		expectedInsecureSkipVerify := false
+		if checkerConfig.client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify != expectedInsecureSkipVerify {
+			t.Errorf("expected client.Transport.TLSClientConfig.InsecureSkipVerify to be %v, got %v", expectedInsecureSkipVerify, checkerConfig.client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify)
+		}
+
+		expectedStatusCodes := []int{201}
+		if len(checkerConfig.ExpectedStatusCodes) != len(expectedStatusCodes) || checkerConfig.ExpectedStatusCodes[0] != expectedStatusCodes[0] {
+			t.Errorf("expected ExpectedStatusCodes to be %v, got %v", expectedStatusCodes, checkerConfig.ExpectedStatusCodes)
+		}
+
+		expectedHeaders := map[string]string{"Authorization": "Bearer token"}
+		for key, value := range expectedHeaders {
+			if checkerConfig.Headers[key] != value {
+				t.Errorf("expected Headers[%s] to be '%s', got '%s'", key, value, checkerConfig.Headers[key])
+			}
+		}
+
+		expectedTimeout := 10 * time.Second
+		if checkerConfig.client.Timeout != expectedTimeout {
+			t.Errorf("expected client Timeout to be '%v', got %v", expectedTimeout, checkerConfig.client.Timeout)
+		}
+	})
+
 	t.Run("Valid HTTP check", func(t *testing.T) {
 		t.Parallel()
 
@@ -274,6 +333,29 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		expected := fmt.Sprintf("invalid %s value: strconv.ParseBool: parsing \"invalid\": invalid syntax", envHTTPAllowDuplicateHeaders)
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
+	t.Run("Invalid HTTP check (malformed HTTP_SKIP_TLS_VERIFY)", func(t *testing.T) {
+		t.Parallel()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envHTTPMethod:              "GET",
+				envHTTPSkipTLSVerify:       "invalid",
+				envHTTPExpectedStatusCodes: "200",
+			}
+			return env[key]
+		}
+
+		_, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := fmt.Sprintf("invalid %s value: strconv.ParseBool: parsing \"invalid\": invalid syntax", envHTTPSkipTLSVerify)
 		if err.Error() != expected {
 			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
