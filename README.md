@@ -55,7 +55,54 @@
 <details>
   <summary>Click here to see the flowchart</summary>
 
-  <img src="https://raw.githubusercontent.com/containeroo/portpatrol/master/.github/assets/http_check.svg" align="center" width="600px" alt="HTTP check"/>
+```mermaid
+flowchart TD;
+    classDef noFill fill:none;
+    classDef violet stroke:#9775fa;
+    classDef green stroke:#2f9e44;
+    classDef error stroke:#fa5252;
+    classDef decision stroke:#1971c2;
+    classDef transparent stroke:none,font-size:20px;
+
+    subgraph MainFlow[ ]
+        direction TB
+        start((Start)) --> createRequest[Create HTTP request for <font color=orange>TARGET_ADDRESS</font>];
+        class start violet;
+
+        createRequest --> addHeaders[Add headers from <font color=orange>HTTP_HEADERS</font>];
+
+        subgraph RetryLoop[Retry Loop]
+        subgraph InnerLoop[ ]
+            direction TB
+            addHeaders --> sendRequest[Send HTTP request];
+            sendRequest --> checkTimeout{Answers within <font color=orange>DIAL_TIMEOUT</font>?};
+            class checkTimeout decision;
+            checkTimeout -->|Yes| checkStatusCode[Check response status code <font color=orange>HTTP_EXPECTED_STATUS_CODES</font>];
+            checkStatusCode --> statusMatch{Matches?};
+            class statusMatch decision;
+
+            statusMatch -->|Yes| targetReady[Target is ready];
+            class targetReady success;
+
+            statusMatch -->|No| targetNotReady[Target is not ready];
+            class targetNotReady error;
+            targetNotReady --> waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+            waitRetry --> addHeaders;
+        end
+        end
+
+        waitRetry --> processEnd((End));
+        class processEnd violet;
+        targetReady --> processEnd;
+    end
+
+    programTerminated[Program terminated or canceled] --> processEnd;
+    class programTerminated error;
+
+class start,createRequest,addHeaders,sendRequest,checkTimeout,checkStatusCode,statusMatch,targetReady,targetNotReady,waitRetry,programTerminated,processEnd,MainFlow,RetryLoop noFill;
+class MainFlow,RetryLoop transparent;
+```
+
 </details>
 
 ### TCP Check
@@ -63,7 +110,40 @@
 <details>
   <summary>Click here to see the flowchart</summary>
 
-  <img src="https://raw.githubusercontent.com/containeroo/portpatrol/master/.github/assets/tcp_check.svg" align="center" width="600px" alt="TCP check"/>
+```mermaid
+graph TD;
+    classDef noFill fill:none;
+    classDef violet stroke:#9775fa;
+    classDef green stroke:#2f9e44;
+    classDef error stroke:#fa5252;
+    classDef transparent stroke:none,font-size:20px;
+
+    subgraph MainFlow[ ]
+        direction TB
+        start((Start)) --> attemptConnect[Attempt to connect to <font color=orange>TARGET_ADDRESS</font>];
+        class start violet;
+
+        subgraph RetryLoop[Retry Loop]
+            subgraph InnerLoop[ ]
+                direction TB
+                attemptConnect -->|Connection successful| targetReady[Target is ready];
+                attemptConnect -->|Connection failed| waitRetry[Wait for retry <font color=orange>CHECK_INTERVAL</font>];
+                waitRetry --> attemptConnect;
+            end
+        end
+
+        targetReady --> processEnd((End));
+        class processEnd violet;
+        waitRetry --> processEnd;
+    end
+
+    programTerminated[Program terminated or canceled] --> processEnd;
+    class programTerminated error;
+
+    class start,attemptConnect,targetReady,waitRetry,processEnd,programTerminated,MainFlow,RetryLoop noFill;
+    class MainFlow,RetryLoop transparent;
+```
+
 </details>
 
 ## Logging
