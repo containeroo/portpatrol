@@ -2,11 +2,11 @@ package checker
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,8 +23,9 @@ type Dialer interface {
 
 // ICMPChecker implements a basic ICMP ping checker.
 type ICMPChecker struct {
-	Name        string        // The name of the checker.
-	Address     string        // The address of the target.
+	Name        string // The name of the checker.
+	Address     string // The address of the target.
+	Protocol    ICMPProtocol
 	dialer      Dialer        // The dialer to use for the connection.
 	ReadTimeout time.Duration // The timeout for reading the ICMP reply.
 }
@@ -37,6 +38,11 @@ func (c *ICMPChecker) String() string {
 // NewICMPChecker initializes a new ICMPChecker with its specific configuration.
 func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func(string) string) (Checker, error) {
 	address = strings.TrimPrefix(address, "icmp://")
+
+	protocol, err := NewProtocol(address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
+	}
 
 	// Determine the read timeout
 	readTimeoutStr := getEnv(envICMPReadTimeout)
@@ -57,6 +63,7 @@ func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func
 	return &ICMPChecker{
 		Name:        name,
 		Address:     address,
+		Protocol:    protocol,
 		dialer:      dialer,
 		ReadTimeout: readTimeout,
 	}, nil
@@ -64,110 +71,70 @@ func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func
 
 // Check sends an ICMP echo request and waits for a reply, respecting the provided context for cancellation.
 func (c *ICMPChecker) Check(ctx context.Context) error {
-	conn, err := c.dialer.DialContext(ctx, "ip4:icmp", c.Address)
+	conn, err := c.dialer.DialContext(ctx, c.Protocol.Network(), c.Address)
 	if err != nil {
 		return fmt.Errorf("failed to dial ICMP address %s: %w", c.Address, err)
 	}
 	defer conn.Close()
 
-	// Set the read deadline separately
+	// Set the read deadline
 	if err := conn.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
 		return fmt.Errorf("failed to set read deadline: %w", err)
 	}
 
-	// Generate identifier and sequence number
-	identifier := uint16(os.Getpid() & 0xffff)
-	sequence := uint16(time.Now().UnixNano() & 0xffff) // Use a timestamp-based sequence number
+	identifier := uint16(os.Getpid() & 0xffff)                    // Retrieve the process ID and take the lower 16 bits
+	sequence := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Increment the sequence number and take the lower 16 bits
 
-	// Create ICMP echo request packet
-	msg := makeICMPEchoRequest(identifier, sequence)
+	msg := c.Protocol.MakeRequest(identifier, sequence)
 
-	// Create a channel to receive the result of the goroutine
-	done := make(chan error, 1)
+	if _, err := conn.Write(msg); err != nil {
+		return fmt.Errorf("failed to send ICMP request to %s: %w", c.Address, err)
+	}
 
-	// Run the ping in a separate goroutine
-	go func() {
-		if _, err := conn.Write(msg); err != nil {
-			done <- fmt.Errorf("failed to send ICMP request to %s: %w", c.Address, err)
-			return
-		}
+	reply := make([]byte, 1500)
+	n, err := conn.Read(reply)
 
-		// Wait for a reply
-		reply := make([]byte, 64) // Reduced buffer size for reply because we only need the first 64 bytes
-		n, err := conn.Read(reply)
-		if err != nil {
-			done <- fmt.Errorf("failed to read ICMP reply from %s: %w", c.Address, err)
-			return
-		}
-
-		// Check if the reply is an ICMP Echo Reply and matches identifier and sequence number
-		if err := validateICMPEchoReply(reply[:n], identifier, sequence); err != nil {
-			done <- err
-			return
-		}
-
-		done <- nil
-	}()
-
-	select {
-	case <-ctx.Done():
-		// If context is canceled, return the context's error
+	// Check if the context was cancelled
+	if ctx.Err() != nil {
 		return fmt.Errorf("context cancelled while waiting for ICMP reply from %s: %w", c.Address, ctx.Err())
-	case err := <-done:
-		// If the goroutine finishes before the context is canceled, return the goroutine's result
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to read ICMP reply from %s: %w", c.Address, err)
+	}
+
+	if err := c.Protocol.ValidateReply(reply[:n], identifier, sequence); err != nil {
 		return err
-	}
-}
-
-// makeICMPEchoRequest creates an ICMP Echo Request packet.
-func makeICMPEchoRequest(identifier, sequence uint16) []byte {
-	// ICMP header (8 bytes)
-	header := make([]byte, 8)
-	header[0] = 8                                      // ICMP Echo Request
-	header[1] = 0                                      // Code 0
-	binary.BigEndian.PutUint16(header[4:], identifier) // Identifier
-	binary.BigEndian.PutUint16(header[6:], sequence)   // Sequence number
-
-	// Calculate checksum
-	checksum := calculateChecksum(header)
-	binary.BigEndian.PutUint16(header[2:], checksum) // Set checksum in header
-
-	return header
-}
-
-// validateICMPEchoReply checks if the reply is an ICMP Echo Reply and validates it.
-func validateICMPEchoReply(reply []byte, identifier, sequence uint16) error {
-	if len(reply) < 20+8 { // 20 bytes for IP header + 8 bytes for ICMP header
-		return fmt.Errorf("reply too short, not a valid ICMP echo reply")
-	}
-
-	if reply[20] != 0 { // ICMP Echo Reply type
-		return fmt.Errorf("unexpected ICMP reply type: %d", reply[20])
-	}
-
-	recvIdentifier := binary.BigEndian.Uint16(reply[24:26])
-	recvSequence := binary.BigEndian.Uint16(reply[26:28])
-
-	if recvIdentifier != identifier || recvSequence != sequence {
-		return fmt.Errorf("identifier or sequence number mismatch: got id=%d seq=%d, expected id=%d seq=%d",
-			recvIdentifier, recvSequence, identifier, sequence)
 	}
 
 	return nil
 }
 
-// calculateChecksum calculates the checksum of an ICMP packet.
+// calculateChecksum calculates the Internet checksum as defined by RFC 1071.
+// This checksum is used in various Internet protocols, including ICMP.
+// The checksum is computed over the data in 16-bit words, and any overflow bits are folded back into the sum.
 func calculateChecksum(data []byte) uint16 {
 	var sum uint32
+
+	// Process each pair of bytes (16 bits) in the data.
+	// The checksum is computed by adding these 16-bit values together.
 	for i := 0; i < len(data)-1; i += 2 {
+		// Combine two adjacent bytes into a 16-bit word and add it to the sum.
 		sum += uint32(data[i])<<8 | uint32(data[i+1])
 	}
 
+	// If there's an odd number of bytes, pad the last byte with zeros to form the final 16-bit word.
+	// This is necessary because the checksum is defined over 16-bit words.
 	if len(data)%2 == 1 {
 		sum += uint32(data[len(data)-1]) << 8
 	}
 
+	// Fold the carry bits from the upper 16 bits of the sum into the lower 16 bits.
+	// This is done by adding the high 16 bits to the low 16 bits until there are no more carry bits.
 	sum = (sum >> 16) + (sum & 0xffff)
 	sum += (sum >> 16)
+
+	// The final checksum is the one's complement of the sum (i.e., invert all bits).
+	// This ensures that a valid checksum over the entire message results in a value of 0xFFFF.
 	return uint16(^sum)
 }

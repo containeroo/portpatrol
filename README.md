@@ -20,8 +20,8 @@
 
 ## Permissions
 
-When using `PortPatrol` in Kubernetes, it's important to ensure that the container has the necessary permissions to send ICMP packets.
-Since `PortPatrol` uses the `NET_RAW` capability, it requires the `CAP_NET_RAW` capability to be added to the container's security context.
+When using `ICMP` checks in Kubernetes, it's important to ensure that the container has the necessary permissions to send ICMP packets. It is necessary to add the `CAP_NET_RAW` capability to the container's security context.
+
 Example:
 
 ```yaml
@@ -36,6 +36,8 @@ Example:
     capabilities:
       add: ["CAP_NET_RAW"]
 ```
+
+For `TCP` and `HTTP` checks, the container does not require any additional permissions.
 
 ## Environment Variables
 

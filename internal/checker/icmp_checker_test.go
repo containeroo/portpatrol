@@ -3,7 +3,6 @@ package checker
 import (
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"net"
 	"testing"
@@ -84,6 +83,22 @@ func TestICMPChecker(t *testing.T) {
 		}
 	})
 
+	t.Run("Invalid ICMP check (malformed address)", func(t *testing.T) {
+		mockEnv := func(key string) string {
+			return ""
+		}
+
+		_, err := NewICMPChecker("example", "127001", 1*time.Second, mockEnv)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "failed to create ICMP protocol: invalid IP address: 127001"
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
+		}
+	})
+
 	t.Run("Invalid ICMP check (malformed read timeout)", func(t *testing.T) {
 		mockEnv := func(key string) string {
 			env := map[string]string{
@@ -108,19 +123,24 @@ func TestICMPChecker(t *testing.T) {
 
 		mockDialer := &mockDialer{
 			dialContextFunc: func(ctx context.Context, network, address string) (net.Conn, error) {
-				// Simulate a connection failure
-				return nil, errors.New("connection refused")
+				return nil, fmt.Errorf("connection refused")
 			},
+		}
+
+		protocol, err := NewProtocol("127.0.0.1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
 		}
 
 		checker := &ICMPChecker{
 			Name:        "example",
 			Address:     "127.0.0.1",
+			Protocol:    protocol,
 			dialer:      mockDialer,
 			ReadTimeout: 1 * time.Second,
 		}
 
-		err := checker.Check(context.Background())
+		err = checker.Check(context.Background())
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -140,14 +160,20 @@ func TestICMPChecker(t *testing.T) {
 			},
 		}
 
+		protocol, err := NewProtocol("127.0.0.1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
 		checker := &ICMPChecker{
 			Name:        "example",
 			Address:     "127.0.0.1",
+			Protocol:    protocol,
 			dialer:      mockDialer,
 			ReadTimeout: 1 * time.Second,
 		}
 
-		err := checker.Check(context.Background())
+		err = checker.Check(context.Background())
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -167,9 +193,15 @@ func TestICMPChecker(t *testing.T) {
 			},
 		}
 
+		protocol, err := NewProtocol("127.0.0.1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
 		checker := &ICMPChecker{
 			Name:        "example",
 			Address:     "127.0.0.1",
+			Protocol:    protocol,
 			dialer:      mockDialer,
 			ReadTimeout: 1 * time.Second,
 		}
@@ -177,7 +209,7 @@ func TestICMPChecker(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 		defer cancel()
 
-		err := checker.Check(ctx)
+		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -197,9 +229,15 @@ func TestICMPChecker(t *testing.T) {
 			},
 		}
 
+		protocol, err := NewProtocol("127.0.0.1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
 		checker := &ICMPChecker{
 			Name:        "example",
 			Address:     "127.0.0.1",
+			Protocol:    protocol,
 			dialer:      mockDialer,
 			ReadTimeout: 1 * time.Second,
 		}
@@ -207,7 +245,7 @@ func TestICMPChecker(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 		defer cancel()
 
-		err := checker.Check(ctx)
+		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -227,9 +265,15 @@ func TestICMPChecker(t *testing.T) {
 			},
 		}
 
+		protocol, err := NewProtocol("127.0.0.1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
 		checker := &ICMPChecker{
 			Name:        "example",
 			Address:     "127.0.0.1",
+			Protocol:    protocol,
 			dialer:      mockDialer,
 			ReadTimeout: 1 * time.Second,
 		}
@@ -237,7 +281,7 @@ func TestICMPChecker(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 		defer cancel()
 
-		err := checker.Check(ctx)
+		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -257,9 +301,15 @@ func TestICMPChecker(t *testing.T) {
 			},
 		}
 
+		protocol, err := NewProtocol("127.0.0.1")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
 		checker := &ICMPChecker{
 			Name:        "example",
 			Address:     "127.0.0.1",
+			Protocol:    protocol,
 			dialer:      mockDialer,
 			ReadTimeout: 5 * time.Second,
 		}
@@ -267,7 +317,7 @@ func TestICMPChecker(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		err := checker.Check(ctx)
+		err = checker.Check(ctx)
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
@@ -275,102 +325,6 @@ func TestICMPChecker(t *testing.T) {
 		expected := "context cancelled while waiting for ICMP reply from 127.0.0.1: context deadline exceeded"
 		if err.Error() != expected {
 			t.Errorf("expected error containing %q, got %q", expected, err)
-		}
-	})
-}
-
-func TestMakeICMPEchoRequest(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Valid ICMP Echo Request", func(t *testing.T) {
-		t.Parallel()
-
-		identifier := uint16(12345)
-		sequence := uint16(1)
-
-		// Generate the ICMP echo request packet
-		packet := makeICMPEchoRequest(identifier, sequence)
-
-		if len(packet) != 8 {
-			t.Fatalf("expected packet length 8, got %d", len(packet))
-		}
-
-		// Verify the ICMP type field
-		if packet[0] != 8 {
-			t.Errorf("expected ICMP type 8 (Echo Request), got %d", packet[0])
-		}
-
-		// Verify the identifier
-		id := binary.BigEndian.Uint16(packet[4:6])
-		if id != identifier {
-			t.Errorf("expected identifier %d, got %d", identifier, id)
-		}
-
-		// Verify the sequence number
-		seq := binary.BigEndian.Uint16(packet[6:8])
-		if seq != sequence {
-			t.Errorf("expected sequence number %d, got %d", sequence, seq)
-		}
-
-		// Extract the checksum from the packet
-		actualChecksum := binary.BigEndian.Uint16(packet[2:4])
-
-		// Temporarily set the checksum to 0 to recalculate it
-		binary.BigEndian.PutUint16(packet[2:], 0)
-		expectedChecksum := calculateChecksum(packet)
-
-		// Verify the checksum
-		if actualChecksum != expectedChecksum {
-			t.Errorf("expected checksum %d, got %d", expectedChecksum, actualChecksum)
-		}
-	})
-}
-
-func TestValidateICMPEchoReply(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Valid ICMP Echo Reply", func(t *testing.T) {
-		t.Parallel()
-
-		identifier := uint16(12345)
-		sequence := uint16(1)
-
-		// Create a valid ICMP Echo Reply
-		reply := make([]byte, 28)                          // 20 bytes for IP header, 8 bytes for ICMP header
-		reply[20] = 0                                      // ICMP Echo Reply type
-		binary.BigEndian.PutUint16(reply[24:], identifier) // Identifier
-		binary.BigEndian.PutUint16(reply[26:], sequence)   // Sequence number
-
-		// Test valid reply
-		err := validateICMPEchoReply(reply, identifier, sequence)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		// Test with wrong identifier
-		err = validateICMPEchoReply(reply, identifier+1, sequence)
-		if err == nil || err.Error() != "identifier or sequence number mismatch: got id=12345 seq=1, expected id=12346 seq=1" {
-			t.Fatalf("expected identifier mismatch error, got %q", err)
-		}
-
-		// Test with wrong sequence number
-		err = validateICMPEchoReply(reply, identifier, sequence+1)
-		if err == nil || err.Error() != "identifier or sequence number mismatch: got id=12345 seq=1, expected id=12345 seq=2" {
-			t.Fatalf("expected sequence number mismatch error, got %q", err)
-		}
-
-		// Test with wrong type
-		reply[20] = 1 // Set to an invalid ICMP type
-		err = validateICMPEchoReply(reply, identifier, sequence)
-		if err == nil || err.Error() != "unexpected ICMP reply type: 1" {
-			t.Fatalf("expected ICMP type mismatch error, got %q", err)
-		}
-
-		// Test with short reply
-		shortReply := reply[:26] // Make it shorter than expected
-		err = validateICMPEchoReply(shortReply, identifier, sequence)
-		if err == nil || err.Error() != "reply too short, not a valid ICMP echo reply" {
-			t.Fatalf("expected short reply error, got %q", err)
 		}
 	})
 }
@@ -532,7 +486,7 @@ type mockConnWithDeadlineError struct {
 }
 
 func (m *mockConnWithDeadlineError) SetReadDeadline(t time.Time) error {
-	return errors.New("mock deadline error")
+	return fmt.Errorf("mock deadline error")
 }
 
 // Mock connection that returns an error when Write is called
@@ -541,7 +495,7 @@ type mockConnWithWriteError struct {
 }
 
 func (m *mockConnWithWriteError) Write(b []byte) (n int, err error) {
-	return 0, errors.New("mock write error")
+	return 0, fmt.Errorf("mock write error")
 }
 
 // Mock connection that returns an error when Read is called
@@ -550,7 +504,7 @@ type mockConnWithReadError struct {
 }
 
 func (m *mockConnWithReadError) Read(b []byte) (n int, err error) {
-	return 0, errors.New("mock read error")
+	return 0, fmt.Errorf("mock read error")
 }
 
 // Mock connection that simulates a delayed response, causing context cancellation
