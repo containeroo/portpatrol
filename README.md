@@ -25,11 +25,11 @@ When using `ICMP` checks in Kubernetes, it's important to ensure that the contai
 Example:
 
 ```yaml
-- name: wait-for-vm
+- name: wait-for-host
   image: ghcr.io/containeroo/portpatrol:latest
   env:
     - name: TARGET_ADDRESS
-      value: hostname.domain.com:22
+      value: icmp://hostname.domain.com
   securityContext:
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
@@ -47,10 +47,14 @@ For `TCP` and `HTTP` checks, the container does not require any additional permi
 
 - `TARGET_NAME`: Name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, it's derived from the target address. For example, `http://postgres.default.svc.cluster.local:5432` is inferred as `postgres.default.svc.cluster.local`.
 - `TARGET_ADDRESS`: The target's address in the following formats:
-  - **TCP**: `host:port` (required). If using the `tcp://` scheme, `TARGET_CHECK_TYPE` can be omitted.
-  - **HTTP**: `scheme://host:port` (required).
-  - **ICMP**: `host:port` (required).
-- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http` or `icmp`). The check type is inferred from the scheme in `TARGET_ADDRESS`. If no scheme is provided, it defaults to `tcp`.
+
+  - **TCP**: `host:port` (required).
+  - **HTTP**: `scheme://host[:port]` (required).
+  - **ICMP**: `host` (required, no port needed or allowed).
+
+  You can always specify a scheme (e.g., `http://`, `tcp://`, `icmp://`) in `TARGET_ADDRESS`, which automatically infers the `TARGET_CHECK_TYPE`, making the `TARGET_CHECK_TYPE` variable optional.
+
+- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http`, or `icmp`). If no scheme is provided in `TARGET_ADDRESS`, this variable determines the check type. If a scheme is provided, `TARGET_CHECK_TYPE` becomes obsolete.
 - `CHECK_INTERVAL`: Time between connection attempts (optional, default: `2s`).
 - `DIAL_TIMEOUT`: Maximum allowed time for each connection attempt (optional, default: `1s`).
 - `LOG_EXTRA_FIELDS`: Enable logging of additional fields (optional, default: `false`).
