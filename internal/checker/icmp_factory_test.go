@@ -1,322 +1,540 @@
 package checker
 
 import (
-	"encoding/binary"
 	"testing"
+	"time"
+
+	"github.com/containeroo/portpatrol/internal/testutils"
+
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 )
 
 func TestNewProtocol(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid IPv4 address", func(t *testing.T) {
+	t.Run("Valid IPv4 Address", func(t *testing.T) {
 		t.Parallel()
 
-		address := "192.168.1.1"
-		protocol, err := NewProtocol(address)
+		protocol, err := newProtocol("192.168.1.1")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		p := protocol.(*ICMPv4)
-
-		expected := "ip4:icmp"
-		if p.Network() != expected {
-			t.Errorf("expected network %s, got %s", expected, p.Network())
+		if _, ok := protocol.(*ICMPv4); !ok {
+			t.Fatalf("expected ICMPv4 protocol, got %T", protocol)
 		}
 	})
 
-	t.Run("Valid IPv6 address", func(t *testing.T) {
+	t.Run("Valid IPv6 Address", func(t *testing.T) {
 		t.Parallel()
 
-		address := "2001:db8::1"
-		protocol, err := NewProtocol(address)
+		protocol, err := newProtocol("2001:db8::1")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		p := protocol.(*ICMPv6)
-
-		expected := "ip6:ipv6-icmp"
-		if p.Network() != expected {
-			t.Fatalf("expected network %s, got %s", expected, p.Network())
+		if _, ok := protocol.(*ICMPv6); !ok {
+			t.Fatalf("expected ICMPv6 protocol, got %T", protocol)
 		}
 	})
 
-	t.Run("Invalid IP address", func(t *testing.T) {
+	t.Run("Unresolvable Address", func(t *testing.T) {
 		t.Parallel()
 
-		address := "invalid-ip"
-		_, err := NewProtocol(address)
+		_, err := newProtocol("invalid.domain")
 		if err == nil {
-			t.Fatalf("expected an error, got none")
+			t.Fatal("expected an error, got none")
 		}
 
-		expectedError := "invalid IP address: invalid-ip"
-		if err.Error() != expectedError {
-			t.Errorf("expected error %q, got %q", expectedError, err.Error())
+		expected := "invalid or unresolvable address: invalid.domain"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("Unsupported IP Address", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := newProtocol("300.300.300.300")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "invalid or unresolvable address: 300.300.300.300"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 }
 
-func TestICMPv4_MakeRequest(t *testing.T) {
+func TestICMPv4MakeRequest(t *testing.T) {
 	t.Parallel()
 
-	identifier := uint16(12345)
-	sequence := uint16(1)
+	t.Run("MakeRequest", func(t *testing.T) {
+		t.Parallel()
 
-	p := &ICMPv4{}
-	packet := p.MakeRequest(identifier, sequence)
+		protocol := &ICMPv4{}
+		msg, err := protocol.MakeRequest(1234, 1)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-	if len(packet) != 8 {
-		t.Fatalf("expected packet length 8, got %d", len(packet))
-	}
+		if len(msg) == 0 {
+			t.Fatal("expected non-empty ICMP message, got empty")
+		}
+	})
+}
 
-	if packet[0] != 8 {
-		t.Errorf("expected ICMP type 8 (Echo Request), got %d", packet[0])
-	}
+func TestICMPv4_Network(t *testing.T) {
+	t.Parallel()
 
-	id := binary.BigEndian.Uint16(packet[4:6])
-	if id != identifier {
-		t.Errorf("expected identifier %d, got %d", identifier, id)
-	}
+	t.Run("Network", func(t *testing.T) {
+		t.Parallel()
 
-	seq := binary.BigEndian.Uint16(packet[6:8])
-	if seq != sequence {
-		t.Errorf("expected sequence number %d, got %d", sequence, seq)
-	}
+		protocol := &ICMPv4{}
+		expected := "ip4:icmp"
+		if protocol.Network() != expected {
+			t.Errorf("expected %q, got %q", expected, protocol.Network())
+		}
+	})
+}
 
-	actualChecksum := binary.BigEndian.Uint16(packet[2:4])
-	binary.BigEndian.PutUint16(packet[2:], 0)
-	expectedChecksum := calculateChecksum(packet)
+func TestICMPv4_SetDeadline(t *testing.T) {
+	t.Parallel()
 
-	if actualChecksum != expectedChecksum {
-		t.Errorf("expected checksum %d, got %d", expectedChecksum, actualChecksum)
-	}
+	t.Run("SetDeadline Success", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn := testutils.MockPacketConn{}
+		protocol := &ICMPv4{conn: &mockConn}
+		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
 }
 
 func TestICMPv4_ValidateReply(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid ICMPv4 Echo Reply", func(t *testing.T) {
+	t.Run("Unexpected Message Type", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv4{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv4{}
+		request, _ := protocol.MakeRequest(1234, 1)
 
-		reply := make([]byte, 28)
-		reply[20] = 0 // ICMP Echo Reply type
+		// Simulate a reply with a different identifier
+		request[4] = 0xFF
 
-		binary.BigEndian.PutUint16(reply[24:], identifier)
-		binary.BigEndian.PutUint16(reply[26:], sequence)
+		err := protocol.ValidateReply(request, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
 
-		err := p.ValidateReply(reply, identifier, sequence)
+		expected := "unexpected ICMPv4 message type: echo"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("ValidateReply Success", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv4{}
+		request, _ := protocol.MakeRequest(1234, 1)
+
+		// Simulate a successful reply by modifying the request type to EchoReply
+		reply := request
+		reply[0] = byte(ipv4.ICMPTypeEchoReply)
+
+		err := protocol.ValidateReply(reply, 1234, 1)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 	})
-
-	t.Run("Invalid ICMPv4 Echo Reply (invalid type)", func(t *testing.T) {
+	t.Run("ValidateReply Identifier Mismatch", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv4{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv4{}
+		request, _ := protocol.MakeRequest(1234, 1)
 
-		reply := make([]byte, 28)
-		reply[20] = 1 // Invalid ICMP type
+		// Simulate a reply with a different identifier
+		reply := request
+		reply[4] = 0xFF // Modify the identifier
 
-		binary.BigEndian.PutUint16(reply[24:], identifier)
-		binary.BigEndian.PutUint16(reply[26:], sequence)
-
-		err := p.ValidateReply(reply, identifier, sequence)
-		if err == nil || err.Error() != "unexpected ICMP reply type: 1" {
-			t.Errorf("expected error 'unexpected ICMP reply type: 1', got %v", err)
+		err := protocol.ValidateReply(reply, 1234, 1)
+		if err == nil {
+			t.Fatal("expected an identifier mismatch error, got none")
 		}
 	})
 
-	t.Run("Invalid ICMPv4 Echo Reply (identifier mismatch)", func(t *testing.T) {
+	t.Run("Error Parsing Message", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv4{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv4{}
+		// Pass an invalid byte slice that cannot be parsed as a valid ICMP message
+		reply := []byte{0xff, 0xff, 0xff}
 
-		reply := make([]byte, 28)
-		reply[20] = 0 // ICMP Echo Reply type
+		err := protocol.ValidateReply(reply, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-		binary.BigEndian.PutUint16(reply[24:], identifier) // Actual identifier
-		binary.BigEndian.PutUint16(reply[26:], sequence)   // Sequence number
-
-		err := p.ValidateReply(reply, identifier+1, sequence) // Expected different identifier
-		if err == nil || err.Error() != "identifier or sequence number mismatch: got id=12345 seq=1, expected id=12346 seq=1" {
-			t.Errorf("expected identifier mismatch error, got %v", err)
+		expected := "failed to parse ICMPv4 message: message too short"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
-	t.Run("Invalid ICMPv4 Echo Reply (sequence mismatch)", func(t *testing.T) {
+	t.Run("Unexpected Message Type", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv4{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv4{}
+		request, _ := protocol.MakeRequest(1234, 1)
 
-		reply := make([]byte, 28)
-		reply[20] = 0 // ICMP Echo Reply type
+		// Simulate a reply with a different identifier
+		request[4] = 0xFF
 
-		binary.BigEndian.PutUint16(reply[24:], identifier) // Identifier
-		binary.BigEndian.PutUint16(reply[26:], sequence)   // Actual sequence
+		err := protocol.ValidateReply(request, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
 
-		err := p.ValidateReply(reply, identifier, sequence+1) // Expected different sequence
-		if err == nil || err.Error() != "identifier or sequence number mismatch: got id=12345 seq=1, expected id=12345 seq=2" {
-			t.Errorf("expected sequence mismatch error, got %v", err)
+		expected := "unexpected ICMPv4 message type: echo"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
-	t.Run("Invalid ICMPv4 Echo Reply (to short)", func(t *testing.T) {
+	t.Run("IdentifierOrSequenceMismatch", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv4{}
-		identifier := uint16(12345)
+		protocol := &ICMPv4{}
+
+		// Create a valid ICMP echo request message
+		identifier := uint16(1234)
 		sequence := uint16(1)
+		validRequest, err := protocol.MakeRequest(identifier, sequence)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-		// Create a reply that is too short (less than 28 bytes, which is the minimum for ICMPv4: 20 bytes IP header + 8 bytes ICMP header)
-		shortReply := make([]byte, 24) // 24 bytes, which is shorter than the required 28 bytes
+		// Modify the request to simulate an incorrect identifier or sequence in the reply
+		replyMsg := icmp.Message{
+			Type: ipv4.ICMPTypeEchoReply, // Correct type for the reply
+			Code: 0,
+			Body: &icmp.Echo{
+				ID:   int(identifier + 1), // Incorrect ID to force a mismatch
+				Seq:  int(sequence + 1),   // Incorrect sequence to force a mismatch
+				Data: validRequest[8:],    // Keep the rest of the data the same
+			},
+		}
+		reply, err := replyMsg.Marshal(nil)
+		if err != nil {
+			t.Fatalf("failed to marshal reply message: %v", err)
+		}
 
-		err := p.ValidateReply(shortReply, identifier, sequence)
-		if err == nil || err.Error() != "reply too short, not a valid ICMP echo reply" {
-			t.Errorf("expected error 'reply too short, not a valid ICMP echo reply', got %v", err)
+		// Call ValidateReply with the modified reply
+		err = protocol.ValidateReply(reply, identifier, sequence)
+		if err == nil {
+			t.Fatal("expected an identifier or sequence mismatch error, got none")
+		}
+
+		expected := "identifier or sequence mismatch"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 }
 
-func TestICMPv6_MakeRequest(t *testing.T) {
+func TestICMPv4_ListenPacket(t *testing.T) {
 	t.Parallel()
 
-	identifier := uint16(12345)
-	sequence := uint16(1)
+	t.Run("Successful ListenPacket", func(t *testing.T) {
+		t.Parallel()
 
-	p := &ICMPv6{}
-	packet := p.MakeRequest(identifier, sequence)
+		protocol := &ICMPv4{}
 
-	if len(packet) != 8 {
-		t.Fatalf("expected packet length 8, got %d", len(packet))
-	}
+		conn, err := protocol.ListenPacket("ip4:icmp", "localhost")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-	if packet[0] != 128 {
-		t.Errorf("expected ICMPv6 type 128 (Echo Request), got %d", packet[0])
-	}
+		if conn == nil {
+			t.Fatal("expected a valid PacketConn, got nil")
+		}
 
-	id := binary.BigEndian.Uint16(packet[4:6])
-	if id != identifier {
-		t.Errorf("expected identifier %d, got %d", identifier, id)
-	}
+		// Clean up the connection
+		defer conn.Close()
+	})
 
-	seq := binary.BigEndian.Uint16(packet[6:8])
-	if seq != sequence {
-		t.Errorf("expected sequence number %d, got %d", sequence, seq)
-	}
+	t.Run("Invalid Network", func(t *testing.T) {
+		t.Parallel()
 
-	actualChecksum := binary.BigEndian.Uint16(packet[2:4])
-	binary.BigEndian.PutUint16(packet[2:], 0)
-	expectedChecksum := calculateChecksum(packet)
+		protocol := &ICMPv4{}
 
-	if actualChecksum != expectedChecksum {
-		t.Errorf("expected checksum %d, got %d", expectedChecksum, actualChecksum)
-	}
+		_, err := protocol.ListenPacket("invalid-network", "localhost")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "listen invalid-network: unknown network invalid-network"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("Invalid Address", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv4{}
+
+		_, err := protocol.ListenPacket("ip4:icmp", "invalid-address")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "listen ip4:icmp: lookup invalid-address: no such host"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+}
+
+// HERE
+
+func TestICMPv6MakeRequest(t *testing.T) {
+	t.Parallel()
+
+	t.Run("MakeRequest", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{}
+		msg, err := protocol.MakeRequest(1234, 1)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if len(msg) == 0 {
+			t.Fatal("expected non-empty ICMP message, got empty")
+		}
+	})
+}
+
+func TestICMPv6_Network(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Network", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{}
+		expected := "ip6:ipv6-icmp"
+		if protocol.Network() != expected {
+			t.Errorf("expected %q, got %q", expected, protocol.Network())
+		}
+	})
+}
+
+func TestICMPv6_SetDeadline(t *testing.T) {
+	t.Parallel()
+
+	t.Run("SetDeadline Success", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn := testutils.MockPacketConn{}
+		protocol := &ICMPv6{conn: &mockConn}
+		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
 }
 
 func TestICMPv6_ValidateReply(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid ICMPv6 Echo Reply", func(t *testing.T) {
+	t.Run("Unexpected Message Type", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv6{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv6{}
+		request, _ := protocol.MakeRequest(1234, 1)
 
-		reply := make([]byte, 8)
-		reply[0] = 129 // ICMPv6 Echo Reply type
-		binary.BigEndian.PutUint16(reply[4:], identifier)
-		binary.BigEndian.PutUint16(reply[6:], sequence)
+		// Simulate a reply with a different identifier
+		request[4] = 0xFF
 
-		err := p.ValidateReply(reply, identifier, sequence)
+		err := protocol.ValidateReply(request, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
+
+		expected := "unexpected ICMPv6 message type: echo request"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("ValidateReply Success", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{}
+		request, _ := protocol.MakeRequest(1234, 1)
+
+		// Simulate a successful reply by modifying the request type to EchoReply
+		reply := request
+		reply[0] = byte(ipv6.ICMPTypeEchoReply)
+
+		err := protocol.ValidateReply(reply, 1234, 1)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 	})
-
-	t.Run("Invalid ICMPv6 Echo Reply (invalid type)", func(t *testing.T) {
+	t.Run("ValidateReply Identifier Mismatch", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv6{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv6{}
+		request, _ := protocol.MakeRequest(1234, 1)
 
-		reply := make([]byte, 8)
-		reply[0] = 1 // Invalid ICMPv6 type
+		// Simulate a reply with a different identifier
+		reply := request
+		reply[4] = 0xFF // Modify the identifier
 
-		binary.BigEndian.PutUint16(reply[4:], identifier)
-		binary.BigEndian.PutUint16(reply[6:], sequence)
-
-		err := p.ValidateReply(reply, identifier, sequence)
-		if err == nil || err.Error() != "unexpected ICMPv6 reply type: 1" {
-			t.Errorf("expected error 'unexpected ICMPv6 reply type: 1', got %v", err)
+		err := protocol.ValidateReply(reply, 1234, 1)
+		if err == nil {
+			t.Fatal("expected an identifier mismatch error, got none")
 		}
 	})
 
-	t.Run("Invalid ICMPv6 Echo Reply (identifier mismatch)", func(t *testing.T) {
+	t.Run("Error Parsing Message", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv6{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv6{}
+		// Pass an invalid byte slice that cannot be parsed as a valid ICMP message
+		reply := []byte{0xff, 0xff, 0xff}
 
-		reply := make([]byte, 8)
-		reply[0] = 129 // ICMPv6 Echo Reply type
+		err := protocol.ValidateReply(reply, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-		binary.BigEndian.PutUint16(reply[4:], identifier) // Actual identifier
-		binary.BigEndian.PutUint16(reply[6:], sequence)   // Sequence number
-
-		err := p.ValidateReply(reply, identifier+1, sequence) // Expected different identifier
-		if err == nil || err.Error() != "identifier or sequence number mismatch: got id=12345 seq=1, expected id=12346 seq=1" {
-			t.Errorf("expected identifier mismatch error, got %v", err)
+		expected := "failed to parse ICMPv6 message: message too short"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
-	t.Run("Invalid ICMPv6 Echo Reply (sequence mismatch)", func(t *testing.T) {
+	t.Run("Unexpected Message Type", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv6{}
-		identifier := uint16(12345)
-		sequence := uint16(1)
+		protocol := &ICMPv6{}
+		request, _ := protocol.MakeRequest(1234, 1)
 
-		reply := make([]byte, 8)
-		reply[0] = 129 // ICMPv6 Echo Reply type
+		// Simulate a reply with a different identifier
+		request[4] = 0xFF
 
-		binary.BigEndian.PutUint16(reply[4:], identifier) // Identifier
-		binary.BigEndian.PutUint16(reply[6:], sequence)   // Actual sequence
+		err := protocol.ValidateReply(request, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected an error, got none")
+		}
 
-		err := p.ValidateReply(reply, identifier, sequence+1) // Expected different sequence
-		if err == nil || err.Error() != "identifier or sequence number mismatch: got id=12345 seq=1, expected id=12345 seq=2" {
-			t.Errorf("expected sequence mismatch error, got %v", err)
+		expected := "unexpected ICMPv6 message type: echo request"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
-	t.Run("Invalid ICMPv6 Echo Reply (to short)", func(t *testing.T) {
+	t.Run("IdentifierOrSequenceMismatch", func(t *testing.T) {
 		t.Parallel()
 
-		p := &ICMPv6{}
-		identifier := uint16(12345)
+		protocol := &ICMPv6{}
+
+		// Create a valid ICMP echo request message
+		identifier := uint16(1234)
 		sequence := uint16(1)
+		validRequest, err := protocol.MakeRequest(identifier, sequence)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-		// Create a reply that is too short (less than 8 bytes)
-		shortReply := make([]byte, 4) // 4 bytes, which is shorter than the 8-byte ICMPv6 header
+		// Modify the request to simulate an incorrect identifier or sequence in the reply
+		replyMsg := icmp.Message{
+			Type: ipv6.ICMPTypeEchoReply, // Correct type for the reply
+			Code: 0,
+			Body: &icmp.Echo{
+				ID:   int(identifier + 1), // Incorrect ID to force a mismatch
+				Seq:  int(sequence + 1),   // Incorrect sequence to force a mismatch
+				Data: validRequest[8:],    // Keep the rest of the data the same
+			},
+		}
+		reply, err := replyMsg.Marshal(nil)
+		if err != nil {
+			t.Fatalf("failed to marshal reply message: %v", err)
+		}
 
-		err := p.ValidateReply(shortReply, identifier, sequence)
-		if err == nil || err.Error() != "reply too short, not a valid ICMPv6 echo reply" {
-			t.Errorf("expected error 'reply too short, not a valid ICMPv6 echo reply', got %v", err)
+		// Call ValidateReply with the modified reply
+		err = protocol.ValidateReply(reply, identifier, sequence)
+		if err == nil {
+			t.Fatal("expected an identifier or sequence mismatch error, got none")
+		}
+
+		expected := "identifier or sequence mismatch"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+}
+
+func TestICMPv6_ListenPacket(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Successful ListenPacket", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{}
+
+		conn, err := protocol.ListenPacket("ip6:ipv6-icmp", "localhost")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if conn == nil {
+			t.Fatal("expected a valid PacketConn, got nil")
+		}
+
+		// Clean up the connection
+		defer conn.Close()
+	})
+
+	t.Run("Invalid Network", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{}
+
+		_, err := protocol.ListenPacket("invalid-network", "localhost")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "listen invalid-network: unknown network invalid-network"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
+		}
+	})
+
+	t.Run("Invalid Address", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{}
+
+		_, err := protocol.ListenPacket("ip6:ipv6-icmp", "invalid-address")
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "listen ip6:ipv6-icmp: lookup invalid-address: no such host"
+		if err.Error() != expected {
+			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 }

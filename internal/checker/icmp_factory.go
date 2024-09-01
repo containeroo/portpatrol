@@ -1,119 +1,155 @@
 package checker
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
+	"time"
+
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 )
 
-// ICMPProtocol is an interface that abstracts the MakeRequest and ValidateReply methods.
-type ICMPProtocol interface {
-	MakeRequest(identifier, sequence uint16) []byte                // MakeRequest creates an ICMP Echo Request packet.
-	ValidateReply(reply []byte, identifier, sequence uint16) error // ValidateReply checks if the reply is an ICMP Echo Reply and validates it.
-	Network() string                                               // Network returns the network type.
+// Protocol defines the interface for an ICMP protocol.
+type Protocol interface {
+	MakeRequest(identifier, sequence uint16) ([]byte, error)
+	ValidateReply(reply []byte, identifier, sequence uint16) error
+	Network() string
+	ListenPacket(network, address string) (net.PacketConn, error)
+	SetDeadline(t time.Time) error
 }
 
-// NewProtocol initializes a new ICMPProtocol based on the provided address.
-func NewProtocol(address string) (ICMPProtocol, error) {
-	var protocol ICMPProtocol
-
+// newProtocol creates a new ICMP protocol based on the given address.
+func newProtocol(address string) (Protocol, error) {
 	ip := net.ParseIP(address)
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address: %s", address)
+		// If the address is not an IP, try resolving it as a domain name
+		ips, err := net.LookupIP(address)
+		if err != nil || len(ips) == 0 {
+			return nil, fmt.Errorf("invalid or unresolvable address: %s", address)
+		}
+		ip = ips[0] // Use the first resolved IP address
 	}
 
-	switch {
-	case ip.To4() != nil:
-		protocol = &ICMPv4{}
-	case ip.To16() != nil && ip.To4() == nil: // Check for IPv6 and ensure it's not IPv4-mapped
-		protocol = &ICMPv6{}
+	if ip.To16() != nil && ip.To4() == nil {
+		return &ICMPv6{}, nil
 	}
 
-	return protocol, nil
+	return &ICMPv4{}, nil
 }
 
-// ICMPv4 implements the ICMPProtocol interface for IPv4.
-type ICMPv4 struct{}
-
-// MakeRequest creates an ICMP Echo Request packet.
-func (p *ICMPv4) MakeRequest(identifier, sequence uint16) []byte {
-	header := make([]byte, 8)
-	header[0] = 8                                      // ICMP Echo Request
-	header[1] = 0                                      // Code 0
-	binary.BigEndian.PutUint16(header[4:], identifier) // Identifier
-	binary.BigEndian.PutUint16(header[6:], sequence)   // Sequence number
-
-	checksum := calculateChecksum(header)
-	binary.BigEndian.PutUint16(header[2:], checksum)
-
-	return header
+// ICMPv4 implements the ICMP protocol for IPv4.
+type ICMPv4 struct {
+	conn net.PacketConn
 }
 
-// ValidateReply checks if the reply is an ICMP Echo Reply and validates it.
+// MakeRequest creates an ICMP echo request message.
+func (p *ICMPv4) MakeRequest(identifier, sequence uint16) ([]byte, error) {
+	body := &icmp.Echo{
+		ID:   int(identifier),
+		Seq:  int(sequence),
+		Data: []byte("HELLO-R-U-THERE"),
+	}
+	msg := icmp.Message{
+		Type: ipv4.ICMPTypeEcho,
+		Code: 0,
+		Body: body,
+	}
+
+	return msg.Marshal(nil)
+}
+
+// ValidateReply validates an ICMP echo reply message.
 func (p *ICMPv4) ValidateReply(reply []byte, identifier, sequence uint16) error {
-	if len(reply) < 28 { // 20 bytes for IP header + 8 bytes for ICMP header
-		return fmt.Errorf("reply too short, not a valid ICMP echo reply")
+	parsedMsg, err := icmp.ParseMessage(1, reply)
+	if err != nil {
+		return fmt.Errorf("failed to parse ICMPv4 message: %w", err)
 	}
 
-	if reply[20] != 0 { // ICMP Echo Reply type
-		return fmt.Errorf("unexpected ICMP reply type: %d", reply[20])
+	if parsedMsg.Type != ipv4.ICMPTypeEchoReply {
+		return fmt.Errorf("unexpected ICMPv4 message type: %v", parsedMsg.Type)
 	}
 
-	recvIdentifier := binary.BigEndian.Uint16(reply[24:26])
-	recvSequence := binary.BigEndian.Uint16(reply[26:28])
-
-	if recvIdentifier != identifier || recvSequence != sequence {
-		return fmt.Errorf("identifier or sequence number mismatch: got id=%d seq=%d, expected id=%d seq=%d",
-			recvIdentifier, recvSequence, identifier, sequence)
+	body, ok := parsedMsg.Body.(*icmp.Echo)
+	if !ok || body.ID != int(identifier) || body.Seq != int(sequence) {
+		return fmt.Errorf("identifier or sequence mismatch")
 	}
 
 	return nil
 }
 
-// Network returns the network type for IPv4.
+// Network returns the network type for the ICMP protocol.
 func (p *ICMPv4) Network() string {
 	return "ip4:icmp"
 }
 
-// ICMPv6 implements the ICMPProtocol interface for IPv6.
-type ICMPv6 struct{}
+// ListenPacket creates a new ICMPv4 packet connection.
+func (p *ICMPv4) ListenPacket(network, address string) (net.PacketConn, error) {
+	var err error
+	p.conn, err = net.ListenPacket(network, address)
 
-// MakeRequest creates an ICMPv6 Echo Request packet.
-func (p *ICMPv6) MakeRequest(identifier, sequence uint16) []byte {
-	header := make([]byte, 8)
-	header[0] = 128                                    // ICMPv6 Echo Request
-	header[1] = 0                                      // Code 0
-	binary.BigEndian.PutUint16(header[4:], identifier) // Identifier
-	binary.BigEndian.PutUint16(header[6:], sequence)   // Sequence number
-
-	checksum := calculateChecksum(header)
-	binary.BigEndian.PutUint16(header[2:], checksum)
-
-	return header
+	return p.conn, err
 }
 
-// ValidateReply checks if the reply is an ICMPv
+// SetDeadline sets the deadline for the ICMPv4 packet connection.
+func (p *ICMPv4) SetDeadline(t time.Time) error {
+	return p.conn.SetDeadline(t)
+}
+
+// ICMPv6 implements the ICMP protocol for IPv6.
+type ICMPv6 struct {
+	conn net.PacketConn
+}
+
+// MakeRequest creates an ICMP echo request message.
+func (p *ICMPv6) MakeRequest(identifier, sequence uint16) ([]byte, error) {
+	body := &icmp.Echo{
+		ID:   int(identifier),
+		Seq:  int(sequence),
+		Data: []byte("HELLO-R-U-THERE"),
+	}
+	msg := icmp.Message{
+		Type: ipv6.ICMPTypeEchoRequest,
+		Code: 0,
+		Body: body,
+	}
+
+	return msg.Marshal(nil)
+}
+
+// ValidateReply validates an ICMP echo reply message.
 func (p *ICMPv6) ValidateReply(reply []byte, identifier, sequence uint16) error {
-	if len(reply) < 8 { // 8 bytes for ICMPv6 header
-		return fmt.Errorf("reply too short, not a valid ICMPv6 echo reply")
+	parsedMsg, err := icmp.ParseMessage(58, reply)
+	if err != nil {
+		return fmt.Errorf("failed to parse ICMPv6 message: %w", err)
 	}
 
-	if reply[0] != 129 { // ICMPv6 Echo Reply type
-		return fmt.Errorf("unexpected ICMPv6 reply type: %d", reply[0])
+	if parsedMsg.Type != ipv6.ICMPTypeEchoReply {
+		return fmt.Errorf("unexpected ICMPv6 message type: %v", parsedMsg.Type)
 	}
 
-	recvIdentifier := binary.BigEndian.Uint16(reply[4:6])
-	recvSequence := binary.BigEndian.Uint16(reply[6:8])
-
-	if recvIdentifier != identifier || recvSequence != sequence {
-		return fmt.Errorf("identifier or sequence number mismatch: got id=%d seq=%d, expected id=%d seq=%d",
-			recvIdentifier, recvSequence, identifier, sequence)
+	body, ok := parsedMsg.Body.(*icmp.Echo)
+	if !ok || body.ID != int(identifier) || body.Seq != int(sequence) {
+		return fmt.Errorf("identifier or sequence mismatch")
 	}
 
 	return nil
 }
 
-// Network returns the network type for IPv6.
+// Network returns the network type for the ICMP protocol.
 func (p *ICMPv6) Network() string {
 	return "ip6:ipv6-icmp"
+}
+
+// ListenPacket creates a new ICMPv6 packet connection.
+func (p *ICMPv6) ListenPacket(network, address string) (net.PacketConn, error) {
+	var err error
+	p.conn, err = net.ListenPacket(network, address)
+
+	return p.conn, err
+}
+
+// SetDeadline sets the deadline for the ICMPv6 packet connection.
+func (p *ICMPv6) SetDeadline(t time.Time) error {
+	return p.conn.SetDeadline(t)
 }
