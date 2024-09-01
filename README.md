@@ -54,7 +54,7 @@ For `TCP` and `HTTP` checks, the container does not require any additional permi
 
   You can always specify a scheme (e.g., `http://`, `tcp://`, `icmp://`) in `TARGET_ADDRESS`, which automatically infers the `TARGET_CHECK_TYPE`, making the `TARGET_CHECK_TYPE` variable optional.
 
-- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http`, or `icmp`). If no scheme is provided in `TARGET_ADDRESS`, this variable determines the check type. If a scheme is provided, `TARGET_CHECK_TYPE` becomes obsolete.
+- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http`, `https`, or `icmp`). If no scheme is provided in `TARGET_ADDRESS`, this variable determines the check type. If a scheme is provided, `TARGET_CHECK_TYPE` becomes obsolete.
 - `CHECK_INTERVAL`: Time between connection attempts (optional, default: `2s`).
 - `DIAL_TIMEOUT`: Maximum allowed time for each connection attempt (optional, default: `1s`).
 - `LOG_EXTRA_FIELDS`: Enable logging of additional fields (optional, default: `false`).
