@@ -403,7 +403,6 @@ func TestICMPChecker(t *testing.T) {
 				return 0, nil, fmt.Errorf("mock read from error")
 			},
 			SetReadDeadlineFunc: func(t time.Time) error {
-				// Ensure this function is properly mocked.
 				return nil
 			},
 			CloseFunc: func() error {
@@ -496,6 +495,194 @@ func TestICMPChecker(t *testing.T) {
 		err := checker.Check(ctx)
 		if err == nil || err.Error() != "mock validation error" {
 			t.Errorf("expected validation error, got %v", err)
+		}
+	})
+}
+
+func TestMakeICMPRequest(t *testing.T) {
+	t.Parallel()
+
+	c := &ICMPChecker{
+		Protocol: &testutils.MockProtocol{
+			MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
+				body := &icmp.Echo{
+					ID:   int(id),
+					Seq:  int(seq),
+					Data: []byte("HELLO-R-U-THERE"),
+				}
+				msg := icmp.Message{
+					Type: ipv4.ICMPTypeEcho,
+					Code: 0,
+					Body: body,
+				}
+				msgBytes, err := msg.Marshal(nil)
+				if err != nil {
+					return nil, err
+				}
+
+				// Debugging output
+				fmt.Printf("Generated ICMP Request: %v\n", msgBytes)
+
+				return msgBytes, nil
+			},
+		},
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		msg, err := c.makeICMPRequest(ctx, 1234, 1)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if len(msg) == 0 {
+			t.Fatalf("expected non-empty message, got empty")
+		}
+
+		// Debugging output
+		fmt.Printf("Generated message in test: %v\n", msg)
+	})
+
+	t.Run("Context Canceled", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		_, err := c.makeICMPRequest(ctx, 1234, 1)
+		if err == nil {
+			t.Fatalf("expected context canceled error, got nil")
+		}
+	})
+}
+
+func TestWriteICMPRequest(t *testing.T) {
+	t.Parallel()
+
+	c := &ICMPChecker{
+		Protocol: &testutils.MockProtocol{},
+	}
+
+	mockConn := &testutils.MockPacketConn{
+		WriteToFunc: func(b []byte, addr net.Addr) (int, error) {
+			return len(b), nil
+		},
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		err := c.writeICMPRequest(ctx, mockConn, []byte{0x01, 0x02, 0x03}, &net.IPAddr{})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("Context Canceled", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		err := c.writeICMPRequest(ctx, mockConn, []byte{0x01, 0x02, 0x03}, &net.IPAddr{})
+		if err == nil {
+			t.Fatalf("expected context canceled error, got nil")
+		}
+	})
+}
+
+func TestReadICMPReply(t *testing.T) {
+	t.Parallel()
+
+	c := &ICMPChecker{
+		Protocol: &testutils.MockProtocol{},
+	}
+
+	mockConn := &testutils.MockPacketConn{
+		ReadFromFunc: func(b []byte) (int, net.Addr, error) {
+			copy(b, []byte("valid"))
+			return 5, &net.IPAddr{}, nil // Return the exact number of bytes written.
+		},
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		reply, err := c.readICMPReply(ctx, mockConn)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if string(reply) != "valid" {
+			t.Fatalf("expected 'valid', got %v", string(reply))
+		}
+	})
+
+	t.Run("Context Canceled", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		_, err := c.readICMPReply(ctx, mockConn)
+		if err == nil {
+			t.Fatalf("expected context canceled error, got nil")
+		}
+	})
+}
+
+func TestValidateICMPReply(t *testing.T) {
+	t.Parallel()
+
+	c := &ICMPChecker{
+		Protocol: &testutils.MockProtocol{
+			ValidateReplyFunc: func(reply []byte, identifier, sequence uint16) error {
+				if string(reply) == "valid" {
+					return nil
+				}
+				return fmt.Errorf("identifier or sequence mismatch")
+			},
+		},
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		err := c.validateICMPReply(ctx, []byte("valid"), 1234, 1)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("Validation Failure", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		err := c.validateICMPReply(ctx, []byte("invalid"), 1234, 1)
+		if err == nil {
+			t.Fatalf("expected validation error, got nil")
+		}
+
+		expectedErr := "identifier or sequence mismatch"
+		if err.Error() != expectedErr {
+			t.Fatalf("expected error %v, got %v", expectedErr, err)
+		}
+	})
+
+	t.Run("Context Canceled", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		err := c.validateICMPReply(ctx, []byte("valid"), 1234, 1)
+		if err == nil {
+			t.Fatalf("expected context canceled error, got nil")
 		}
 	})
 }

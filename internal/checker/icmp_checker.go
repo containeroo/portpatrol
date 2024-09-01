@@ -55,44 +55,135 @@ func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func
 	}, nil
 }
 
-// Check performs a ICMP check on the target.
+// Check performs an ICMP check on the target.
 func (c *ICMPChecker) Check(ctx context.Context) error {
+	// Resolve the IP address
 	dst, err := net.ResolveIPAddr(c.Protocol.Network(), c.Address)
 	if err != nil {
 		return fmt.Errorf("failed to resolve IP address: %w", err)
 	}
 
+	// Listen for ICMP packets
 	conn, err := c.Protocol.ListenPacket(ctx, c.Protocol.Network(), "0.0.0.0")
 	if err != nil {
 		return fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
 	defer conn.Close()
 
+	// Set the read deadline
 	if err := conn.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
 		return fmt.Errorf("failed to set read deadline: %w", err)
 	}
 
-	identifier := uint16(os.Getpid() & 0xffff)
-	sequence := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff)
+	identifier := uint16(os.Getpid() & 0xffff)                    // Create a unique identifier
+	sequence := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Create a unique sequence number
 
-	msg, err := c.Protocol.MakeRequest(identifier, sequence)
+	// Make the ICMP request with context
+	msg, err := c.makeICMPRequest(ctx, identifier, sequence)
 	if err != nil {
-		return fmt.Errorf("failed to create ICMP request: %w", err)
+		return err
 	}
 
-	if _, err := conn.WriteTo(msg, dst); err != nil {
-		return fmt.Errorf("failed to send ICMP request to %s: %w", c.Address, err)
+	// Write the ICMP request with context
+	if err := c.writeICMPRequest(ctx, conn, msg, dst); err != nil {
+		return err
 	}
 
-	reply := make([]byte, 1500)
-	n, _, err := conn.ReadFrom(reply)
+	// Read the ICMP reply with context
+	reply, err := c.readICMPReply(ctx, conn)
 	if err != nil {
-		return fmt.Errorf("failed to read ICMP reply from %s: %w", c.Address, err)
+		return err
 	}
 
-	if err := c.Protocol.ValidateReply(reply[:n], identifier, sequence); err != nil {
+	// Validate the ICMP reply with context
+	if err := c.validateICMPReply(ctx, reply, identifier, sequence); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// makeICMPRequest handles ICMP request creation with context.
+func (c *ICMPChecker) makeICMPRequest(ctx context.Context, identifier, sequence uint16) ([]byte, error) {
+	done := make(chan error, 1)
+	var msg []byte
+
+	go func() {
+		var err error
+		msg, err = c.Protocol.MakeRequest(identifier, sequence)
+		done <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return nil, fmt.Errorf("failed to create ICMP request: %w", err)
+		}
+		return msg, nil
+	}
+}
+
+// writeICMPRequest handles writing the ICMP request with context.
+func (c *ICMPChecker) writeICMPRequest(ctx context.Context, conn net.PacketConn, msg []byte, dst net.Addr) error {
+	done := make(chan error, 1)
+
+	go func() {
+		_, err := conn.WriteTo(msg, dst)
+		done <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("failed to send ICMP request to %s: %w", c.Address, err)
+		}
+		return nil
+	}
+}
+
+// readICMPReply handles reading the ICMP reply with context.
+func (c *ICMPChecker) readICMPReply(ctx context.Context, conn net.PacketConn) ([]byte, error) {
+	done := make(chan error, 1)
+	reply := make([]byte, 1500)
+	var n int
+
+	go func() {
+		var err error
+		n, _, err = conn.ReadFrom(reply)
+		done <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return nil, fmt.Errorf("failed to read ICMP reply from %s: %w", c.Address, err)
+		}
+		return reply[:n], nil
+	}
+}
+
+// validateICMPReply handles validating the ICMP reply with context.
+func (c *ICMPChecker) validateICMPReply(ctx context.Context, reply []byte, identifier, sequence uint16) error {
+	done := make(chan error, 1)
+
+	go func() {
+		err := c.Protocol.ValidateReply(reply, identifier, sequence)
+		done <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 }

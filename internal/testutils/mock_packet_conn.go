@@ -16,23 +16,38 @@ type MockProtocol struct {
 }
 
 func (m *MockProtocol) MakeRequest(identifier, sequence uint16) ([]byte, error) {
-	return m.MakeRequestFunc(identifier, sequence)
+	if m.MakeRequestFunc != nil {
+		return m.MakeRequestFunc(identifier, sequence)
+	}
+	return nil, nil
 }
 
 func (m *MockProtocol) ValidateReply(reply []byte, identifier, sequence uint16) error {
-	return m.ValidateReplyFunc(reply, identifier, sequence)
+	if m.ValidateReplyFunc != nil {
+		return m.ValidateReplyFunc(reply, identifier, sequence)
+	}
+	return nil
 }
 
 func (m *MockProtocol) Network() string {
-	return m.NetworkFunc()
+	if m.NetworkFunc != nil {
+		return m.NetworkFunc()
+	}
+	return ""
 }
 
 func (m *MockProtocol) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
-	return m.ListenPacketFunc(ctx, network, address)
+	if m.ListenPacketFunc != nil {
+		return m.ListenPacketFunc(ctx, network, address)
+	}
+	return nil, nil
 }
 
 func (m *MockProtocol) SetDeadline(t time.Time) error {
-	return m.SetDeadlineFunc(t)
+	if m.SetDeadlineFunc != nil {
+		return m.SetDeadlineFunc(t)
+	}
+	return nil
 }
 
 // MockPacketConn is a mock implementation of net.PacketConn for testing purposes.

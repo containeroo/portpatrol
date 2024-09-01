@@ -11,6 +11,11 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
+const (
+	icmpv4ProtocolNumber = 1
+	icmpv6ProtocolNumber = 58
+)
+
 // Protocol defines the interface for an ICMP protocol.
 type Protocol interface {
 	MakeRequest(identifier, sequence uint16) ([]byte, error)
@@ -21,6 +26,7 @@ type Protocol interface {
 }
 
 // newProtocol creates a new ICMP protocol based on the given address.
+// If the address is not an IP, it will be resolved as a domain name.
 func newProtocol(address string) (Protocol, error) {
 	ip := net.ParseIP(address)
 	if ip == nil {
@@ -62,7 +68,7 @@ func (p *ICMPv4) MakeRequest(identifier, sequence uint16) ([]byte, error) {
 
 // ValidateReply validates an ICMP echo reply message.
 func (p *ICMPv4) ValidateReply(reply []byte, identifier, sequence uint16) error {
-	parsedMsg, err := icmp.ParseMessage(1, reply)
+	parsedMsg, err := icmp.ParseMessage(icmpv4ProtocolNumber, reply)
 	if err != nil {
 		return fmt.Errorf("failed to parse ICMPv4 message: %w", err)
 	}
@@ -124,7 +130,7 @@ func (p *ICMPv6) MakeRequest(identifier, sequence uint16) ([]byte, error) {
 
 // ValidateReply validates an ICMP echo reply message.
 func (p *ICMPv6) ValidateReply(reply []byte, identifier, sequence uint16) error {
-	parsedMsg, err := icmp.ParseMessage(58, reply)
+	parsedMsg, err := icmp.ParseMessage(icmpv6ProtocolNumber, reply)
 	if err != nil {
 		return fmt.Errorf("failed to parse ICMPv6 message: %w", err)
 	}
