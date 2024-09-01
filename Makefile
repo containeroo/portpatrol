@@ -8,7 +8,7 @@ test:
 
 # Generate and display test coverage
 cover:
-	go test ./... -coverprofile=coverage.out
+	sudo go test ./... -coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
 # Clean up generated files

@@ -15,12 +15,14 @@ var CheckerFactory = map[string]CheckerConstructor{
 	"http":  NewHTTPChecker,
 	"https": NewHTTPChecker,
 	"tcp":   NewTCPChecker,
+	"icmp":  NewICMPChecker,
 }
 
 // SupportedCheckTypes maps check types to their supported schemes.
 var SupportedCheckTypes = map[string][]string{
 	"http": {"http", "https"},
 	"tcp":  {"tcp"},
+	"icmp": {"icmp"},
 }
 
 // Checker is an interface that defines methods to perform a check.
@@ -52,7 +54,7 @@ func IsValidCheckType(checkType string) bool {
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
 	if scheme == "" {
-		return "", nil // No scheme provided, return an empty string and no error
+		return "", nil
 	}
 
 	scheme = strings.ToLower(scheme) // Normalize the scheme to lowercase
