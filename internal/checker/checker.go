@@ -54,7 +54,7 @@ func IsValidCheckType(checkType string) bool {
 func InferCheckType(address string) (string, error) {
 	scheme, _ := extractScheme(address)
 	if scheme == "" {
-		return "", nil // No scheme provided, return an empty string and no error
+		return "", nil
 	}
 
 	scheme = strings.ToLower(scheme) // Normalize the scheme to lowercase
