@@ -35,6 +35,7 @@ dockers:
       - --label=org.opencontainers.image.licenses="GNU General Public License v3.0"
     extra_files:
       - go.mod
+      - go.sum
       - cmd
       - internal
   - image_templates:
@@ -56,6 +57,7 @@ dockers:
       - --label=org.opencontainers.image.licenses="GNU General Public License v3.0"
     extra_files:
       - go.mod
+      - go.sum
       - cmd
       - internal
 
