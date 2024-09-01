@@ -103,7 +103,7 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	return nil
 }
 
-// makeICMPRequest handles ICMP request creation with context.
+// makeICMPRequest handles ICMP request creation.
 func (c *ICMPChecker) makeICMPRequest(ctx context.Context, identifier, sequence uint16) ([]byte, error) {
 	done := make(chan error, 1)
 	var msg []byte
@@ -125,7 +125,7 @@ func (c *ICMPChecker) makeICMPRequest(ctx context.Context, identifier, sequence 
 	}
 }
 
-// writeICMPRequest handles writing the ICMP request with context.
+// writeICMPRequest handles writing the ICMP request.
 func (c *ICMPChecker) writeICMPRequest(ctx context.Context, conn net.PacketConn, msg []byte, dst net.Addr) error {
 	done := make(chan error, 1)
 
@@ -145,7 +145,7 @@ func (c *ICMPChecker) writeICMPRequest(ctx context.Context, conn net.PacketConn,
 	}
 }
 
-// readICMPReply handles reading the ICMP reply with context.
+// readICMPReply handles reading the ICMP reply.
 func (c *ICMPChecker) readICMPReply(ctx context.Context, conn net.PacketConn) ([]byte, error) {
 	done := make(chan error, 1)
 	reply := make([]byte, 1500)
@@ -168,7 +168,7 @@ func (c *ICMPChecker) readICMPReply(ctx context.Context, conn net.PacketConn) ([
 	}
 }
 
-// validateICMPReply handles validating the ICMP reply with context.
+// validateICMPReply handles validating the ICMP reply.
 func (c *ICMPChecker) validateICMPReply(ctx context.Context, reply []byte, identifier, sequence uint16) error {
 	done := make(chan error, 1)
 
