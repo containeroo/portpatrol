@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -257,7 +258,10 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 
 		protocol := &ICMPv4{}
 
-		conn, err := protocol.ListenPacket("ip4:icmp", "localhost")
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		conn, err := protocol.ListenPacket(ctx, "ip4:icmp", "localhost")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -275,12 +279,15 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 
 		protocol := &ICMPv4{}
 
-		_, err := protocol.ListenPacket("invalid-network", "localhost")
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := protocol.ListenPacket(ctx, "invalid-network", "localhost")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "listen invalid-network: unknown network invalid-network"
+		expected := "failed to listen for ICMP packets: listen invalid-network: unknown network invalid-network"
 		if err.Error() != expected {
 			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}
@@ -291,12 +298,15 @@ func TestICMPv4_ListenPacket(t *testing.T) {
 
 		protocol := &ICMPv4{}
 
-		_, err := protocol.ListenPacket("ip4:icmp", "invalid-address")
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := protocol.ListenPacket(ctx, "ip4:icmp", "invalid-address")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "listen ip4:icmp: lookup invalid-address: no such host"
+		expected := "failed to listen for ICMP packets: listen ip4:icmp: lookup invalid-address: no such host"
 		if err.Error() != expected {
 			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}
@@ -493,7 +503,10 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 
 		protocol := &ICMPv6{}
 
-		conn, err := protocol.ListenPacket("ip6:ipv6-icmp", "localhost")
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		conn, err := protocol.ListenPacket(ctx, "ip6:ipv6-icmp", "localhost")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -511,12 +524,15 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 
 		protocol := &ICMPv6{}
 
-		_, err := protocol.ListenPacket("invalid-network", "localhost")
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := protocol.ListenPacket(ctx, "invalid-network", "localhost")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "listen invalid-network: unknown network invalid-network"
+		expected := "failed to listen for ICMP packets: listen invalid-network: unknown network invalid-network"
 		if err.Error() != expected {
 			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}
@@ -527,12 +543,15 @@ func TestICMPv6_ListenPacket(t *testing.T) {
 
 		protocol := &ICMPv6{}
 
-		_, err := protocol.ListenPacket("ip6:ipv6-icmp", "invalid-address")
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := protocol.ListenPacket(ctx, "ip6:ipv6-icmp", "invalid-address")
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "listen ip6:ipv6-icmp: lookup invalid-address: no such host"
+		expected := "failed to listen for ICMP packets: listen ip6:ipv6-icmp: lookup invalid-address: no such host"
 		if err.Error() != expected {
 			t.Errorf("expected error %q, got %q", expected, err.Error())
 		}

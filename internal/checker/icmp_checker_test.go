@@ -185,7 +185,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 		}
@@ -213,7 +213,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return nil, fmt.Errorf("mock listen packet error")
 			},
 		}
@@ -250,7 +250,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 		}
@@ -287,7 +287,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 			MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
@@ -319,8 +319,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
-				// This won't be called due to the address resolution error
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return nil, nil
 			},
 			MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
@@ -369,7 +368,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 			MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
@@ -416,7 +415,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 			MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
@@ -473,7 +472,7 @@ func TestICMPChecker(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 			MakeRequestFunc: func(id, seq uint16) ([]byte, error) {

@@ -753,7 +753,7 @@ func TestICMPChecker_Check_SuccessfulICMPCheck(t *testing.T) {
 			NetworkFunc: func() string {
 				return "ip4:icmp"
 			},
-			ListenPacketFunc: func(network, address string) (net.PacketConn, error) {
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 				return mockPacketConn, nil
 			},
 		}

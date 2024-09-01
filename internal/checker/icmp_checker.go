@@ -57,13 +57,12 @@ func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func
 
 // Check performs a ICMP check on the target.
 func (c *ICMPChecker) Check(ctx context.Context) error {
-	// Attempt to resolve the IP address first
 	dst, err := net.ResolveIPAddr(c.Protocol.Network(), c.Address)
 	if err != nil {
 		return fmt.Errorf("failed to resolve IP address: %w", err)
 	}
 
-	conn, err := c.Protocol.ListenPacket(c.Protocol.Network(), "0.0.0.0")
+	conn, err := c.Protocol.ListenPacket(ctx, c.Protocol.Network(), "0.0.0.0")
 	if err != nil {
 		return fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}

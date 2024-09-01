@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"context"
 	"net"
 	"time"
 )
@@ -10,7 +11,7 @@ type MockProtocol struct {
 	MakeRequestFunc   func(identifier, sequence uint16) ([]byte, error)
 	ValidateReplyFunc func(reply []byte, identifier, sequence uint16) error
 	NetworkFunc       func() string
-	ListenPacketFunc  func(network, address string) (net.PacketConn, error)
+	ListenPacketFunc  func(ctx context.Context, network, address string) (net.PacketConn, error)
 	SetDeadlineFunc   func(t time.Time) error
 }
 
@@ -26,8 +27,8 @@ func (m *MockProtocol) Network() string {
 	return m.NetworkFunc()
 }
 
-func (m *MockProtocol) ListenPacket(network, address string) (net.PacketConn, error) {
-	return m.ListenPacketFunc(network, address)
+func (m *MockProtocol) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
+	return m.ListenPacketFunc(ctx, network, address)
 }
 
 func (m *MockProtocol) SetDeadline(t time.Time) error {

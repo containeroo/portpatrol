@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"time"
@@ -15,7 +16,7 @@ type Protocol interface {
 	MakeRequest(identifier, sequence uint16) ([]byte, error)
 	ValidateReply(reply []byte, identifier, sequence uint16) error
 	Network() string
-	ListenPacket(network, address string) (net.PacketConn, error)
+	ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error)
 	SetDeadline(t time.Time) error
 }
 
@@ -84,11 +85,15 @@ func (p *ICMPv4) Network() string {
 }
 
 // ListenPacket creates a new ICMPv4 packet connection.
-func (p *ICMPv4) ListenPacket(network, address string) (net.PacketConn, error) {
-	var err error
-	p.conn, err = net.ListenPacket(network, address)
+func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
+	var lc net.ListenConfig
+	conn, err := lc.ListenPacket(ctx, network, address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to listen for ICMP packets: %w", err)
+	}
+	p.conn = conn
 
-	return p.conn, err
+	return p.conn, nil
 }
 
 // SetDeadline sets the deadline for the ICMPv4 packet connection.
@@ -142,11 +147,15 @@ func (p *ICMPv6) Network() string {
 }
 
 // ListenPacket creates a new ICMPv6 packet connection.
-func (p *ICMPv6) ListenPacket(network, address string) (net.PacketConn, error) {
-	var err error
-	p.conn, err = net.ListenPacket(network, address)
+func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
+	var lc net.ListenConfig
+	conn, err := lc.ListenPacket(ctx, network, address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to listen for ICMP packets: %w", err)
+	}
+	p.conn = conn
 
-	return p.conn, err
+	return p.conn, nil
 }
 
 // SetDeadline sets the deadline for the ICMPv6 packet connection.
