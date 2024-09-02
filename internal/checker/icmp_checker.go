@@ -18,10 +18,11 @@ const (
 
 // ICMPChecker implements a basic ICMP ping checker.
 type ICMPChecker struct {
-	Name        string        // The name of the checker.
-	Address     string        // The address of the target.
-	Protocol    Protocol      // The protocol to use for the connection.
-	ReadTimeout time.Duration // The timeout for reading the ICMP reply.
+	Name         string        // The name of the checker.
+	Address      string        // The address of the target.
+	Protocol     Protocol      // The protocol to use for the connection.
+	ReadTimeout  time.Duration // The timeout for reading the ICMP reply.
+	WriteTimeout time.Duration // The timeout for writing the ICMP request.
 }
 
 // String returns the name of the checker.
@@ -31,7 +32,10 @@ func (c *ICMPChecker) String() string {
 
 // NewICMPChecker initializes a new ICMPChecker with its specific configuration.
 func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func(string) string) (Checker, error) {
+	// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
+	// so it must be removed before passing the address to other functions.
 	address = strings.TrimPrefix(address, "icmp://")
+
 	protocol, err := newProtocol(address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
@@ -48,10 +52,11 @@ func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func
 	}
 
 	return &ICMPChecker{
-		Name:        name,
-		Address:     address,
-		Protocol:    protocol,
-		ReadTimeout: readTimeout,
+		Name:         name,
+		Address:      address,
+		Protocol:     protocol,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: dialTimeout,
 	}, nil
 }
 
@@ -70,21 +75,16 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	// Set the read deadline
-	if err := conn.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
-		return fmt.Errorf("failed to set read deadline: %w", err)
-	}
-
 	identifier := uint16(os.Getpid() & 0xffff)                    // Create a unique identifier
 	sequence := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Create a unique sequence number
 
-	// Make the ICMP request with context
-	msg, err := c.makeICMPRequest(ctx, identifier, sequence)
+	// Make the ICMP request
+	msg, err := c.Protocol.MakeRequest(identifier, sequence)
 	if err != nil {
 		return err
 	}
 
-	// Write the ICMP request with context
+	// Write the ICMP request
 	if err := c.writeICMPRequest(ctx, conn, msg, dst); err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 		return err
 	}
 
-	// Validate the ICMP reply with context
+	// Validate the ICMP reply
 	if err := c.validateICMPReply(ctx, reply, identifier, sequence); err != nil {
 		return err
 	}
@@ -103,30 +103,12 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	return nil
 }
 
-// makeICMPRequest handles ICMP request creation.
-func (c *ICMPChecker) makeICMPRequest(ctx context.Context, identifier, sequence uint16) ([]byte, error) {
-	done := make(chan error, 1)
-	var msg []byte
-
-	go func() {
-		var err error
-		msg, err = c.Protocol.MakeRequest(identifier, sequence)
-		done <- err
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case err := <-done:
-		if err != nil {
-			return nil, fmt.Errorf("failed to create ICMP request: %w", err)
-		}
-		return msg, nil
-	}
-}
-
 // writeICMPRequest handles writing the ICMP request.
 func (c *ICMPChecker) writeICMPRequest(ctx context.Context, conn net.PacketConn, msg []byte, dst net.Addr) error {
+	if err := conn.SetWriteDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
+		return fmt.Errorf("failed to set write deadline: %w", err)
+	}
+
 	done := make(chan error, 1)
 
 	go func() {
@@ -147,6 +129,11 @@ func (c *ICMPChecker) writeICMPRequest(ctx context.Context, conn net.PacketConn,
 
 // readICMPReply handles reading the ICMP reply.
 func (c *ICMPChecker) readICMPReply(ctx context.Context, conn net.PacketConn) ([]byte, error) {
+	// Set the read deadline
+	if err := conn.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
+		return nil, fmt.Errorf("failed to set read deadline: %w", err)
+	}
+
 	done := make(chan error, 1)
 	reply := make([]byte, 1500)
 	var n int

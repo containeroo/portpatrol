@@ -102,7 +102,7 @@ func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net
 	return p.conn, nil
 }
 
-// SetDeadline sets the deadline for the ICMPv4 packet connection.
+// SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
 func (p *ICMPv4) SetDeadline(t time.Time) error {
 	return p.conn.SetDeadline(t)
 }
@@ -164,7 +164,7 @@ func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net
 	return p.conn, nil
 }
 
-// SetDeadline sets the deadline for the ICMPv6 packet connection.
+// SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
 func (p *ICMPv6) SetDeadline(t time.Time) error {
 	return p.conn.SetDeadline(t)
 }
