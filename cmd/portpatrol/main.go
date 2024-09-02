@@ -14,7 +14,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/runner"
 )
 
-const version = "0.4.1"
+const version = "0.4.2"
 
 // run is the main function of the application
 func run(ctx context.Context, getEnv func(string) string, output io.Writer) error {
