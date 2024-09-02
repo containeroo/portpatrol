@@ -117,6 +117,45 @@ func TestRun(t *testing.T) {
 		}
 	})
 
+	t.Run("ICMP Target is ready", func(t *testing.T) {
+		t.Parallel()
+
+		env := map[string]string{
+			envTargetAddress:   "icmp://127.0.0.1",
+			envCheckInterval:   "1s",
+			envDialTimeout:     "1s",
+			envTargetCheckType: "icmp",
+		}
+
+		mockEnv := func(key string) string {
+			return env[key]
+		}
+
+		var output strings.Builder
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		// cancel after 2 Seconds
+		go func() {
+			time.Sleep(2 * time.Second)
+			cancel()
+		}()
+
+		err := run(ctx, mockEnv, &output)
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
+		last := len(outputEntries) - 1
+
+		expected := "127.0.0.1 is ready ✓"
+		if !strings.Contains(outputEntries[last], expected) {
+			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
+		}
+	})
+
 	t.Run("Config error: variable is required", func(t *testing.T) {
 		t.Parallel()
 
