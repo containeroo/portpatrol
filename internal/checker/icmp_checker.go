@@ -41,11 +41,13 @@ func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func
 		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
 	}
 
+	// Determine the read timeout
 	readTimeoutStr := getEnv(envICMPReadTimeout)
 	if readTimeoutStr == "" {
 		readTimeoutStr = defaultICMPReadTimeout
 	}
 
+	// Parse the read timeout string to a duration
 	readTimeout, err := time.ParseDuration(readTimeoutStr)
 	if err != nil || readTimeout <= 0 {
 		return nil, fmt.Errorf("invalid %s value: %s", envICMPReadTimeout, readTimeoutStr)

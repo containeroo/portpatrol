@@ -58,7 +58,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPAllowDuplicateHeaders, err)
 	}
 
-	// Parse headers
+	// Parse the headers string into a headers map
 	parsedHeaders, err := parseHTTPHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
@@ -69,6 +69,8 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	if expectedStatusStr == "" {
 		expectedStatusStr = defaultHTTPExpectedStatus
 	}
+
+	// Parse the expected status codes string into a slice of status codes
 	expectedStatusCodes, err := parseHTTPStatusCodes(expectedStatusStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
@@ -130,8 +132,7 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	// Check the response status code
 	for _, code := range c.ExpectedStatusCodes {
 		if resp.StatusCode == code {
-			// Return nil if the status code matches
-			return nil
+			return nil // Return nil if the status code matches
 		}
 	}
 
