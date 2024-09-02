@@ -63,7 +63,7 @@ func ParseStatusCodes(statusRanges string) ([]int, error) {
 // Parameters:
 //   - headers: Comma-separated string of headers in "Key=Value" format.
 //     The value can be empty (e.g., "X-Empty-Header="), but the key must not be empty.
-//   - allowDuplicates: If true, allows duplicate keys with the last occurrence taking precedence.
+//   - allowDuplicates: If true, the function will override the previous value with the new one. If false, the function will return an error if a duplicate header is encountered.
 //
 // Returns:
 //   - A map of header names to values, or an error if parsing fails.
