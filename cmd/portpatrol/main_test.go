@@ -15,13 +15,13 @@ func TestRun(t *testing.T) {
 	t.Parallel()
 
 	const (
-		envTargetName          = "TARGET_NAME"
-		envTargetAddress       = "TARGET_ADDRESS"
-		envTargetCheckType     = "TARGET_CHECK_TYPE"
-		envCheckInterval       = "CHECK_INTERVAL"
-		envDialTimeout         = "DIAL_TIMEOUT"
-		envLogAdditionalFields = "LOG_EXTRA_FIELDS"
-		envHTTPHeaders         = "HTTP_HEADERS"
+		envTargetName          string = "TARGET_NAME"
+		envTargetAddress       string = "TARGET_ADDRESS"
+		envTargetCheckType     string = "TARGET_CHECK_TYPE"
+		envCheckInterval       string = "CHECK_INTERVAL"
+		envDialTimeout         string = "DIAL_TIMEOUT"
+		envLogAdditionalFields string = "LOG_EXTRA_FIELDS"
+		envHTTPHeaders         string = "HTTP_HEADERS"
 	)
 
 	t.Run("HTTP Target is ready", func(t *testing.T) {

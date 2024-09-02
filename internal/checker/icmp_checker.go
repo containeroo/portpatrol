@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	envICMPReadTimeout = "ICMP_READ_TIMEOUT"
+	envICMPReadTimeout string = "ICMP_READ_TIMEOUT"
 
-	defaultICMPReadTimeout = "1s"
+	defaultICMPReadTimeout time.Duration = time.Second * 1
 )
 
 // ICMPChecker implements a basic ICMP ping checker.
@@ -32,34 +32,33 @@ func (c *ICMPChecker) String() string {
 
 // NewICMPChecker initializes a new ICMPChecker with its specific configuration.
 func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func(string) string) (Checker, error) {
+	var err error
+
+	checker := ICMPChecker{
+		Name:         name,
+		ReadTimeout:  defaultICMPReadTimeout,
+		WriteTimeout: dialTimeout,
+	}
+
 	// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
 	// so it must be removed before passing the address to other functions.
-	address = strings.TrimPrefix(address, "icmp://")
+	checker.Address = strings.TrimPrefix(address, "icmp://")
 
-	protocol, err := newProtocol(address)
+	checker.Protocol, err = newProtocol(checker.Address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
 	}
 
 	// Determine the read timeout
-	readTimeoutStr := getEnv(envICMPReadTimeout)
-	if readTimeoutStr == "" {
-		readTimeoutStr = defaultICMPReadTimeout
+	if readTimeoutStr := getEnv(envICMPReadTimeout); readTimeoutStr != "" {
+		readTimeout, err := time.ParseDuration(readTimeoutStr)
+		if err != nil || readTimeout <= 0 {
+			return nil, fmt.Errorf("invalid %s value: %s", envICMPReadTimeout, readTimeoutStr)
+		}
+		checker.ReadTimeout = readTimeout
 	}
 
-	// Parse the read timeout string to a duration
-	readTimeout, err := time.ParseDuration(readTimeoutStr)
-	if err != nil || readTimeout <= 0 {
-		return nil, fmt.Errorf("invalid %s value: %s", envICMPReadTimeout, readTimeoutStr)
-	}
-
-	return &ICMPChecker{
-		Name:         name,
-		Address:      address,
-		Protocol:     protocol,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: dialTimeout,
-	}, nil
+	return &checker, nil
 }
 
 // Check performs an ICMP check on the target.

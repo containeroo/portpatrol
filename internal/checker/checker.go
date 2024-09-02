@@ -33,12 +33,12 @@ type Checker interface {
 
 // NewChecker creates a Checker based on the provided check type.
 func NewChecker(checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	factory, found := CheckerFactory[checkType]
+	checkerFn, found := CheckerFactory[checkType]
 	if !found {
 		return nil, fmt.Errorf("unknown check type: %s", checkType)
 	}
 
-	return factory(name, address, timeout, getEnv)
+	return checkerFn(name, address, timeout, getEnv)
 }
 
 // IsValidCheckType validates if the check type is supported.

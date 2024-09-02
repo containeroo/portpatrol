@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	envTargetName      = "TARGET_NAME"
-	envTargetAddress   = "TARGET_ADDRESS"
-	envTargetCheckType = "TARGET_CHECK_TYPE"
-	envCheckInterval   = "CHECK_INTERVAL"
-	envDialTimeout     = "DIAL_TIMEOUT"
-	envLogExtraFields  = "LOG_EXTRA_FIELDS"
+	envTargetName      string = "TARGET_NAME"
+	envTargetAddress   string = "TARGET_ADDRESS"
+	envTargetCheckType string = "TARGET_CHECK_TYPE"
+	envCheckInterval   string = "CHECK_INTERVAL"
+	envDialTimeout     string = "DIAL_TIMEOUT"
+	envLogExtraFields  string = "LOG_EXTRA_FIELDS"
 
-	defaultTargetCheckType = "tcp"
-	defaultCheckInterval   = 2 * time.Second
-	defaultDialTimeout     = 1 * time.Second
-	defaultLogExtraFields  = false
+	defaultTargetCheckType string        = "tcp"
+	defaultCheckInterval   time.Duration = 2 * time.Second
+	defaultDialTimeout     time.Duration = 1 * time.Second
+	defaultLogExtraFields  bool          = false
 )
 
 // Config holds the required environment variables.
@@ -52,10 +52,9 @@ func ParseConfig(getEnv func(string) string) (Config, error) {
 	}
 
 	if cfg.TargetName == "" {
-		// Prepend scheme if missing to avoid url.Parse error
 		address := cfg.TargetAddress
 		if !strings.Contains(address, "://") {
-			address = fmt.Sprintf("http://%s", address)
+			address = fmt.Sprintf("http://%s", address) // Prepend scheme if missing to avoid url.Parse error
 		}
 
 		// Use url.Parse to handle both cases: with and without a port

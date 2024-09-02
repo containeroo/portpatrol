@@ -21,19 +21,18 @@ func (c *TCPChecker) String() string {
 
 // NewTCPChecker creates a new TCPChecker.
 func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
-	// so it must be removed before passing the address to other functions.
-	address = strings.TrimPrefix(address, "tcp://")
-
-	dialer := &net.Dialer{
-		Timeout: timeout,
+	checker := TCPChecker{
+		Name: name,
+		dialer: &net.Dialer{
+			Timeout: timeout,
+		},
 	}
 
-	return &TCPChecker{
-		Name:    name,
-		Address: address,
-		dialer:  dialer,
-	}, nil
+	// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
+	// so it must be removed before passing the address to other functions.
+	checker.Address = strings.TrimPrefix(address, "tcp://")
+
+	return &checker, nil
 }
 
 // Check performs a TCP connection check.

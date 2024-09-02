@@ -12,16 +12,18 @@ import (
 )
 
 const (
-	envHTTPMethod                = "HTTP_METHOD"
-	envHTTPHeaders               = "HTTP_HEADERS"
-	envHTTPAllowDuplicateHeaders = "HTTP_ALLOW_DUPLICATE_HEADERS"
-	envHTTPExpectedStatusCodes   = "HTTP_EXPECTED_STATUS_CODES"
-	envHTTPSkipTLSVerify         = "HTTP_SKIP_TLS_VERIFY"
+	envHTTPMethod                string = "HTTP_METHOD"
+	envHTTPHeaders               string = "HTTP_HEADERS"
+	envHTTPAllowDuplicateHeaders string = "HTTP_ALLOW_DUPLICATE_HEADERS"
+	envHTTPExpectedStatusCodes   string = "HTTP_EXPECTED_STATUS_CODES"
+	envHTTPSkipTLSVerify         string = "HTTP_SKIP_TLS_VERIFY"
 
-	defaultHTTPExpectedStatus        = "200"
-	defaultHTTPAllowDuplicateHeaders = "false"
-	defaultHTTPSkipTLSVerify         = "false"
+	defaultHTTPMethod                string = http.MethodGet
+	defaultHTTPAllowDuplicateHeaders bool   = false
+	defaultHTTPSkipTLSVerify         bool   = false
 )
+
+var defaultHTTPExpectedStatusCodes = []int{200} // Slice cannot be consts
 
 // HTTPChecker implements the Checker interface for HTTP checks.
 type HTTPChecker struct {
@@ -41,56 +43,54 @@ func (c *HTTPChecker) String() string {
 
 // NewHTTPChecker creates a new HTTPChecker.
 func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	// Determine the HTTP method
-	httpMethod := getEnv(envHTTPMethod)
-	if httpMethod == "" {
-		httpMethod = http.MethodGet
+	var err error
+
+	checker := HTTPChecker{
+		Name:                name,
+		Address:             address,
+		Method:              defaultHTTPMethod,
+		ExpectedStatusCodes: defaultHTTPExpectedStatusCodes,
+	}
+
+	// Override the default HTTP method if specified
+	if method := getEnv(envHTTPMethod); method != "" {
+		checker.Method = method
 	}
 
 	// Determine if duplicate headers are allowed
-	allowDupHeaderStr := getEnv(envHTTPAllowDuplicateHeaders)
-	if allowDupHeaderStr == "" {
-		allowDupHeaderStr = defaultHTTPAllowDuplicateHeaders
-	}
-
-	// Parse the boolean value for allowDuplicates
-	allowDupHeaders, err := strconv.ParseBool(allowDupHeaderStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid %s value: %w", envHTTPAllowDuplicateHeaders, err)
+	allowDupHeaders := defaultHTTPAllowDuplicateHeaders
+	if allowDupHeaderStr := getEnv(envHTTPAllowDuplicateHeaders); allowDupHeaderStr != "" {
+		allowDupHeaders, err = strconv.ParseBool(allowDupHeaderStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s value: %w", envHTTPAllowDuplicateHeaders, err)
+		}
 	}
 
 	// Parse the headers string into a headers map
-	parsedHeaders, err := httputils.ParseHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
+	checker.Headers, err = httputils.ParseHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
 	}
 
-	// Determine the expected status codes
-	expectedStatusStr := getEnv(envHTTPExpectedStatusCodes)
-	if expectedStatusStr == "" {
-		expectedStatusStr = defaultHTTPExpectedStatus
-	}
-
-	// Parse the expected status codes string into a slice of status codes
-	expectedStatusCodes, err := httputils.ParseStatusCodes(expectedStatusStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
+	// Override the default expected status codes if specified
+	if expectedStatusStr := getEnv(envHTTPExpectedStatusCodes); expectedStatusStr != "" {
+		checker.ExpectedStatusCodes, err = httputils.ParseStatusCodes(expectedStatusStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
+		}
 	}
 
 	// Determine if TLS verification should be skipped
-	skipTLSVerifyStr := getEnv(envHTTPSkipTLSVerify)
-	if skipTLSVerifyStr == "" {
-		skipTLSVerifyStr = defaultHTTPSkipTLSVerify
-	}
-
-	// Parse the boolean value for skipTLSVerify
-	skipTLSVerify, err := strconv.ParseBool(skipTLSVerifyStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid %s value: %w", envHTTPSkipTLSVerify, err)
+	skipTLSVerify := defaultHTTPSkipTLSVerify
+	if skipTLSVerifyStr := getEnv(envHTTPSkipTLSVerify); skipTLSVerifyStr != "" {
+		skipTLSVerify, err = strconv.ParseBool(skipTLSVerifyStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s value: %w", envHTTPSkipTLSVerify, err)
+		}
 	}
 
 	// Create the HTTP client with the given timeout and TLS configuration
-	client := &http.Client{
+	checker.client = &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -100,14 +100,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 		},
 	}
 
-	return &HTTPChecker{
-		Name:                name,
-		Address:             address,
-		ExpectedStatusCodes: expectedStatusCodes,
-		Method:              httpMethod,
-		Headers:             parsedHeaders,
-		client:              client,
-	}, nil
+	return &checker, nil
 }
 
 // Check performs an HTTP request and checks the response.
