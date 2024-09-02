@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/containeroo/portpatrol/pkg/httputils"
 )
 
 const (
@@ -59,7 +60,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 
 	// Parse the headers string into a headers map
-	parsedHeaders, err := parseHTTPHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
+	parsedHeaders, err := httputils.ParseHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
 	}
@@ -71,7 +72,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 
 	// Parse the expected status codes string into a slice of status codes
-	expectedStatusCodes, err := parseHTTPStatusCodes(expectedStatusStr)
+	expectedStatusCodes, err := httputils.ParseStatusCodes(expectedStatusStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
 	}
@@ -137,92 +138,4 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	}
 
 	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.ExpectedStatusCodes)
-}
-
-// parseHTTPStatusCodes parses a comma-separated string of HTTP status codes and ranges
-// into a slice of individual status codes. It supports combinations of single codes
-// (e.g., "200") and ranges (e.g., "200-204"), including mixed combinations like "200,300-301,404".
-// Returns an error if any code or range is invalid.
-func parseHTTPStatusCodes(statusRanges string) ([]int, error) {
-	var statusCodes []int
-
-	ranges := strings.Split(statusRanges, ",")
-	for _, r := range ranges {
-		trimmed := strings.TrimSpace(r)
-
-		if !strings.Contains(trimmed, "-") {
-			// Handle individual status codes like "200"
-			code, err := strconv.Atoi(trimmed)
-			if err != nil {
-				return nil, fmt.Errorf("invalid status code: %s", trimmed)
-			}
-			statusCodes = append(statusCodes, code)
-			continue
-		}
-
-		// Handle ranges like "200-204"
-		parts := strings.Split(trimmed, "-") // Split the range into start and end
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid status range: %s", trimmed)
-		}
-
-		// Parse the start and end status codes
-		start, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
-		end, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
-
-		// Check if parsing failed or if the start is greater than the end
-		if err1 != nil || err2 != nil || start > end {
-			return nil, fmt.Errorf("invalid status range: %s", trimmed)
-		}
-
-		// Generate a slice of status codes in the range
-		for i := start; i <= end; i++ {
-			statusCodes = append(statusCodes, i)
-		}
-	}
-
-	return statusCodes, nil
-}
-
-// parseHTTPHeaders parses a comma-separated list of HTTP headers in key=value format
-// and returns a map of the headers. It supports multiple headers, including combinations
-// like "Content-Type=application/json, Authorization=Bearer token". The value can be
-// empty (e.g., "X-Empty-Header="), but the key must not be empty.
-// If allowDuplicates is false, the function will return an error if a duplicate header is encountered.
-// If allowDuplicates is true, the function will override the previous value with the new one.
-func parseHTTPHeaders(headers string, allowDuplicates bool) (map[string]string, error) {
-	headerMap := make(map[string]string)
-	if headers == "" {
-		return headerMap, nil
-	}
-
-	// Split the headers into key=value pairs
-	pairs := strings.Split(headers, ",")
-	for _, pair := range pairs {
-		trimmedPair := strings.TrimSpace(pair)
-		if trimmedPair == "" {
-			continue // Skip any empty parts resulting from trailing commas
-		}
-
-		// Split the pair into key and value
-		parts := strings.SplitN(trimmedPair, "=", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid header format: %s", pair)
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		if key == "" {
-			return nil, fmt.Errorf("header key cannot be empty: %s", pair)
-		}
-
-		if _, exists := headerMap[key]; exists && !allowDuplicates {
-			return nil, fmt.Errorf("duplicate header key found: %s", key)
-		}
-
-		headerMap[key] = value
-	}
-
-	return headerMap, nil
 }

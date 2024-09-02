@@ -38,6 +38,7 @@ dockers:
       - go.sum
       - cmd
       - internal
+      - pkg
   - image_templates:
       - ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}-arm64v8
       - ghcr.io/containeroo/portpatrol:latest-arm64v8
@@ -60,6 +61,7 @@ dockers:
       - go.sum
       - cmd
       - internal
+      - pkg
 
 docker_manifests:
   - name_template: ghcr.io/containeroo/portpatrol:{{ trimprefix .Tag "v" }}
