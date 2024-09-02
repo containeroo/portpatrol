@@ -130,6 +130,19 @@ func TestInferCheckType(t *testing.T) {
 		}
 	})
 
+	t.Run("ICMP scheme", func(t *testing.T) {
+		t.Parallel()
+
+		checkType, err := InferCheckType("icmp://host.example.com")
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		if checkType != "icmp" {
+			t.Fatalf("expected 'http', got %q", checkType)
+		}
+	})
+
 	t.Run("No scheme", func(t *testing.T) {
 		t.Parallel()
 

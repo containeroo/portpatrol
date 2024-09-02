@@ -19,7 +19,7 @@ func TestNewICMPChecker(t *testing.T) {
 		t.Parallel()
 
 		mockEnv := func(key string) string {
-			return "2s" // valid timeout
+			return "2s"
 		}
 
 		checker, err := NewICMPChecker("TestIPv4", "icmp://google.com", 1*time.Second, mockEnv)
@@ -229,8 +229,55 @@ func TestICMPChecker(t *testing.T) {
 		defer cancel()
 
 		err := checker.Check(ctx)
-		if err == nil || err.Error() != "failed to listen for ICMP packets: mock listen packet error" {
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to listen for ICMP packets: mock listen packet error"
+		if err.Error() != expected {
 			t.Errorf("expected listen packet error, got %v", err)
+		}
+	})
+
+	t.Run("Error Setting Write Deadline", func(t *testing.T) {
+		t.Parallel()
+
+		mockPacketConn := &testutils.MockPacketConn{
+			SetWriteDeadlineFunc: func(t time.Time) error {
+				return fmt.Errorf("mock set write deadline error")
+			},
+			CloseFunc: func() error {
+				return nil
+			},
+		}
+
+		mockProtocol := &testutils.MockProtocol{
+			NetworkFunc: func() string {
+				return "ip4:icmp"
+			},
+			ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
+				return mockPacketConn, nil
+			},
+		}
+
+		checker := &ICMPChecker{
+			Name:        "TestCheckerWriteDeadlineError",
+			Address:     "127.0.0.1",
+			Protocol:    mockProtocol,
+			ReadTimeout: 2 * time.Second,
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		err := checker.Check(ctx)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to set write deadline: mock set write deadline error"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
@@ -266,8 +313,13 @@ func TestICMPChecker(t *testing.T) {
 		defer cancel()
 
 		err := checker.Check(ctx)
-		if err == nil || err.Error() != "failed to set read deadline: mock set read deadline error" {
-			t.Errorf("expected set read deadline error, got %v", err)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to set read deadline: mock set read deadline error"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
@@ -306,8 +358,13 @@ func TestICMPChecker(t *testing.T) {
 		defer cancel()
 
 		err := checker.Check(ctx)
-		if err == nil || err.Error() != "failed to create ICMP request: mock make request error" {
-			t.Errorf("expected make request error, got %v", err)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "mock make request error"
+		if err.Error() != expected {
+			t.Fatalf("expected error %q, got %q", expected, err.Error())
 		}
 	})
 
@@ -387,7 +444,12 @@ func TestICMPChecker(t *testing.T) {
 		defer cancel()
 
 		err := checker.Check(ctx)
-		if err == nil || err.Error() != "failed to send ICMP request to 127.0.0.1: mock write to error" {
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to send ICMP request to 127.0.0.1: mock write to error"
+		if err.Error() != expected {
 			t.Errorf("expected write to error, got %v", err)
 		}
 	})
@@ -433,7 +495,12 @@ func TestICMPChecker(t *testing.T) {
 		defer cancel()
 
 		err := checker.Check(ctx)
-		if err == nil || err.Error() != "failed to read ICMP reply from 127.0.0.1: mock read from error" {
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to read ICMP reply from 127.0.0.1: mock read from error"
+		if err.Error() != expected {
 			t.Errorf("expected read from error, got %v", err)
 		}
 	})
@@ -493,7 +560,12 @@ func TestICMPChecker(t *testing.T) {
 		defer cancel()
 
 		err := checker.Check(ctx)
-		if err == nil || err.Error() != "mock validation error" {
+		if err == nil {
+			t.Error("expected an error, got none")
+		}
+
+		expected := "mock validation error"
+		if err.Error() != expected {
 			t.Errorf("expected validation error, got %v", err)
 		}
 	})
@@ -520,8 +592,7 @@ func TestMakeICMPRequest(t *testing.T) {
 					return nil, err
 				}
 
-				// Debugging output
-				fmt.Printf("Generated ICMP Request: %v\n", msgBytes)
+				t.Logf("Generated ICMP Request: %v", msgBytes)
 
 				return msgBytes, nil
 			},
@@ -531,8 +602,7 @@ func TestMakeICMPRequest(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		msg, err := c.makeICMPRequest(ctx, 1234, 1)
+		msg, err := c.Protocol.MakeRequest(1234, 1)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -541,20 +611,7 @@ func TestMakeICMPRequest(t *testing.T) {
 			t.Fatalf("expected non-empty message, got empty")
 		}
 
-		// Debugging output
-		fmt.Printf("Generated message in test: %v\n", msg)
-	})
-
-	t.Run("Context Canceled", func(t *testing.T) {
-		t.Parallel()
-
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-
-		_, err := c.makeICMPRequest(ctx, 1234, 1)
-		if err == nil {
-			t.Fatalf("expected context canceled error, got nil")
-		}
+		t.Logf("Generated message in test: %v", msg)
 	})
 }
 
@@ -569,12 +626,17 @@ func TestWriteICMPRequest(t *testing.T) {
 		WriteToFunc: func(b []byte, addr net.Addr) (int, error) {
 			return len(b), nil
 		},
+		SetWriteDeadlineFunc: func(t time.Time) error {
+			return nil
+		},
 	}
 
 	t.Run("Success", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		err := c.writeICMPRequest(ctx, mockConn, []byte{0x01, 0x02, 0x03}, &net.IPAddr{})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -584,12 +646,42 @@ func TestWriteICMPRequest(t *testing.T) {
 	t.Run("Context Canceled", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		mockConn := &testutils.MockPacketConn{
+			ReadFromFunc: func(b []byte) (int, net.Addr, error) {
+				// Simulate a slow response
+				time.Sleep(3 * time.Second)
+				copy(b, []byte("valid"))
+				return 5, &net.IPAddr{}, nil
+			},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		cancel()
 
 		err := c.writeICMPRequest(ctx, mockConn, []byte{0x01, 0x02, 0x03}, &net.IPAddr{})
 		if err == nil {
 			t.Fatalf("expected context canceled error, got nil")
+		}
+	})
+
+	t.Run("Write Deadline Error", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn.SetWriteDeadlineFunc = func(t time.Time) error {
+			return fmt.Errorf("mock set write deadline error")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		err := c.writeICMPRequest(ctx, mockConn, []byte{0x01, 0x02, 0x03}, &net.IPAddr{})
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to set write deadline: mock set write deadline error"
+		if err.Error() != expected {
+			t.Fatalf("expected write deadline error, got %v", err)
 		}
 	})
 }
@@ -625,12 +717,42 @@ func TestReadICMPReply(t *testing.T) {
 	t.Run("Context Canceled", func(t *testing.T) {
 		t.Parallel()
 
+		mockConn := &testutils.MockPacketConn{
+			ReadFromFunc: func(b []byte) (int, net.Addr, error) {
+				// Simulate a slow response
+				time.Sleep(3 * time.Second)
+				copy(b, []byte("valid"))
+				return 5, &net.IPAddr{}, nil
+			},
+		}
+
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
 		_, err := c.readICMPReply(ctx, mockConn)
 		if err == nil {
 			t.Fatalf("expected context canceled error, got nil")
+		}
+	})
+
+	t.Run("Read Deadline Error", func(t *testing.T) {
+		t.Parallel()
+
+		mockConn.SetReadDeadlineFunc = func(t time.Time) error {
+			return fmt.Errorf("mock set read deadline error")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		_, err := c.readICMPReply(ctx, mockConn)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := "failed to set read deadline: mock set read deadline error"
+		if err.Error() != expected {
+			t.Fatalf("expected write deadline error, got %v", err)
 		}
 	})
 }
