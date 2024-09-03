@@ -43,8 +43,6 @@ func (c *HTTPChecker) String() string {
 
 // NewHTTPChecker creates a new HTTPChecker.
 func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	var err error
-
 	checker := HTTPChecker{
 		Name:                name,
 		Address:             address,
@@ -58,6 +56,7 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 
 	// Determine if duplicate headers are allowed
+	var err error
 	allowDupHeaders := defaultHTTPAllowDuplicateHeaders
 	if allowDupHeaderStr := getEnv(envHTTPAllowDuplicateHeaders); allowDupHeaderStr != "" {
 		allowDupHeaders, err = strconv.ParseBool(allowDupHeaderStr)
@@ -67,17 +66,19 @@ func NewHTTPChecker(name, address string, timeout time.Duration, getEnv func(str
 	}
 
 	// Parse the headers string into a headers map
-	checker.Headers, err = httputils.ParseHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
+	headers, err := httputils.ParseHeaders(getEnv(envHTTPHeaders), allowDupHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s value: %w", envHTTPHeaders, err)
 	}
+	checker.Headers = headers
 
 	// Override the default expected status codes if specified
 	if expectedStatusStr := getEnv(envHTTPExpectedStatusCodes); expectedStatusStr != "" {
-		checker.ExpectedStatusCodes, err = httputils.ParseStatusCodes(expectedStatusStr)
+		expectedStatusCodes, err := httputils.ParseStatusCodes(expectedStatusStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid %s value: %w", envHTTPExpectedStatusCodes, err)
 		}
+		checker.ExpectedStatusCodes = expectedStatusCodes
 	}
 
 	// Determine if TLS verification should be skipped

@@ -32,22 +32,22 @@ func (c *ICMPChecker) String() string {
 
 // NewICMPChecker initializes a new ICMPChecker with its specific configuration.
 func NewICMPChecker(name, address string, dialTimeout time.Duration, getEnv func(string) string) (Checker, error) {
-	var err error
+	// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
+	// so it must be removed before passing the address to other functions.
+	address = strings.TrimPrefix(address, "icmp://")
 
 	checker := ICMPChecker{
 		Name:         name,
+		Address:      address,
 		ReadTimeout:  defaultICMPReadTimeout,
 		WriteTimeout: dialTimeout,
 	}
 
-	// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
-	// so it must be removed before passing the address to other functions.
-	checker.Address = strings.TrimPrefix(address, "icmp://")
-
-	checker.Protocol, err = newProtocol(checker.Address)
+	protocol, err := newProtocol(checker.Address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
 	}
+	checker.Protocol = protocol
 
 	// Determine the read timeout
 	if readTimeoutStr := getEnv(envICMPReadTimeout); readTimeoutStr != "" {

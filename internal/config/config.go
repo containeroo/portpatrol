@@ -91,11 +91,11 @@ func ParseConfig(getEnv func(string) string) (Config, error) {
 
 	// Parse the log additional fields
 	if logFieldsStr := getEnv(envLogExtraFields); logFieldsStr != "" {
-		logAdditionalFields, err := strconv.ParseBool(logFieldsStr)
+		logExtraFields, err := strconv.ParseBool(logFieldsStr)
 		if err != nil {
 			return Config{}, fmt.Errorf("invalid %s value: %s", envLogExtraFields, logFieldsStr)
 		}
-		cfg.LogExtraFields = logAdditionalFields
+		cfg.LogExtraFields = logExtraFields
 	}
 
 	// Infer TargetCheckType if not provided
