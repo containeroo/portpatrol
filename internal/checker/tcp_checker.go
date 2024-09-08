@@ -20,7 +20,7 @@ func (c *TCPChecker) String() string {
 }
 
 // NewTCPChecker creates a new TCPChecker.
-func NewTCPChecker(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
+func NewTCPChecker(name, address string, timeout time.Duration) (Checker, error) {
 	// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
 	// so it must be removed before passing the address to other functions.
 	address = strings.TrimPrefix(address, "tcp://")

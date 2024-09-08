@@ -433,11 +433,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetCheckType: "tcp",
 		}
 
-		mockEnv := func(key string) string {
-			return ""
-		}
-
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -475,11 +471,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			DialTimeout:   50 * time.Millisecond,
 		}
 
-		mockEnv := func(key string) string {
-			return ""
-		}
-
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -537,11 +529,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		mockEnv := func(key string) string {
-			return ""
-		}
-
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
@@ -607,18 +595,13 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			TargetName:      "TCPServer",
-			TargetAddress:   "localhost:7084",
-			CheckInterval:   50 * time.Millisecond,
-			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: "tcp",
+			TargetName:    "TCPServer",
+			TargetAddress: "localhost:7084",
+			CheckInterval: 50 * time.Millisecond,
+			DialTimeout:   50 * time.Millisecond,
 		}
 
-		mockEnv := func(key string) string {
-			return ""
-		}
-
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -660,11 +643,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetCheckType: "tcp",
 		}
 
-		mockEnv := func(key string) string {
-			return ""
-		}
-
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}

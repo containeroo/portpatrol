@@ -19,11 +19,7 @@ func TestTCPChecker(t *testing.T) {
 		}
 		defer ln.Close()
 
-		mockEnv := func(s string) string {
-			return ""
-		}
-
-		checker, err := NewTCPChecker("example", ln.Addr().String(), 1*time.Second, mockEnv)
+		checker, err := NewTCPChecker("example", ln.Addr().String(), 1*time.Second)
 		if err != nil {
 			t.Fatalf("failed to create TCPChecker: %q", err)
 		}
@@ -38,11 +34,7 @@ func TestTCPChecker(t *testing.T) {
 	t.Run("Failed TCP check", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(s string) string {
-			return ""
-		}
-
-		checker, err := NewTCPChecker("example", "localhost:7090", 1*time.Second, mockEnv)
+		checker, err := NewTCPChecker("example", "localhost:7090", 1*time.Second)
 		if err != nil {
 			t.Fatalf("failed to create TCPChecker: %q", err)
 		}

@@ -7,17 +7,6 @@ import (
 	"time"
 )
 
-// CheckerConstructor is a function type for creating Checkers.
-type CheckerConstructor func(name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error)
-
-// CheckerFactory is a map that stores the different Checker factories.
-var CheckerFactory = map[string]CheckerConstructor{
-	"http":  NewHTTPChecker,
-	"https": NewHTTPChecker,
-	"tcp":   NewTCPChecker,
-	"icmp":  NewICMPChecker,
-}
-
 // SupportedCheckTypes maps check types to their supported schemes.
 var SupportedCheckTypes = map[string][]string{
 	"http": {"http", "https"},
@@ -31,14 +20,21 @@ type Checker interface {
 	String() string                  // String returns the name of the checker.
 }
 
-// NewChecker creates a Checker based on the provided check type.
+// Factory function that returns the appropriate Checker based on checkType
 func NewChecker(checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
-	checkerFn, found := CheckerFactory[checkType]
-	if !found {
-		return nil, fmt.Errorf("unknown check type: %s", checkType)
+	switch checkType {
+	case "http", "https":
+		// HTTP and HTTPS checkers may need environment variables for proxy settings, etc.
+		return NewHTTPChecker(name, address, timeout, getEnv)
+	case "tcp":
+		// TCP checkers may not need environment variables
+		return NewTCPChecker(name, address, timeout)
+	case "icmp":
+		// ICMP checkers may have a different timeout logic
+		return NewICMPChecker(name, address, timeout, getEnv)
+	default:
+		return nil, fmt.Errorf("unsupported check type: %s", checkType)
 	}
-
-	return checkerFn(name, address, timeout, getEnv)
 }
 
 // IsValidCheckType validates if the check type is supported.

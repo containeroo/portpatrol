@@ -40,6 +40,22 @@ func TestNewChecker(t *testing.T) {
 		}
 	})
 
+	t.Run("Valid ICMP checker", func(t *testing.T) {
+		t.Parallel()
+
+		check, err := NewChecker("icmp", "example", "example.com", 5*time.Second, func(s string) string {
+			return ""
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %q", err)
+		}
+
+		expected := "example"
+		if check.String() != expected {
+			t.Fatalf("expected name to be %q got %q", expected, check.String())
+		}
+	})
+
 	t.Run("Invalid checker type", func(t *testing.T) {
 		t.Parallel()
 
@@ -50,7 +66,7 @@ func TestNewChecker(t *testing.T) {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "unknown check type: invalid"
+		expected := "unsupported check type: invalid"
 		if err.Error() != expected {
 			t.Errorf("expected error to be %q, got %q", expected, err.Error())
 		}
