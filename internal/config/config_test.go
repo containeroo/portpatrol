@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/containeroo/portpatrol/internal/checker"
 )
 
 func TestParseConfig(t *testing.T) {
@@ -28,7 +30,7 @@ func TestParseConfig(t *testing.T) {
 		expected := Config{
 			TargetName:      "example.com", // Extracted from TargetAddress
 			TargetAddress:   "http://example.com",
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			CheckInterval:   2 * time.Second,
 			DialTimeout:     1 * time.Second,
 		}
@@ -58,7 +60,7 @@ func TestParseConfig(t *testing.T) {
 		expected := Config{
 			TargetName:      "www.example.com", // Extracted from TargetAddress
 			TargetAddress:   "www.example.com:80",
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			CheckInterval:   5 * time.Second,
 			DialTimeout:     10 * time.Second,
 		}
@@ -88,7 +90,7 @@ func TestParseConfig(t *testing.T) {
 		expected := Config{
 			TargetName:      "postgres.postgres.svc.cluster.local", // Extracted from TargetAddress
 			TargetAddress:   "http://postgres.postgres.svc.cluster.local:80",
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			CheckInterval:   5 * time.Second,
 			DialTimeout:     10 * time.Second,
 		}
@@ -118,7 +120,7 @@ func TestParseConfig(t *testing.T) {
 		expected := Config{
 			TargetName:      "example.com", // Extracted from TargetAddress
 			TargetAddress:   "tcp://example.com:80",
-			TargetCheckType: "tcp",
+			TargetCheckType: checker.TCP,
 			CheckInterval:   5 * time.Second,
 			DialTimeout:     10 * time.Second,
 		}
@@ -271,7 +273,7 @@ func TestParseConfig(t *testing.T) {
 		expected := Config{
 			TargetName:      "example.com",
 			TargetAddress:   "http://example.com",
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			CheckInterval:   2 * time.Second,
 			DialTimeout:     1 * time.Second,
 			LogExtraFields:  true,
@@ -321,7 +323,7 @@ func TestParseConfig(t *testing.T) {
 		expected := Config{
 			TargetName:      "example.com",
 			TargetAddress:   "example.com:80",
-			TargetCheckType: "tcp",
+			TargetCheckType: checker.TCP,
 			CheckInterval:   2 * time.Second,
 			DialTimeout:     1 * time.Second,
 			LogExtraFields:  false,
@@ -347,7 +349,7 @@ func TestParseConfig(t *testing.T) {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "unsupported check type: invalid"
+		expected := "invalid check type from environment: unsupported check type: invalid"
 		if err.Error() != expected {
 			t.Errorf("expected error to contain %q, got %q", expected, err)
 		}
@@ -368,7 +370,7 @@ func TestParseConfig(t *testing.T) {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "could not infer check type for address htp://example.com: unsupported scheme: htp"
+		expected := "could not infer check type from address htp://example.com: unsupported check type: htp"
 		if err.Error() != expected {
 			t.Fatalf("expected error to contain %q, got %q", expected, err)
 		}

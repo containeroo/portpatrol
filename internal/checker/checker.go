@@ -7,11 +7,18 @@ import (
 	"time"
 )
 
-// SupportedCheckTypes maps check types to their supported schemes.
-var SupportedCheckTypes = map[string][]string{
-	"http": {"http", "https"},
-	"tcp":  {"tcp"},
-	"icmp": {"icmp"},
+// CheckType is an enumeration that represents the type of check being performed.
+type CheckType int
+
+const (
+	TCP  CheckType = iota // TCP represents a check over the TCP protocol.
+	HTTP                  // HTTP represents a check over the HTTP protocol.
+	ICMP                  // ICMP represents a check using the ICMP protocol (ping).
+)
+
+// String returns the string representation of the CheckType.
+func (c CheckType) String() string {
+	return [...]string{"TCP", "HTTP", "ICMP"}[c]
 }
 
 // Checker is an interface that defines methods to perform a check.
@@ -21,47 +28,29 @@ type Checker interface {
 }
 
 // Factory function that returns the appropriate Checker based on checkType
-func NewChecker(checkType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
+func NewChecker(checkType CheckType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	switch checkType {
-	case "http", "https":
-		// HTTP and HTTPS checkers may need environment variables for proxy settings, etc.
+	case HTTP: // HTTP and HTTPS checkers may need environment variables for proxy settings, etc.
 		return NewHTTPChecker(name, address, timeout, getEnv)
-	case "tcp":
-		// TCP checkers may not need environment variables
+	case TCP: // TCP checkers may not need environment variables
 		return NewTCPChecker(name, address, timeout)
-	case "icmp":
-		// ICMP checkers may have a different timeout logic
+	case ICMP: // ICMP checkers may have a different timeout logic
 		return NewICMPChecker(name, address, timeout, getEnv)
 	default:
-		return nil, fmt.Errorf("unsupported check type: %s", checkType)
+		return nil, fmt.Errorf("unsupported check type: %d", checkType)
 	}
 }
 
-// IsValidCheckType validates if the check type is supported.
-func IsValidCheckType(checkType string) bool {
-	_, exists := SupportedCheckTypes[checkType]
-
-	return exists
-}
-
-// InferCheckType infers the check type based on the scheme of the target address.
-// It returns an empty string and no error if no scheme is provided.
-// If an unsupported scheme is provided, it returns an error.
-func InferCheckType(address string) (string, error) {
-	scheme, _ := extractScheme(address)
-	if scheme == "" {
-		return "", nil
+// GetCheckTypeFromString converts a string to a CheckType enum.
+func GetCheckTypeFromString(checkTypeStr string) (CheckType, error) {
+	switch strings.ToLower(checkTypeStr) {
+	case "http", "https":
+		return HTTP, nil
+	case "tcp":
+		return TCP, nil
+	case "icmp":
+		return ICMP, nil
+	default:
+		return -1, fmt.Errorf("unsupported check type: %s", checkTypeStr)
 	}
-
-	scheme = strings.ToLower(scheme) // Normalize the scheme to lowercase
-
-	for checkType, schemes := range SupportedCheckTypes {
-		for _, s := range schemes {
-			if s == scheme {
-				return checkType, nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("unsupported scheme: %s", scheme)
 }

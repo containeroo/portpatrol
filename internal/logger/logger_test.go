@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containeroo/portpatrol/internal/checker"
 	"github.com/containeroo/portpatrol/internal/config"
 )
 
@@ -21,7 +22,7 @@ func TestSetupLogger(t *testing.T) {
 			TargetAddress:   "localhost:8080",
 			CheckInterval:   1 * time.Second,
 			DialTimeout:     2 * time.Second,
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			LogExtraFields:  true,
 		}
 		var buf bytes.Buffer
@@ -46,7 +47,7 @@ func TestSetupLogger(t *testing.T) {
 			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
 		}
 
-		expected = "checker_type=http"
+		expected = "checker_type=HTTP"
 		if !strings.Contains(logOutput, expected) {
 			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
 		}
