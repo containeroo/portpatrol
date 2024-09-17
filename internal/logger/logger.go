@@ -17,7 +17,7 @@ func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
 			slog.String("target_address", cfg.TargetAddress),
 			slog.String("interval", cfg.CheckInterval.String()),
 			slog.String("dial_timeout", cfg.DialTimeout.String()),
-			slog.String("checker_type", cfg.TargetCheckType),
+			slog.String("checker_type", cfg.TargetCheckType.String()),
 			slog.String("version", cfg.Version),
 		)
 	}

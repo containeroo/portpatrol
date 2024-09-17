@@ -206,7 +206,7 @@ func TestRun(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		expected := "configuration error: unsupported check type: invalid"
+		expected := "configuration error: invalid check type from environment: unsupported check type: invalid"
 		if err.Error() != expected {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}
@@ -237,7 +237,7 @@ func TestRun(t *testing.T) {
 			t.Error("Expected error, got none")
 		}
 
-		expected := "configuration error: could not infer check type for address htp://localhost:8080: unsupported scheme: htp"
+		expected := "configuration error: could not infer check type from address htp://localhost:8080: unsupported check type: htp"
 		if err.Error() != expected {
 			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 		}

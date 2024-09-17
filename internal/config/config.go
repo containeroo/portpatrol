@@ -18,21 +18,21 @@ const (
 	envDialTimeout     string = "DIAL_TIMEOUT"
 	envLogExtraFields  string = "LOG_EXTRA_FIELDS"
 
-	defaultTargetCheckType string        = "tcp"
-	defaultCheckInterval   time.Duration = 2 * time.Second
-	defaultDialTimeout     time.Duration = 1 * time.Second
-	defaultLogExtraFields  bool          = false
+	defaultTargetCheckType checker.CheckType = checker.TCP
+	defaultCheckInterval   time.Duration     = 2 * time.Second
+	defaultDialTimeout     time.Duration     = 1 * time.Second
+	defaultLogExtraFields  bool              = false
 )
 
 // Config holds the required environment variables.
 type Config struct {
-	Version         string        // The version of the application.
-	TargetName      string        // The name of the target.
-	TargetAddress   string        // The address of the target.
-	TargetCheckType string        // Type of check: "tcp" or "http"
-	CheckInterval   time.Duration // The interval between connection attempts.
-	DialTimeout     time.Duration // The timeout for dialing the target.
-	LogExtraFields  bool          // Whether to log the fields in the log message.
+	Version         string            // The version of the application.
+	TargetName      string            // The name of the target.
+	TargetAddress   string            // The address of the target.
+	TargetCheckType checker.CheckType // Type of check: "tcp", "http" or "icmp".
+	CheckInterval   time.Duration     // The interval between connection attempts.
+	DialTimeout     time.Duration     // The timeout for dialing the target.
+	LogExtraFields  bool              // Whether to log the fields in the log message.
 }
 
 // ParseConfig retrieves and parses the required environment variables.
@@ -41,7 +41,7 @@ func ParseConfig(getEnv func(string) string) (Config, error) {
 	cfg := Config{
 		TargetName:      getEnv(envTargetName),
 		TargetAddress:   getEnv(envTargetAddress),
-		TargetCheckType: getEnv(envTargetCheckType),
+		TargetCheckType: defaultTargetCheckType,
 		CheckInterval:   defaultCheckInterval,
 		DialTimeout:     defaultDialTimeout,
 		LogExtraFields:  defaultLogExtraFields,
@@ -98,22 +98,38 @@ func ParseConfig(getEnv func(string) string) (Config, error) {
 		cfg.LogExtraFields = logExtraFields
 	}
 
-	// Infer TargetCheckType if not provided
-	if cfg.TargetCheckType == "" {
-		checkType, err := checker.InferCheckType(cfg.TargetAddress)
-		if err != nil {
-			return Config{}, fmt.Errorf("could not infer check type for address %s: %w", cfg.TargetAddress, err)
-		}
-		if checkType == "" {
-			checkType = defaultTargetCheckType
-		}
-		cfg.TargetCheckType = checkType
-	}
-
-	// Validate the check type
-	if !checker.IsValidCheckType(cfg.TargetCheckType) {
-		return Config{}, fmt.Errorf("unsupported check type: %s", cfg.TargetCheckType)
+	// Resolve TargetCheckType
+	if err := resolveTargetCheckType(&cfg, getEnv); err != nil {
+		return Config{}, err
 	}
 
 	return cfg, nil
+}
+
+// resolveTargetCheckType handles the logic for determining the check type
+func resolveTargetCheckType(cfg *Config, getEnv func(string) string) error {
+	// First, check if envTargetCheckType is explicitly set
+	if checkTypeStr := getEnv(envTargetCheckType); checkTypeStr != "" {
+		checkType, err := checker.GetCheckTypeFromString(checkTypeStr)
+		if err != nil {
+			return fmt.Errorf("invalid check type from environment: %w", err)
+		}
+		cfg.TargetCheckType = checkType
+		return nil
+	}
+
+	// If not set, try to infer from the TargetAddress scheme
+	parts := strings.SplitN(cfg.TargetAddress, "://", 2) // parts[0] is the scheme, parts[1] is the address
+	if len(parts) == 2 {
+		checkType, err := checker.GetCheckTypeFromString(parts[0])
+		if err != nil {
+			return fmt.Errorf("could not infer check type from address %s: %w", cfg.TargetAddress, err)
+		}
+		cfg.TargetCheckType = checkType
+		return nil
+	}
+
+	// Fallback to default check type if neither is set or inferred
+	cfg.TargetCheckType = defaultTargetCheckType
+	return nil
 }

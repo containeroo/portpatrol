@@ -11,7 +11,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid HTTP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker("http", "example", "http://example.com", 5*time.Second, func(s string) string {
+		check, err := NewChecker(HTTP, "example", "http://example.com", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err != nil {
@@ -27,7 +27,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid TCP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker("tcp", "example", "example.com:80", 5*time.Second, func(s string) string {
+		check, err := NewChecker(TCP, "example", "example.com:80", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err != nil {
@@ -43,7 +43,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid ICMP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker("icmp", "example", "example.com", 5*time.Second, func(s string) string {
+		check, err := NewChecker(ICMP, "example", "example.com", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err != nil {
@@ -59,130 +59,69 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Invalid checker type", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := NewChecker("invalid", "example", "example.com", 5*time.Second, func(s string) string {
+		_, err := NewChecker(8, "example", "example.com", 5*time.Second, func(s string) string {
 			return ""
 		})
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}
 
-		expected := "unsupported check type: invalid"
+		expected := "unsupported check type: 8"
 		if err.Error() != expected {
 			t.Errorf("expected error to be %q, got %q", expected, err.Error())
 		}
 	})
 }
 
-func TestIsValidCheckType(t *testing.T) {
+func TestGetCheckTypeString(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid TCP Check Type", func(t *testing.T) {
+	t.Run("Check type string (enum)", func(t *testing.T) {
 		t.Parallel()
 
-		if isValid := IsValidCheckType("tcp"); !isValid {
-			t.Errorf("expected true for check type 'tcp', got false")
+		if HTTP.String() != "HTTP" {
+			t.Fatalf("expected 'HTTP', got %q", HTTP.String())
+		}
+		if TCP.String() != "TCP" {
+			t.Fatalf("expected 'TCP', got %q", TCP.String())
+		}
+		if ICMP.String() != "ICMP" {
+			t.Fatalf("expected 'ICMP', got %q", ICMP.String())
 		}
 	})
 
-	t.Run("Valid HTTP Check Type", func(t *testing.T) {
-		t.Parallel()
-
-		if isValid := IsValidCheckType("http"); !isValid {
-			t.Errorf("expected true for check type 'http', got false")
-		}
-	})
-
-	t.Run("Invalid Check Type", func(t *testing.T) {
-		t.Parallel()
-
-		if isValid := IsValidCheckType("invalid"); isValid {
-			t.Errorf("expected false for check type 'invalid', got true")
-		}
-	})
-
-	t.Run("Empty Check Type", func(t *testing.T) {
-		t.Parallel()
-
-		if isValid := IsValidCheckType(""); isValid {
-			t.Errorf("expected false for empty check type, got true")
-		}
-	})
-
-	t.Run("Random String Check Type", func(t *testing.T) {
-		t.Parallel()
-
-		if isValid := IsValidCheckType("random"); isValid {
-			t.Errorf("expected false for check type 'random', got true")
-		}
-	})
-}
-
-func TestInferCheckType(t *testing.T) {
-	t.Parallel()
-
-	t.Run("HTTP scheme", func(t *testing.T) {
-		t.Parallel()
-
-		checkType, err := InferCheckType("http://example.com")
+	t.Run("Check type string (func)", func(t *testing.T) {
+		want := HTTP
+		got, err := GetCheckTypeFromString("http")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
-
-		if checkType != "http" {
-			t.Fatalf("expected 'http', got %q", checkType)
+		if want != got {
+			t.Fatalf("expected %q, got %q", want, got)
 		}
-	})
 
-	t.Run("TCP scheme", func(t *testing.T) {
-		t.Parallel()
-
-		checkType, err := InferCheckType("tcp://example.com")
+		want = TCP
+		got, err = GetCheckTypeFromString("tcp")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
-
-		if checkType != "tcp" {
-			t.Fatalf("expected 'tcp', got %q", checkType)
+		if want != got {
+			t.Fatalf("expected %q, got %q", want, got)
 		}
-	})
 
-	t.Run("ICMP scheme", func(t *testing.T) {
-		t.Parallel()
-
-		checkType, err := InferCheckType("icmp://host.example.com")
+		want = ICMP
+		got, err = GetCheckTypeFromString("icmp")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
-
-		if checkType != "icmp" {
-			t.Fatalf("expected 'http', got %q", checkType)
-		}
-	})
-
-	t.Run("No scheme", func(t *testing.T) {
-		t.Parallel()
-
-		checkType, err := InferCheckType("example.com:80")
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
+		if want != got {
+			t.Fatalf("expected %q, got %q", want, got)
 		}
 
-		if checkType != "" {
-			t.Fatalf("expected 'tcp', got %q", checkType)
-		}
-	})
-
-	t.Run("Unsupported scheme", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := InferCheckType("ftp://example.com")
+		want = -1
+		got, err = GetCheckTypeFromString("invalid")
 		if err == nil {
 			t.Fatal("expected an error, got none")
-		}
-
-		expected := "unsupported scheme: ftp"
-		if err.Error() != expected {
-			t.Errorf("expected error to be %q, got %q", expected, err.Error())
 		}
 	})
 }

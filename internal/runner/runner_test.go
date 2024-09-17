@@ -133,7 +133,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			TargetAddress:   "http://localhost:6081/success",
 			CheckInterval:   500 * time.Millisecond,
 			DialTimeout:     500 * time.Millisecond,
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			LogExtraFields:  true,
 			Version:         "1.0.0",
 		}
@@ -257,7 +257,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			TargetAddress:   "http://localhost:2081/wrong",
 			CheckInterval:   500 * time.Millisecond,
 			DialTimeout:     500 * time.Millisecond,
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 			LogExtraFields:  true,
 			Version:         "1.0.0",
 		}
@@ -369,7 +369,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			TargetAddress:   "http://localhost:7083/fail",
 			CheckInterval:   50 * time.Millisecond,
 			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: "http",
+			TargetCheckType: checker.HTTP,
 		}
 
 		mockEnv := func(key string) string {
@@ -430,7 +430,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetAddress:   listener.Addr().String(),
 			CheckInterval:   50 * time.Millisecond,
 			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: "tcp",
+			TargetCheckType: checker.TCP,
 		}
 
 		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
@@ -501,7 +501,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetAddress:   "localhost:5081",
 			CheckInterval:   500 * time.Millisecond,
 			DialTimeout:     500 * time.Millisecond,
-			TargetCheckType: "tcp",
+			TargetCheckType: checker.TCP,
 			LogExtraFields:  true,
 			Version:         "1.0.0",
 		}
@@ -640,7 +640,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetAddress:   "localhost:7084",
 			CheckInterval:   50 * time.Millisecond,
 			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: "tcp",
+			TargetCheckType: checker.TCP,
 		}
 
 		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
