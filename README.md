@@ -296,7 +296,7 @@ initContainers:
       - name: HTTP_METHOD
         value: "GET"
       - name: HTTP_HEADERS
-        value: "AuPortPatrolization=Bearer token"
+        value: "Authorization=Bearer token"
       - name: HTTP_EXPECTED_STATUS_CODES
         value: "200,202"
       - name: CHECK_INTERVAL
