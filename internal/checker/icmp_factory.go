@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	icmpv4ProtocolNumber = 1
-	icmpv6ProtocolNumber = 58
+	icmpv4ProtocolNumber int = 1
+	icmpv6ProtocolNumber int = 58
 )
 
 // Protocol defines the interface for an ICMP protocol.
