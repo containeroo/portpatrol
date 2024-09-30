@@ -258,7 +258,7 @@ initContainers:
     image: ghcr.io/containeroo/portpatrol:latest
     env:
       - name: TARGET_ADDRESS
-        value: hostname.domain.com:22
+        value: icmp://hostname.domain.tld
     securityContext:
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
