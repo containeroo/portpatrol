@@ -17,7 +17,7 @@ func TestParseConfig(t *testing.T) {
 
 		mockEnv := func(key string) string {
 			env := map[string]string{
-				envTargetAddress: "http://example.com",
+				envTargetAddress: "example.com:80",
 			}
 			return env[key]
 		}
@@ -29,8 +29,8 @@ func TestParseConfig(t *testing.T) {
 
 		expected := Config{
 			TargetName:      "example.com", // Extracted from TargetAddress
-			TargetAddress:   "http://example.com",
-			TargetCheckType: checker.HTTP,
+			TargetAddress:   "example.com:80",
+			TargetCheckType: checker.TCP,
 			CheckInterval:   2 * time.Second,
 			DialTimeout:     1 * time.Second,
 		}
