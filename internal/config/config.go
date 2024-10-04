@@ -118,7 +118,7 @@ func resolveTargetCheckType(cfg *Config, getEnv func(string) string) error {
 		return nil
 	}
 
-	// If not set, try to infer from the TargetAddress scheme
+	// If envTargetCheckType is not set, try to infer it from the target address
 	parts := strings.SplitN(cfg.TargetAddress, "://", 2) // parts[0] is the scheme, parts[1] is the address
 	if len(parts) == 2 {
 		checkType, err := checker.GetCheckTypeFromString(parts[0])
@@ -129,7 +129,5 @@ func resolveTargetCheckType(cfg *Config, getEnv func(string) string) error {
 		return nil
 	}
 
-	// Fallback to default check type if neither is set or inferred
-	cfg.TargetCheckType = defaultTargetCheckType
 	return nil
 }
