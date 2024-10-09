@@ -4,40 +4,7 @@
 
 # PortPatrol
 
-`PortPatrol` is a simple Go application that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated.
-
-## How It Works
-
-`PortPatrol` performs the following steps:
-
-- **Configuration**: The application is configured using environment variables, allowing flexibility and easy integration into various environments like Docker or Kubernetes.
-- **Target Connection Attempts**: It repeatedly attempts to connect to the specified `TCP`, `HTTP` or `ICMP` target based on the configured `CHECK_INTERVAL` and `DIAL_TIMEOUT`.
-- **Logging**: `PortPatrol` logs connection attempts, successes, and failures. You can enable additional logging fields to include more context in the logs.
-- **Exit Status**:
-
-  - If the target becomes available, `PortPatrol` exits with a status code of `0` (success).
-  - If the program is terminated before the target is ready, it exits with a non-zero status code, typically `1`, indicating failure or interruption.
-
-## Permissions
-
-When using `ICMP` checks in Kubernetes, it's important to ensure that the container has the necessary permissions to send ICMP packets. It is necessary to add the `CAP_NET_RAW` capability to the container's security context.
-
-Example:
-
-```yaml
-- name: wait-for-host
-  image: ghcr.io/containeroo/portpatrol:latest
-  env:
-    - name: TARGET_ADDRESS
-      value: icmp://hostname.domain.com
-  securityContext:
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
-    capabilities:
-      add: ["CAP_NET_RAW"]
-```
-
-For `TCP` and `HTTP` checks, the container does not require any additional permissions.
+`PortPatrol` is a simple Go application that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated. Intended to run as a Kubernetes initContainer, `PortPatrol` helps verify whether a dependency is ready. Configuration is managed through environment variables; for more details, refer to the [Environment Variables](#EnvironmentVariables) section."
 
 ## Environment Variables
 
@@ -48,9 +15,9 @@ For `TCP` and `HTTP` checks, the container does not require any additional permi
 - `TARGET_NAME`: Name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, it's derived from the target address. For example, `http://postgres.default.svc.cluster.local:5432` is inferred as `postgres.default.svc.cluster.local`.
 - `TARGET_ADDRESS`: The target's address in the following formats:
 
-  - **TCP**: `host:port` (required).
-  - **HTTP**: `scheme://host[:port]` (required).
-  - **ICMP**: `host` (required, no port needed or allowed).
+  - **TCP**: `host:port` (port is required).
+  - **HTTP**: `scheme://host[:port]` (scheme is required).
+  - **ICMP**: `host` (no scheme and port allowed).
 
   You can always specify a scheme (e.g., `http://`, `tcp://`, `icmp://`) in `TARGET_ADDRESS`, which automatically infers the `TARGET_CHECK_TYPE`, making the `TARGET_CHECK_TYPE` variable optional.
 
@@ -121,6 +88,27 @@ graph TD;
 ```
 
 </details>
+
+## Permissions
+
+**Only** when using `ICMP` checks in Kubernetes, it's important to ensure that the container has the necessary permissions to send ICMP packets. It is necessary to add the `CAP_NET_RAW` capability to the container's security context.
+
+Example:
+
+```yaml
+- name: wait-for-host
+  image: ghcr.io/containeroo/portpatrol:latest
+  env:
+    - name: TARGET_ADDRESS
+      value: icmp://hostname.domain.com
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      add: ["CAP_NET_RAW"]
+```
+
+For `TCP` and `HTTP` checks, the container does not require any additional permissions.
 
 ### HTTP Check
 
@@ -287,13 +275,12 @@ initContainers:
   - name: wait-for-postgres
     image: ghcr.io/containeroo/portpatrol:latest
     env:
-      - name: TARGET_NAME
-        value: PostgreSQL
       - name: TARGET_ADDRESS
         value: http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
+      # TARGET_NAME will be inferred from TARGET_ADDRESS to postgres.default.svc.cluster.local
       # TARGET_CHECK_TYPE is not not necessary, because TARGET_ADDRESS has a scheme (http://)
       # HTTP_METHOD is not necessary, because the default is GET
-      # HTTP_EXPECTED_STATUS_CODES is not necessary, because the default is 200 and /health returns 200 if the service is ready
+      # HTTP_EXPECTED_STATUS_CODES is not necessary, because the default is 200 and /healthz returns 200 if the service is ready
       # CHECK_INTERVAL defaults to 2 seconds which is okay for a health check
       # DIAL_TIMEOUT defaults to 1 second which is okay for a health check
   - name: wait-for-webapp
@@ -312,15 +299,8 @@ initContainers:
       - name: HTTP_EXPECTED_STATUS_CODES
         value: "200,202"
       - name: CHECK_INTERVAL
-        value: "2s" # Specify the interval duration, e.g., 2 seconds
+        value: "5s" # Specify the interval duration, e.g., 5 seconds
       - name: DIAL_TIMEOUT
         value: "2s" # Specify the dial timeout duration, e.g., 2 seconds
-      - name: LOG_EXTRA_FIELDS
-        value: "true"
 ```
 
-## Usage Scenarios
-
-- Kubernetes initContainers: Use `PortPatrol` to delay the start of a service until its dependencies are ready, ensuring reliable startup sequences.
-- Startup Scripts: Include `PortPatrol` in deployment scripts to ensure that services wait for dependencies before proceeding.
-- CI/CD Pipelines: Use `PortPatrol` in CI/CD pipelines to wait for services to be ready before running integration tests.
