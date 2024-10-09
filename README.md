@@ -259,7 +259,7 @@ initContainers:
     env:
       - name: TARGET_ADDRESS
         value: icmp://hostname.domain.tld
-    securityContext:
+    securityContext: # icmp requires CAP_NET_RAW
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       capabilities:
@@ -269,21 +269,33 @@ initContainers:
     env:
       - name: TARGET_ADDRESS
         value: valkey.default.svc.cluster.local:6379
+  - name: wait-for-valkey
+    image: ghcr.io/containeroo/portpatrol:latest
+    env:
+      - name: TARGET_NAME
+        value: Valkey
+      - name: TARGET_ADDRESS
+        value: valkey.default.svc.cluster.local:6379
+      - name: TARGET_CHECK_TYPE
+        value: tcp # Specify the type of check
+      - name: CHECK_INTERVAL
+        value: "5s" # Specify the interval duration, e.g., 5 seconds
+      - name: DIAL_TIMEOUT
+        value: "5s" # Specify the dial timeout duration, e.g., 5 seconds
+      - name: LOG_EXTRA_FIELDS
+        value: "true"
   - name: wait-for-postgres
     image: ghcr.io/containeroo/portpatrol:latest
     env:
       - name: TARGET_NAME
         value: PostgreSQL
       - name: TARGET_ADDRESS
-        value: postgres.default.svc.cluster.local:5432
-      - name: TARGET_CHECK_TYPE
-        value: tcp # Specify the type of check, either tcp or http
-      - name: CHECK_INTERVAL
-        value: "5s" # Specify the interval duration, e.g., 2 seconds
-      - name: DIAL_TIMEOUT
-        value: "5s" # Specify the dial timeout duration, e.g., 2 seconds
-      - name: LOG_EXTRA_FIELDS
-        value: "true"
+        value: http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
+      # TARGET_CHECK_TYPE is not not necessary, because TARGET_ADDRESS has a scheme (http://)
+      # HTTP_METHOD is not necessary, because the default is GET
+      # HTTP_EXPECTED_STATUS_CODES is not necessary, because the default is 200 and /health returns 200 if the service is ready
+      # CHECK_INTERVAL defaults to 2 seconds which is okay for a health check
+      # DIAL_TIMEOUT defaults to 1 second which is okay for a health check
   - name: wait-for-webapp
     image: ghcr.io/containeroo/portpatrol:latest
     env:
@@ -292,9 +304,9 @@ initContainers:
       - name: TARGET_ADDRESS
         value: webapp.default.svc.cluster.local:8080
       - name: TARGET_CHECK_TYPE
-        value: http # Specify the type of check, either tcp or http
+        value: http
       - name: HTTP_METHOD
-        value: "GET"
+        value: "POST"
       - name: HTTP_HEADERS
         value: "Authorization=Bearer token"
       - name: HTTP_EXPECTED_STATUS_CODES
