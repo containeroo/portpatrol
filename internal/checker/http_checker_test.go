@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -103,6 +104,48 @@ func TestHTTPChecker(t *testing.T) {
 		err = checker.Check(ctx)
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
+		}
+	})
+	t.Run("no scheme", func(t *testing.T) {
+		t.Parallel()
+
+		// Set up a test HTTP server with a unexpected status code
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		})
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		mockEnv := func(key string) string {
+			env := map[string]string{
+				envHTTPMethod:              "GET",
+				envHTTPHeaders:             "Auportpatrolization=Bearer token",
+				envHTTPExpectedStatusCodes: "200",
+			}
+			return env[key]
+		}
+
+		url, err := url.Parse(server.URL)
+		if err != nil {
+			t.Fatalf("failed to create HTTPChecker: %q", err)
+		}
+
+		checker, err := NewHTTPChecker("example", fmt.Sprintf("%s:%s", url.Hostname(), url.Port()), 1*time.Second, mockEnv)
+		if err != nil {
+			t.Fatalf("failed to create HTTPChecker: %q", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		defer cancel()
+
+		err = checker.Check(ctx)
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+
+		expected := fmt.Sprintf("failed to create request: parse \"%s:%s\": first path segment in URL cannot contain colon", url.Hostname(), url.Port())
+		if err.Error() != expected {
+			t.Fatalf("expected error containing %q, got %q", expected, err)
 		}
 	})
 
