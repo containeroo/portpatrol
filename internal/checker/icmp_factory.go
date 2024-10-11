@@ -16,12 +16,28 @@ const (
 	icmpv6ProtocolNumber int = 58
 )
 
-// Protocol defines the interface for an ICMP protocol.
+// Protocol defines the interface for an ICMP protocol, which allows for sending and receiving ICMP echo requests
+// (ping) for network diagnostics and availability checks. This interface abstracts the details of ICMPv4 and ICMPv6 protocols
+// and provides methods for constructing requests, validating responses, and managing packet connections.
 type Protocol interface {
+	// MakeRequest creates an ICMP echo request message with the specified identifier and sequence number.
+	// Returns the serialized byte representation of the message or an error if message construction fails.
 	MakeRequest(identifier, sequence uint16) ([]byte, error)
+
+	// ValidateReply verifies that an ICMP echo reply message matches the expected identifier and sequence number.
+	// Returns an error if the reply is invalid, such as a mismatch in identifier, sequence number, or unexpected message type.
 	ValidateReply(reply []byte, identifier, sequence uint16) error
+
+	// Network returns the network type string to be used for listening to ICMP packets, which typically indicates the IP
+	// protocol version (e.g., "ip4:icmp" for IPv4 ICMP or "ip6:ipv6-icmp" for IPv6 ICMP).
 	Network() string
+
+	// ListenPacket sets up a listener for ICMP packets on the specified network and address, using the provided context.
+	// Returns a net.PacketConn for reading and writing packets, or an error if the listener cannot be established.
 	ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error)
+
+	// SetDeadline sets the read and write deadlines for the packet connection, affecting any I/O operations on the connection.
+	// Returns an error if setting the deadline fails.
 	SetDeadline(t time.Time) error
 }
 

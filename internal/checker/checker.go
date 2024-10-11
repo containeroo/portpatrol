@@ -21,13 +21,17 @@ func (c CheckType) String() string {
 	return [...]string{"TCP", "HTTP", "ICMP"}[c]
 }
 
-// Checker is an interface that defines methods to perform a check.
+// Checker defines an interface for performing various types of checks, such as TCP, HTTP, or ICMP.
+// It provides methods for executing the check and obtaining a string representation of the checker.
 type Checker interface {
-	Check(ctx context.Context) error // Check performs a check and returns an error if the check fails.
-	String() string                  // String returns the name of the checker.
+	// Check performs a check and returns an error if the check fails.
+	Check(ctx context.Context) error
+
+	// String returns the name of the checker.
+	String() string
 }
 
-// Factory function that returns the appropriate Checker based on checkType
+// Factory function that returns the appropriate Checker based on checkType.
 func NewChecker(checkType CheckType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
 	switch checkType {
 	case HTTP: // HTTP and HTTPS checkers may need environment variables for proxy settings, etc.

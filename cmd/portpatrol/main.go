@@ -16,7 +16,7 @@ import (
 
 const version = "0.4.7"
 
-// run is the main function of the application
+// run is the main function of the application.
 func run(ctx context.Context, getEnv func(string) string, output io.Writer) error {
 	// Create a new context that listens for interrupt signals
 	// and cancels the context when received. Ensures proper resource cleanup.
