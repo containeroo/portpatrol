@@ -4,21 +4,19 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/containeroo/portpatrol/internal/config"
+	"github.com/containeroo/portpatrol/internal/flags"
 )
 
 // SetupLogger configures the logger based on the configuration.
-func SetupLogger(cfg config.Config, output io.Writer) *slog.Logger {
+func SetupLogger(f *flags.ParsedFlags, output io.Writer) *slog.Logger {
 	handlerOpts := &slog.HandlerOptions{}
 
-	if cfg.LogExtraFields {
+	if f.LogExtraFields {
 		// Return a logger with the additional fields
 		return slog.New(slog.NewTextHandler(output, handlerOpts)).With(
-			slog.String("target_address", cfg.TargetAddress),
-			slog.String("interval", cfg.CheckInterval.String()),
-			slog.String("dial_timeout", cfg.DialTimeout.String()),
-			slog.String("checker_type", cfg.TargetCheckType.String()),
-			slog.String("version", cfg.Version),
+			slog.String("interval", f.DefaultCheckInterval.String()),
+			slog.String("dial_timeout", f.DefaultDialTimeout.String()),
+			slog.String("version", f.Version),
 		)
 	}
 

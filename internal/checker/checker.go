@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 )
 
-// CheckType is an enumeration that represents the type of check being performed.
 type CheckType int
 
 const (
@@ -21,6 +19,10 @@ func (c CheckType) String() string {
 	return [...]string{"TCP", "HTTP", "ICMP"}[c]
 }
 
+type CheckerConfig interface {
+	// Marker interface; no methods required
+}
+
 // Checker defines an interface for performing various types of checks, such as TCP, HTTP, or ICMP.
 // It provides methods for executing the check and obtaining a string representation of the checker.
 type Checker interface {
@@ -31,15 +33,26 @@ type Checker interface {
 	String() string
 }
 
-// Factory function that returns the appropriate Checker based on checkType.
-func NewChecker(checkType CheckType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
+func NewChecker(checkType CheckType, name, address string, config CheckerConfig) (Checker, error) {
 	switch checkType {
-	case HTTP: // HTTP and HTTPS checkers may need environment variables for proxy settings, etc.
-		return NewHTTPChecker(name, address, timeout, getEnv)
-	case TCP: // TCP checkers may not need environment variables
-		return NewTCPChecker(name, address, timeout)
-	case ICMP: // ICMP checkers may have a different timeout logic
-		return NewICMPChecker(name, address, timeout, getEnv)
+	case HTTP:
+		httpConfig, ok := config.(HTTPCheckerConfig)
+		if !ok {
+			return nil, fmt.Errorf("invalid config for HTTP checker")
+		}
+		return NewHTTPChecker(name, address, httpConfig)
+	case TCP:
+		tcpConfig, ok := config.(TCPCheckerConfig)
+		if !ok {
+			return nil, fmt.Errorf("invalid config for TCP checker")
+		}
+		return NewTCPChecker(name, address, tcpConfig)
+	case ICMP:
+		icmpConfig, ok := config.(ICMPCheckerConfig)
+		if !ok {
+			return nil, fmt.Errorf("invalid config for ICMP checker")
+		}
+		return NewICMPChecker(name, address, icmpConfig)
 	default:
 		return nil, fmt.Errorf("unsupported check type: %d", checkType)
 	}

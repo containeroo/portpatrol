@@ -1,4 +1,4 @@
-package runner
+package wait
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/containeroo/portpatrol/internal/checker"
 )
 
-// LoopUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
-func LoopUntilReady(ctx context.Context, interval time.Duration, checker checker.Checker, logger *slog.Logger) error {
+// WaitUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
+func WaitUntilReady(ctx context.Context, interval time.Duration, checker checker.Checker, logger *slog.Logger) error {
 	logger.Info(fmt.Sprintf("Waiting for %s to become ready...", checker))
 
 	for {

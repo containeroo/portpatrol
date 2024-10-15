@@ -274,6 +274,14 @@ initContainers:
         value: "true"
   - name: wait-for-postgres
     image: ghcr.io/containeroo/portpatrol:latest
+    args:
+    - --target.postgres.address=postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
+    - --target.postgres.type=http
+    - --target.postgres.method=POST
+    - --target.postgres.headers=Authorization=Bearer token
+    - --target.postgres.expected-status-codes=200,202
+    - --target-address=http://postgres2.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
+    - --target-address=http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
     env:
       - name: TARGET_ADDRESS
         value: http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
