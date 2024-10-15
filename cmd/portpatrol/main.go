@@ -26,13 +26,14 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("configuration error: %w", err)
 	}
+	f.Version = version
+
+	checkers, err := flags.ParseTargets(f.Targets, f.DefaultCheckInterval)
+	if err != nil {
+		return fmt.Errorf("parse error: %w", err)
+	}
 
 	logger := logger.SetupLogger(f, output)
-
-	checkers, err := flags.ParseChecker(f.Targets, f.DefaultCheckInterval)
-	if err != nil {
-		return fmt.Errorf("configuration error: %w", err)
-	}
 
 	eg, ctx := errgroup.WithContext(ctx)
 
@@ -41,7 +42,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		eg.Go(func() error {
 			err := wait.WaitUntilReady(ctx, checker.Interval, checker.Checker, logger)
 			if err != nil {
-				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.String(), err)
+				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.Name(), err)
 			}
 			return nil
 		})

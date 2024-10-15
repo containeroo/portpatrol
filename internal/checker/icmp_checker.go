@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -15,55 +14,40 @@ const (
 	defaultICMPWriteTimeout time.Duration = 1 * time.Second
 )
 
-type ICMPCheckerConfig struct {
-	Interval     time.Duration
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-}
-
 // ICMPChecker implements the Checker interface for ICMP checks.
 type ICMPChecker struct {
-	name         string        // The name of the checker.
-	address      string        // The address of the target.
-	readTimeout  time.Duration // The timeout for reading the ICMP reply.
-	writeTimeout time.Duration // The timeout for writing the ICMP request.
-
-	protocol Protocol // The protocol (ICMPv4 or ICMPv6) used for the check.
+	name         string
+	address      string
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+	protocol     Protocol
 }
 
 // Name returns the name of the checker.
-func (c *ICMPChecker) String() string {
+func (c *ICMPChecker) Name() string {
 	return c.name
 }
 
-// NewICMPChecker initializes a new ICMPChecker with the given parameters.
-func NewICMPChecker(name, address string, cfg ICMPCheckerConfig) (Checker, error) {
-	// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
-	// so it must be removed before passing the address to other functions.
-	address = strings.TrimPrefix(address, "icmp://")
-
-	readTimeout := cfg.ReadTimeout
-	if readTimeout == 0 {
-		readTimeout = defaultICMPReadTimeout
-	}
-
-	writeTimeout := cfg.WriteTimeout
-	if writeTimeout == 0 {
-		writeTimeout = defaultICMPWriteTimeout
-	}
-
-	protocol, err := newProtocol(address)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
-	}
-
+// newICMPChecker initializes a new ICMPChecker with functional options.
+func newICMPChecker(name, address string, opts ...Option) (*ICMPChecker, error) {
 	checker := &ICMPChecker{
 		name:         name,
 		address:      address,
-		readTimeout:  readTimeout,
-		writeTimeout: writeTimeout,
-		protocol:     protocol,
+		readTimeout:  defaultICMPReadTimeout,
+		writeTimeout: defaultICMPWriteTimeout,
 	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt.apply(checker)
+	}
+
+	// Initialize protocol based on address
+	protocol, err := newProtocol(checker.address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
+	}
+	checker.protocol = protocol
 
 	return checker, nil
 }
@@ -120,4 +104,26 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// WithICMPReadTimeout sets the read timeout for the ICMPChecker.
+func WithICMPReadTimeout(timeout time.Duration) Option {
+	return OptionFunc(func(c Checker) {
+		if icmpChecker, ok := c.(*ICMPChecker); ok {
+			if timeout > 0 {
+				icmpChecker.readTimeout = timeout
+			}
+		}
+	})
+}
+
+// WithICMPWriteTimeout sets the write timeout for the ICMPChecker.
+func WithICMPWriteTimeout(timeout time.Duration) Option {
+	return OptionFunc(func(c Checker) {
+		if icmpChecker, ok := c.(*ICMPChecker); ok {
+			if timeout > 0 {
+				icmpChecker.writeTimeout = timeout
+			}
+		}
+	})
 }

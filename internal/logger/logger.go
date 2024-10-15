@@ -11,11 +11,11 @@ import (
 func SetupLogger(f *flags.ParsedFlags, output io.Writer) *slog.Logger {
 	handlerOpts := &slog.HandlerOptions{}
 
-	if f.LogExtraFields {
+	if f.Debug {
 		// Return a logger with the additional fields
 		return slog.New(slog.NewTextHandler(output, handlerOpts)).With(
 			slog.String("interval", f.DefaultCheckInterval.String()),
-			slog.String("dial_timeout", f.DefaultDialTimeout.String()),
+			// slog.String("dial_timeout", f.DefaultTimeout.String()),
 			slog.String("version", f.Version),
 		)
 	}

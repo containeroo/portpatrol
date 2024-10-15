@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 )
 
+// CheckType represents the type of check to perform.
 type CheckType int
 
 const (
@@ -14,13 +16,24 @@ const (
 	ICMP                  // ICMP represents a check using the ICMP protocol (ping).
 )
 
+const defaultCheckInterval time.Duration = 1 * time.Second
+
 // String returns the string representation of the CheckType.
 func (c CheckType) String() string {
 	return [...]string{"TCP", "HTTP", "ICMP"}[c]
 }
 
-type CheckerConfig interface {
-	// Marker interface; no methods required
+// Option defines a functional option for configuring a Checker.
+type Option interface {
+	apply(Checker)
+}
+
+// OptionFunc is a function that applies an Option to a Checker.
+type OptionFunc func(Checker)
+
+// apply calls the OptionFunc with the given Checker.
+func (f OptionFunc) apply(c Checker) {
+	f(c)
 }
 
 // Checker defines an interface for performing various types of checks, such as TCP, HTTP, or ICMP.
@@ -29,30 +42,27 @@ type Checker interface {
 	// Check performs a check and returns an error if the check fails.
 	Check(ctx context.Context) error
 
-	// String returns the name of the checker.
-	String() string
+	// Name returns the name of the checker.
+	Name() string
 }
 
-func NewChecker(checkType CheckType, name, address string, config CheckerConfig) (Checker, error) {
+// NewChecker creates a new Checker based on the specified CheckType, name, address, and options.
+func NewChecker(checkType CheckType, name, address string, opts ...Option) (Checker, error) {
 	switch checkType {
 	case HTTP:
-		httpConfig, ok := config.(HTTPCheckerConfig)
-		if !ok {
-			return nil, fmt.Errorf("invalid config for HTTP checker")
-		}
-		return NewHTTPChecker(name, address, httpConfig)
+		return newHTTPChecker(name, address, opts...)
 	case TCP:
-		tcpConfig, ok := config.(TCPCheckerConfig)
-		if !ok {
-			return nil, fmt.Errorf("invalid config for TCP checker")
-		}
-		return NewTCPChecker(name, address, tcpConfig)
+		// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
+		// so it must be removed before passing the address to other functions.
+		address = strings.TrimPrefix(address, "tcp://")
+
+		return newTCPChecker(name, address, opts...)
 	case ICMP:
-		icmpConfig, ok := config.(ICMPCheckerConfig)
-		if !ok {
-			return nil, fmt.Errorf("invalid config for ICMP checker")
-		}
-		return NewICMPChecker(name, address, icmpConfig)
+		// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
+		// so it must be removed before passing the address to other functions.
+		address = strings.TrimPrefix(address, "icmp://")
+
+		return newICMPChecker(name, address, opts...)
 	default:
 		return nil, fmt.Errorf("unsupported check type: %d", checkType)
 	}

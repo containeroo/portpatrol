@@ -1,3 +1,5 @@
+// flags/flags.go
+
 package flags
 
 import (
@@ -14,29 +16,34 @@ import (
 )
 
 const (
-	defaultCheckInterval  time.Duration = 2 * time.Second
-	defaultDialTimeout    time.Duration = 1 * time.Second
-	defaultLogExtraFields bool          = false
+	// Options
+	defaultDebug         bool          = false
+	paramDefaultInterval string        = "default-interval"
+	defaultCheckInterval time.Duration = 2 * time.Second
 
-	defaultHTTPAllowDuplicateHeaders bool = false
-	defaultHTTPSkipTLSVerify         bool = false
+	paramPrefix   string = "target"
+	paramType     string = "type"
+	paramName     string = "name"
+	paramAddress  string = "address"
+	paramInterval string = "interval"
+
+	// HTTPChecker parameter keys
+	paramHTTPMethod                  string = "method"
+	paramHTTPHeaders                 string = "headers"
+	paramHTTPAllowDuplicateHeaders   string = "allow-duplicate-headers"
+	paramHTTPExpectedStatusCodes     string = "expected-status-codes"
+	paramHTTPSkipTLSVerify           string = "skip-tls-verify"
+	paramHTTPTimeout                 string = "timeout"
+	defaultHTTPAllowDuplicateHeaders bool   = false
+	defaultHTTPSkipTLSVerify         bool   = false
+
+	// TCPChecker parameter keys
+	paramTCPTimeout string = "timeout"
+
+	// ICMPChecker parameter keys
+	paramICMPReadTimeout  string = "read-timeout"
+	paramICMPWriteTimeout string = "write-timeout"
 )
-
-type HelpRequested struct {
-	Message string
-}
-
-func (e *HelpRequested) Error() string {
-	return e.Message
-}
-
-type VersionRequested struct {
-	Version string
-}
-
-func (e *VersionRequested) Error() string {
-	return e.Version
-}
 
 type TargetChecker struct {
 	Interval time.Duration
@@ -47,28 +54,28 @@ type ParsedFlags struct {
 	ShowHelp             bool
 	ShowVersion          bool
 	Version              string
-	DefaultDialTimeout   time.Duration // The timeout for dialing the target.
-	DefaultCheckInterval time.Duration // The interval between connection attempts.
-	LogExtraFields       bool          // Whether to log the fields in the log message.
-
-	Targets map[string]map[string]string
+	DefaultCheckInterval time.Duration
+	Debug                bool
+	Targets              map[string]map[string]string
 }
 
+// ParseFlags parses command line arguments and returns the parsed flags.
 func ParseFlags(args []string, version string) (*ParsedFlags, error) {
-	// Preprocess arguments to extract dynamic target flags
-	var newArgs []string
+	var knownArgs []string
 	var dynamicArgs []string
 
+	// Preprocess arguments to extract dynamic target flags
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		if strings.HasPrefix(arg, "--target.") {
-			dynamicArgs = append(dynamicArgs, arg)
-			if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-				i++
-				dynamicArgs = append(dynamicArgs, args[i])
-			}
-		} else {
-			newArgs = append(newArgs, arg)
+		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", paramPrefix)) {
+			knownArgs = append(knownArgs, arg)
+			continue
+		}
+
+		dynamicArgs = append(dynamicArgs, arg)
+		if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+			i++ // Use next argument as value
+			dynamicArgs = append(dynamicArgs, args[i])
 		}
 	}
 
@@ -80,42 +87,21 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	var buf bytes.Buffer
 	flagSet.SetOutput(&buf)
 
-	// Set custom usage function
+	// Custom usage function to display help information
 	flagSet.Usage = func() {
-		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--target.identifier.property=value]\n\nOptions:\n", flagSetName)
+		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY>=value]\n\nOptions:\n", flagSetName, paramPrefix)
 		flagSet.PrintDefaults()
-		// Show properties for TCP
-		buf.WriteString("\nTCP properties:\n")
-		buf.WriteString("  name: The name of the Target. If not specified, it's derived from the target address.\n")
-		buf.WriteString("  address: The IP address or hostname of the target in the following formats: scheme://hostname:port")
-		buf.WriteString("  timeout: The timeout for the TCP connection.\n")
-		buf.WriteString("  type: The type of check to perform. Must be \"tcp\".\n")
-		// Show properties for HTTP
-		buf.WriteString("\nHTTP properties:\n")
-		buf.WriteString("  name: The name of the Target. If not specified, it's derived from the target address.\n")
-		buf.WriteString("  address: The IP address or hostname of the target in the following formats: [tcp://]hostname[:port]\n")
-		buf.WriteString("  timeout: The timeout for the HTTP request.\n")
-		buf.WriteString("  type: The type of check to perform. Must be \"http\" or \"https\".\n")
-		buf.WriteString("  method: The HTTP method to use. Defaults to \"GET\".\n")
-		buf.WriteString("  headers: A comma-separated list of HTTP headers to include in the request.\n")
-		buf.WriteString("  allow_duplicate_headers: Whether to allow duplicate headers in the request. Defaults to false.\n")
-		buf.WriteString("  expected_status_codes: A comma-separated list of expected status codes. Defaults to 200.\n")
-		buf.WriteString("  skip_tls_verify: Whether to skip TLS verification. Defaults to false.\n")
-		// Show properties for ICMP
-		buf.WriteString("\nICMP properties:\n")
-		buf.WriteString("  name: The name of the Target. If not specified, it's derived from the target address.\n")
-		buf.WriteString("  address: The IP address or hostname of the target in the following formats: [icmp://]hostname\n")
+		displayCheckerProperties(&buf)
 	}
 
 	// Define known flags
-	showVersion := flagSet.Bool("version", false, "Show version")
-	showHelp := flagSet.BoolP("help", "h", false, "Show help")
-	dialTimeout := flagSet.Duration("dial-timeout", defaultDialTimeout, "Timeout for dialing the target")
-	checkInterval := flagSet.Duration("check-interval", defaultCheckInterval, "Interval between checks")
-	logExtraFields := flagSet.Bool("log-extra-fields", defaultLogExtraFields, "Log extra fields")
+	checkInterval := flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overwritten for each target.")
+	logExtraFields := flagSet.Bool("debug", defaultDebug, "Log extra fields.")
+	showVersion := flagSet.Bool("version", false, "Show version and exit.")
+	showHelp := flagSet.BoolP("help", "h", false, "Show help.")
 
-	// Parse known flags with the newArgs slice
-	if err := flagSet.Parse(newArgs); err != nil {
+	// Parse known flags
+	if err := flagSet.Parse(knownArgs); err != nil {
 		buf.WriteString(err.Error())
 		buf.WriteString("\n\n")
 		flagSet.Usage()
@@ -125,15 +111,67 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	// Handle help request
 	if *showHelp {
 		flagSet.Usage()
-		return nil, &HelpRequested{Message: buf.String()}
+		return nil, errors.New(buf.String())
 	}
 
 	// Handle version request
 	if *showVersion {
-		return nil, &VersionRequested{Version: fmt.Sprintf("%s version %s", flagSetName, version)}
+		return nil, fmt.Errorf("%s version %s", flagSetName, version)
 	}
 
 	// Process the dynamic target flags
+	targets, err := processDynamicArgs(dynamicArgs, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for unknown arguments
+	for _, arg := range flagSet.Args() {
+		if strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, fmt.Sprintf("--%s.", paramPrefix)) {
+			return nil, fmt.Errorf("Warning: Unknown flag ignored: %s\n", arg)
+		}
+	}
+
+	return &ParsedFlags{
+		DefaultCheckInterval: *checkInterval,
+		Debug:                *logExtraFields,
+		Targets:              targets,
+	}, nil
+}
+
+// displayCheckerProperties appends checker properties documentation to the buffer.
+func displayCheckerProperties(buf *bytes.Buffer) {
+	// Display TCP Checker properties
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The type of check to perform. Must be \"tcp\".\n", paramPrefix, paramType))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The name of the target. If not specified, it's derived from the target address.\n", paramPrefix, paramName))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The IP address or hostname of the target in the following format: tcp://hostname:port\n", paramPrefix, paramAddress))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The timeout for the TCP connection.\n", paramPrefix, paramTCPTimeout))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: (Optional) Override the default interval for this target.\n", paramPrefix, paramInterval))
+
+	// Display HTTP Checker properties
+	buf.WriteString("\nHTTP Checker Properties:\n")
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The type of check to perform. Must be \"http\" or \"https\".\n", paramPrefix, paramType))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The name of the target. If not specified, it's derived from the target address.\n", paramPrefix, paramName))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The IP address or hostname of the target in the following format: http://hostname[:port]\n", paramPrefix, paramAddress))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The HTTP method to use. Defaults to \"GET\".\n", paramPrefix, paramHTTPMethod))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: A comma-separated list of HTTP headers to include in the request.\n", paramPrefix, paramHTTPHeaders))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: A comma-separated list of expected status codes. Defaults to 200.\n", paramPrefix, paramHTTPExpectedStatusCodes))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: Whether to skip TLS verification. Defaults to false.\n", paramPrefix, paramHTTPSkipTLSVerify))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The timeout for the HTTP request.\n", paramPrefix, paramHTTPTimeout))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: (Optional) Override the default interval for this target.\n", paramPrefix, paramInterval))
+
+	// Display ICMP Checker properties
+	buf.WriteString("\nICMP Checker Properties:\n")
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The type of check to perform. Must be \"icmp\".\n", paramPrefix, paramType))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The name of the target. If not specified, it's derived from the target address.\n", paramPrefix, paramName))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The IP address or hostname of the target in the following format: icmp://hostname\n", paramPrefix, paramAddress))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The read timeout for the ICMP connection.\n", paramPrefix, paramICMPReadTimeout))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: The write timeout for the ICMP connection.\n", paramPrefix, paramICMPWriteTimeout))
+	buf.WriteString(fmt.Sprintf("  --%s.<IDENTIFIER>.%s: (Optional) Override the default interval for this target.\n", paramPrefix, paramInterval))
+}
+
+// processDynamicArgs processes dynamic target flags and returns target configurations.
+func processDynamicArgs(dynamicArgs []string, buf bytes.Buffer) (map[string]map[string]string, error) {
 	// Map to store target configurations
 	targets := make(map[string]map[string]string)
 
@@ -168,103 +206,94 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 		targetName := nameParts[1]                    // e.g., "postgres"
 		parameter := strings.Join(nameParts[2:], ".") // e.g., "address"
 
-		// Initialize the target map if necessary and store the parameter value
+		// Initialize the target map if necessary
 		if _, exists := targets[targetName]; !exists {
 			targets[targetName] = make(map[string]string)
-			targets[targetName]["name"] = value
 		}
 
 		// Store the parameter value
 		targets[targetName][parameter] = value
 	}
 
-	// Check for unknown arguments
-	for _, arg := range flagSet.Args() {
-		if strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, "--target.") {
-			return nil, fmt.Errorf("Warning: Unknown flag ignored: %s\n", arg)
-		}
-	}
-
-	return &ParsedFlags{
-		DefaultCheckInterval: *checkInterval,
-		DefaultDialTimeout:   *dialTimeout,
-		LogExtraFields:       *logExtraFields,
-		Targets:              targets,
-	}, nil
+	return targets, nil
 }
 
-func ParseChecker(targets map[string]map[string]string, defaultInterval time.Duration) ([]TargetChecker, error) {
+// ParseTargets creates a slice of TargetChecker based on the provided target configurations.
+func ParseTargets(targets map[string]map[string]string, defaultInterval time.Duration) ([]TargetChecker, error) {
 	var targetCheckers []TargetChecker
 
 	for targetName, params := range targets {
+		address, ok := params[paramAddress]
+		if !ok || address == "" {
+			return nil, fmt.Errorf("missing %q for target %q", paramAddress, targetName)
+		}
+
 		// Determine the check type
-		checkTypeStr, ok := params["type"]
+		checkTypeStr, ok := params[paramType]
 		if !ok || checkTypeStr == "" {
 			// Try to infer the type from the address scheme
-			address := params["address"]
+			address := params[paramAddress]
 			parts := strings.SplitN(address, "://", 2)
-			if len(parts) == 2 {
-				checkTypeStr = parts[0]
-				// params["address"] = parts[1]
-			} else {
-				return nil, fmt.Errorf("missing 'type' parameter for target '%s'", targetName)
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("missing %q parameter for target %q", paramType, targetName)
 			}
+			checkTypeStr = parts[0]
 		}
 
 		checkType, err := checker.GetCheckTypeFromString(checkTypeStr)
 		if err != nil {
-			return nil, fmt.Errorf("unsupported check type '%s' for target '%s'", checkTypeStr, targetName)
+			return nil, fmt.Errorf("unsupported check type %q for target %q", checkTypeStr, targetName)
 		}
 
 		name := targetName
-		if n, ok := params["name"]; ok && n != "" {
+		if n, ok := params[paramName]; ok && n != "" {
 			name = n
-		}
-
-		address, ok := params["address"]
-		if !ok || address == "" {
-			return nil, fmt.Errorf("missing 'address' for target '%s'", targetName)
-		}
-
-		// Create the specific config based on the check type
-		var config checker.CheckerConfig
-
-		switch checkType {
-		case checker.HTTP:
-			cfg, err := parseHTTPCheckerConfig(params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse HTTP config for target '%s': %w", targetName, err)
-			}
-			config = cfg
-		case checker.TCP:
-			cfg, err := parseTCPCheckerConfig(params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse TCP config for target '%s': %w", targetName, err)
-			}
-			config = cfg
-		case checker.ICMP:
-			cfg, err := parseICMPCheckerConfig(params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse ICMP config for target '%s': %w", targetName, err)
-			}
-			config = cfg
-		default:
-			return nil, fmt.Errorf("unsupported check type '%s' for target '%s'", checkTypeStr, targetName)
-		}
-
-		// Create the checker
-		chk, err := checker.NewChecker(checkType, name, address, config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create checker for target '%s': %w", targetName, err)
 		}
 
 		// Get interval from parameters or use default
 		interval := defaultInterval
-		if intervalStr, ok := params["interval"]; ok && intervalStr != "" {
+		if intervalStr, ok := params[paramInterval]; ok && intervalStr != "" {
 			interval, err = time.ParseDuration(intervalStr)
 			if err != nil {
-				return nil, fmt.Errorf("invalid 'interval' for target '%s': %w", targetName, err)
+				return nil, fmt.Errorf("invalid %q for target '%s': %w", paramInterval, targetName, err)
 			}
+		}
+
+		// Remove common parameters from params map
+		delete(params, paramType)
+		delete(params, paramName)
+		delete(params, paramAddress)
+		delete(params, paramInterval)
+
+		// Collect functional options based on the check type
+		var options []checker.Option
+		switch checkType {
+		case checker.HTTP:
+			httpOpts, err := parseHTTPCheckerOptions(params)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse HTTP options for target %q: %w", targetName, err)
+			}
+			options = append(options, httpOpts...)
+		case checker.TCP:
+			tcpOpts, err := parseTCPCheckerOptions(params)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse TCP options for target '%s': %w", targetName, err)
+			}
+			options = append(options, tcpOpts...)
+		case checker.ICMP:
+			icmpOpts, err := parseICMPCheckerOptions(params)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse ICMP options for target %q: %w", targetName, err)
+			}
+			options = append(options, icmpOpts...)
+		default:
+			return nil, fmt.Errorf("unsupported check type %q for target %q", checkTypeStr, targetName)
+		}
+
+		// Create the checker using the functional options
+		chk, err := checker.NewChecker(checkType, name, address, options...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create checker for target %q: %w", targetName, err)
 		}
 
 		targetCheckers = append(targetCheckers, TargetChecker{
@@ -276,104 +305,146 @@ func ParseChecker(targets map[string]map[string]string, defaultInterval time.Dur
 	return targetCheckers, nil
 }
 
-func parseHTTPCheckerConfig(params map[string]string) (checker.HTTPCheckerConfig, error) {
-	cfg := checker.HTTPCheckerConfig{}
+// parseHTTPCheckerOptions parses HTTP checker specific options from parameters.
+func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error) {
+	var opts []checker.Option
 
-	if method, ok := params["method"]; ok && method != "" {
-		cfg.Method = method
+	// Create a copy of params to track unrecognized parameters
+	unrecognizedParams := make(map[string]struct{})
+	for key := range params {
+		unrecognizedParams[key] = struct{}{}
 	}
 
-	if headersStr, ok := params["headers"]; ok && headersStr != "" {
-		headers, err := httputils.ParseHeaders(headersStr, defaultHTTPAllowDuplicateHeaders)
+	if method, ok := params[paramHTTPMethod]; ok && method != "" {
+		opts = append(opts, checker.WithHTTPMethod(method))
+		delete(unrecognizedParams, paramHTTPMethod)
+	}
+
+	allowDupHeaders := defaultHTTPAllowDuplicateHeaders
+	if allowDupHeadersStr, ok := params[paramHTTPAllowDuplicateHeaders]; ok && allowDupHeadersStr != "" {
+		var err error
+		allowDupHeaders, err = strconv.ParseBool(allowDupHeadersStr)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid headers: %w", err)
+			return nil, fmt.Errorf("invalid %q: %w", paramHTTPAllowDuplicateHeaders, err)
 		}
-		cfg.Headers = headers
+		delete(unrecognizedParams, paramHTTPAllowDuplicateHeaders)
 	}
 
-	if codesStr, ok := params["expected_status_codes"]; ok && codesStr != "" {
+	if headersStr, ok := params[paramHTTPHeaders]; ok && headersStr != "" {
+		headers, err := httputils.ParseHeaders(headersStr, allowDupHeaders)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %q: %w", paramHTTPHeaders, err)
+		}
+		opts = append(opts, checker.WithHTTPHeaders(headers))
+		delete(unrecognizedParams, paramHTTPHeaders)
+	}
+
+	if codesStr, ok := params[paramHTTPExpectedStatusCodes]; ok && codesStr != "" {
 		codes, err := httputils.ParseStatusCodes(codesStr)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid expected_status_codes: %w", err)
+			return nil, fmt.Errorf("invalid %q: %w", paramHTTPExpectedStatusCodes, err)
 		}
-		cfg.ExpectedStatusCodes = codes
+		opts = append(opts, checker.WithExpectedStatusCodes(codes))
+		delete(unrecognizedParams, paramHTTPExpectedStatusCodes)
 	}
 
-	if skipStr, ok := params["skip_tls_verify"]; ok && skipStr != "" {
+	if skipStr, ok := params[paramHTTPSkipTLSVerify]; ok && skipStr != "" {
 		skip, err := strconv.ParseBool(skipStr)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid skip_tls_verify: %w", err)
+			return nil, fmt.Errorf("invalid %s: %w", paramHTTPSkipTLSVerify, err)
 		}
-		cfg.SkipTLSVerify = skip
+		opts = append(opts, checker.WithHTTPSkipTLSVerify(skip))
+		delete(unrecognizedParams, paramHTTPSkipTLSVerify)
 	}
 
-	if timeoutStr, ok := params["timeout"]; ok && timeoutStr != "" {
+	if timeoutStr, ok := params[paramHTTPTimeout]; ok && timeoutStr != "" {
 		t, err := time.ParseDuration(timeoutStr)
-		if err != nil {
-			return cfg, fmt.Errorf("invalid timeout: %w", err)
+		if err != nil || t <= 0 {
+			return nil, fmt.Errorf("invalid %q: %w", paramHTTPTimeout, err)
 		}
-		cfg.Timeout = t
+		opts = append(opts, checker.WithHTTPTimeout(t))
+		delete(unrecognizedParams, paramHTTPTimeout)
 	}
 
-	if intervalStr, ok := params["interval"]; ok && intervalStr != "" {
-		interval, err := time.ParseDuration(intervalStr)
-		if err != nil {
-			return cfg, fmt.Errorf("invalid interval: %w", err)
+	// After processing known parameters, check for unrecognized ones
+	if len(unrecognizedParams) > 0 {
+		var unknownKeys []string
+		for key := range unrecognizedParams {
+			unknownKeys = append(unknownKeys, key)
 		}
-		cfg.Interval = interval
+		return nil, fmt.Errorf("unrecognized parameters for HTTP checker: %v", unknownKeys)
 	}
 
-	return cfg, nil
+	return opts, nil
 }
 
-func parseTCPCheckerConfig(params map[string]string) (checker.TCPCheckerConfig, error) {
-	cfg := checker.TCPCheckerConfig{}
+// parseTCPCheckerOptions parses TCP checker specific options from parameters.
+func parseTCPCheckerOptions(params map[string]string) ([]checker.Option, error) {
+	var opts []checker.Option
 
-	if timeoutStr, ok := params["timeout"]; ok && timeoutStr != "" {
+	// Create a copy of params to track unrecognized parameters
+	unrecognizedParams := make(map[string]struct{})
+	for key := range params {
+		unrecognizedParams[key] = struct{}{}
+	}
+
+	if timeoutStr, ok := params[paramTCPTimeout]; ok && timeoutStr != "" {
 		t, err := time.ParseDuration(timeoutStr)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid timeout: %w", err)
+			return nil, fmt.Errorf("invalid %q: %w", paramTCPTimeout, err)
 		}
-		cfg.Timeout = t
+		opts = append(opts, checker.WithTCPTimeout(t))
+		delete(unrecognizedParams, paramTCPTimeout)
 	}
 
-	if intervalStr, ok := params["interval"]; ok && intervalStr != "" {
-		interval, err := time.ParseDuration(intervalStr)
-		if err != nil {
-			return cfg, fmt.Errorf("invalid interval: %w", err)
+	// After processing known parameters, check for unrecognized ones
+	if len(unrecognizedParams) > 0 {
+		var unknownKeys []string
+		for key := range unrecognizedParams {
+			unknownKeys = append(unknownKeys, key)
 		}
-		cfg.Interval = interval
+		return nil, fmt.Errorf("unrecognized parameters for TCP checker: %v", unknownKeys)
 	}
 
-	return cfg, nil
+	return opts, nil
 }
 
-func parseICMPCheckerConfig(params map[string]string) (checker.ICMPCheckerConfig, error) {
-	cfg := checker.ICMPCheckerConfig{}
+// parseICMPCheckerOptions parses ICMP checker specific options from parameters.
+func parseICMPCheckerOptions(params map[string]string) ([]checker.Option, error) {
+	var opts []checker.Option
 
-	if readTimeoutStr, ok := params["read_timeout"]; ok && readTimeoutStr != "" {
+	// Create a copy of params to track unrecognized parameters
+	unrecognizedParams := make(map[string]struct{})
+	for key := range params {
+		unrecognizedParams[key] = struct{}{}
+	}
+
+	if readTimeoutStr, ok := params[paramICMPReadTimeout]; ok && readTimeoutStr != "" {
 		rt, err := time.ParseDuration(readTimeoutStr)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid read_timeout: %w", err)
+			return nil, fmt.Errorf("invalid %q: %w", paramICMPReadTimeout, err)
 		}
-		cfg.ReadTimeout = rt
+		opts = append(opts, checker.WithICMPReadTimeout(rt))
+		delete(unrecognizedParams, paramICMPReadTimeout)
 	}
 
-	if writeTimeoutStr, ok := params["write_timeout"]; ok && writeTimeoutStr != "" {
+	if writeTimeoutStr, ok := params[paramICMPWriteTimeout]; ok && writeTimeoutStr != "" {
 		wt, err := time.ParseDuration(writeTimeoutStr)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid write_timeout: %w", err)
+			return nil, fmt.Errorf("invalid %q: %w", paramICMPWriteTimeout, err)
 		}
-		cfg.WriteTimeout = wt
+		opts = append(opts, checker.WithICMPWriteTimeout(wt))
+		delete(unrecognizedParams, paramICMPWriteTimeout)
 	}
 
-	if intervalStr, ok := params["interval"]; ok && intervalStr != "" {
-		interval, err := time.ParseDuration(intervalStr)
-		if err != nil {
-			return cfg, fmt.Errorf("invalid interval: %w", err)
+	// After processing known parameters, check for unrecognized ones
+	if len(unrecognizedParams) > 0 {
+		var unknownKeys []string
+		for key := range unrecognizedParams {
+			unknownKeys = append(unknownKeys, key)
 		}
-		cfg.Interval = interval
+		return nil, fmt.Errorf("unrecognized parameters for ICMP checker: %v", unknownKeys)
 	}
 
-	return cfg, nil
+	return opts, nil
 }

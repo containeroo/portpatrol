@@ -9,83 +9,56 @@ import (
 )
 
 const (
-	defaultHTTPDialTimeout time.Duration = 1 * time.Second
-	defaultHTTPMethod                    = http.MethodGet
+	defaultHTTPTimeout       time.Duration = 1 * time.Second
+	defaultHTTPMethod        string        = http.MethodGet
+	defaultHTTPSkipTLSVerify bool          = false
 )
 
-var defaultHTTPExpectedStatusCodes = []int{200} // Slices cannot be constants
+var defaultHTTPExpectedStatusCodes = []int{200}
 
 // HTTPChecker implements the Checker interface for HTTP checks.
 type HTTPChecker struct {
-	name                  string            // The name of the checker.
-	address               string            // The address of the target.
-	expectedStatusCodes   []int             // The expected status codes.
-	method                string            // The HTTP method to use.
-	headers               map[string]string // The HTTP headers to include in the request.
-	allowDuplicateHeaders bool              // Whether to allow duplicate headers.
-	skipTLSVerify         bool              // Whether to skip TLS verification.
-	dialTimeout           time.Duration     // The timeout for dialing the target.
-
-	client *http.Client // The HTTP client to use for the request.
+	name                string
+	address             string
+	method              string
+	headers             map[string]string
+	expectedStatusCodes []int
+	skipTLSVerify       bool
+	timeout             time.Duration
+	client              *http.Client
 }
 
-type HTTPCheckerConfig struct {
-	Interval            time.Duration
-	Method              string
-	Headers             map[string]string
-	ExpectedStatusCodes []int
-	SkipTLSVerify       bool
-	Timeout             time.Duration
-}
-
-// String returns the name of the checker.
-func (c *HTTPChecker) String() string {
+// Name returns the name of the checker.
+func (c *HTTPChecker) Name() string {
 	return c.name
 }
 
-// NewHTTPChecker creates a new HTTPChecker with default values and applies any provided options.
-func NewHTTPChecker(name, address string, cfg HTTPCheckerConfig) (Checker, error) {
-	// Set defaults if necessary
-	method := cfg.Method
-	if method == "" {
-		method = defaultHTTPMethod
-	}
-
-	expectedStatusCodes := cfg.ExpectedStatusCodes
-	if len(expectedStatusCodes) == 0 {
-		expectedStatusCodes = defaultHTTPExpectedStatusCodes
-	}
-
-	headers := cfg.Headers
-	if headers == nil {
-		headers = make(map[string]string)
-	}
-
-	timeout := cfg.Timeout
-	if timeout == 0 {
-		timeout = defaultHTTPDialTimeout
-	}
-
-	// Initialize the HTTP client
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: cfg.SkipTLSVerify,
-			},
-		},
-	}
-
+// newHTTPChecker creates a new HTTPChecker with functional options.
+func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) {
 	checker := &HTTPChecker{
 		name:                name,
 		address:             address,
-		method:              method,
-		expectedStatusCodes: expectedStatusCodes,
-		headers:             headers,
-		skipTLSVerify:       cfg.SkipTLSVerify,
-		dialTimeout:         timeout,
-		client:              client,
+		method:              defaultHTTPMethod,
+		headers:             make(map[string]string),
+		expectedStatusCodes: defaultHTTPExpectedStatusCodes,
+		skipTLSVerify:       defaultHTTPSkipTLSVerify,
+		timeout:             defaultHTTPTimeout,
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt.apply(checker)
+	}
+
+	// Initialize the HTTP client
+	checker.client = &http.Client{
+		Timeout: checker.timeout,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: checker.skipTLSVerify,
+			},
+		},
 	}
 
 	return checker, nil
@@ -119,4 +92,55 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	}
 
 	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.expectedStatusCodes)
+}
+
+// WithHTTPMethod sets the HTTP method for the HTTPChecker.
+func WithHTTPMethod(method string) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			httpChecker.method = method
+		}
+	})
+}
+
+// WithHTTPHeaders sets the HTTP headers for the HTTPChecker.
+func WithHTTPHeaders(headers map[string]string) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			for key, value := range headers {
+				httpChecker.headers[key] = value
+			}
+		}
+	})
+}
+
+// WithExpectedStatusCodes sets the expected status codes for the HTTPChecker.
+func WithExpectedStatusCodes(codes []int) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			if len(codes) > 0 {
+				httpChecker.expectedStatusCodes = codes
+			}
+		}
+	})
+}
+
+// WithHTTPSkipTLSVerify sets the TLS verification flag for the HTTPChecker.
+func WithHTTPSkipTLSVerify(skip bool) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			httpChecker.skipTLSVerify = skip
+		}
+	})
+}
+
+// WithHTTPTimeout sets the timeout for the HTTPChecker.
+func WithHTTPTimeout(timeout time.Duration) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			if timeout > 0 {
+				httpChecker.timeout = timeout
+			}
+		}
+	})
 }
