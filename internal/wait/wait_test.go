@@ -1,4 +1,4 @@
-package runner
+package wait
 
 import (
 	"context"
@@ -64,7 +64,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -114,7 +114,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -196,7 +196,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -310,7 +310,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -396,7 +396,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			cancel()
 		}()
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil && err != context.Canceled {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}
@@ -444,7 +444,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -482,7 +482,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -537,7 +537,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		var stdOut strings.Builder
 		logger := logger.SetupLogger(cfg, &stdOut)
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
 			t.Errorf("Unexpected error: %q", err)
 		}
@@ -616,7 +616,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			cancel()
 		}()
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil && err != context.Canceled {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}
@@ -654,7 +654,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(50*time.Millisecond))
 		defer cancel() // Ensure cancel is called to free resources
 
-		err = LoopUntilReady(ctx, cfg.CheckInterval, checker, logger)
+		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != context.DeadlineExceeded {
 			t.Errorf("Expected context canceled error, got %q", err)
 		}

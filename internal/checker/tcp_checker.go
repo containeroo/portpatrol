@@ -3,46 +3,67 @@ package checker
 import (
 	"context"
 	"net"
-	"strings"
 	"time"
 )
 
+const defaultTCPTimeout time.Duration = 1 * time.Second
+
 // TCPChecker implements the Checker interface for TCP checks.
 type TCPChecker struct {
-	Name    string      // The name of the checker.
-	Address string      // The address of the target.
-	dialer  *net.Dialer // The dialer to use for the connection.
+	name    string
+	address string
+	timeout time.Duration
+	dialer  *net.Dialer
 }
 
-// String returns the name of the checker.
-func (c *TCPChecker) String() string {
-	return c.Name
+// Name returns the address of the checker.
+func (c *TCPChecker) GetAddress() string {
+	return c.address
 }
 
-// NewTCPChecker creates a new TCPChecker.
-func NewTCPChecker(name, address string, timeout time.Duration) (Checker, error) {
-	// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
-	// so it must be removed before passing the address to other functions.
-	address = strings.TrimPrefix(address, "tcp://")
+// Name returns the name of the checker.
+func (c *TCPChecker) GetName() string {
+	return c.name
+}
 
-	checker := TCPChecker{
-		Address: address,
-		Name:    name,
+// Name returns the type of the checker.
+func (c *TCPChecker) GetType() string {
+	return TCP.String()
+}
+
+// newTCPChecker creates a new TCPChecker with functional options.
+func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) {
+	checker := &TCPChecker{
+		name:    name,
+		address: address,
+		timeout: defaultTCPTimeout,
 		dialer: &net.Dialer{
-			Timeout: timeout,
+			Timeout: defaultTCPTimeout,
 		},
 	}
 
-	return &checker, nil
+	for _, opt := range opts {
+		opt.apply(checker)
+	}
+
+	return checker, nil
 }
 
 // Check performs a TCP connection check.
 func (c *TCPChecker) Check(ctx context.Context) error {
-	conn, err := c.dialer.DialContext(ctx, "tcp", c.Address)
+	conn, err := c.dialer.DialContext(ctx, "tcp", c.address)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-
+	conn.Close()
 	return nil
+}
+
+// WithTCPTimeout sets the timeout for the TCPChecker.
+func WithTCPTimeout(timeout time.Duration) Option {
+	return OptionFunc(func(c Checker) {
+		if tcpChecker, ok := c.(*TCPChecker); ok {
+			tcpChecker.timeout = timeout
+		}
+	})
 }

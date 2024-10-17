@@ -38,18 +38,18 @@ func TestHTTPChecker(t *testing.T) {
 		checkerConfig := checker.(*HTTPChecker) // Type assertion to *HTTPChecker
 
 		expected := "example"
-		if checkerConfig.Name != expected {
-			t.Errorf("expected Name to be '%s', got %v", expected, checkerConfig.Name)
+		if checkerConfig.name != expected {
+			t.Errorf("expected Name to be '%s', got %v", expected, checkerConfig.name)
 		}
 
 		expected = "http://localhost:8080"
-		if checkerConfig.Address != expected {
-			t.Errorf("expected Address to be '%s', got %v", expected, checkerConfig.Address)
+		if checkerConfig.address != expected {
+			t.Errorf("expected Address to be '%s', got %v", expected, checkerConfig.address)
 		}
 
 		expected = "POST"
-		if checkerConfig.Method != expected {
-			t.Errorf("expected Method to be '%s', got %v", expected, checkerConfig.Method)
+		if checkerConfig.method != expected {
+			t.Errorf("expected Method to be '%s', got %v", expected, checkerConfig.method)
 		}
 
 		expectedInsecureSkipVerify := false
@@ -58,14 +58,14 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		expectedStatusCodes := []int{201}
-		if len(checkerConfig.ExpectedStatusCodes) != len(expectedStatusCodes) || checkerConfig.ExpectedStatusCodes[0] != expectedStatusCodes[0] {
-			t.Errorf("expected ExpectedStatusCodes to be %v, got %v", expectedStatusCodes, checkerConfig.ExpectedStatusCodes)
+		if len(checkerConfig.expectedStatusCodes) != len(expectedStatusCodes) || checkerConfig.expectedStatusCodes[0] != expectedStatusCodes[0] {
+			t.Errorf("expected ExpectedStatusCodes to be %v, got %v", expectedStatusCodes, checkerConfig.expectedStatusCodes)
 		}
 
 		expectedHeaders := map[string]string{"Authorization": "Bearer token"}
 		for key, value := range expectedHeaders {
-			if checkerConfig.Headers[key] != value {
-				t.Errorf("expected Headers[%s] to be '%s', got '%s'", key, value, checkerConfig.Headers[key])
+			if checkerConfig.headers[key] != value {
+				t.Errorf("expected Headers[%s] to be '%s', got '%s'", key, value, checkerConfig.headers[key])
 			}
 		}
 
@@ -283,8 +283,8 @@ func TestHTTPChecker(t *testing.T) {
 			"Content-Type": "application/json",
 		}
 
-		if !reflect.DeepEqual(c.Headers, expectedHeaders) {
-			t.Fatalf("expected headers %v, got %v", expectedHeaders, c.Headers)
+		if !reflect.DeepEqual(c.headers, expectedHeaders) {
+			t.Fatalf("expected headers %v, got %v", expectedHeaders, c.headers)
 		}
 	})
 

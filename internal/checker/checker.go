@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// CheckType is an enumeration that represents the type of check being performed.
+// CheckType represents the type of check to perform.
 type CheckType int
 
 const (
@@ -16,9 +16,24 @@ const (
 	ICMP                  // ICMP represents a check using the ICMP protocol (ping).
 )
 
+const defaultCheckInterval time.Duration = 1 * time.Second
+
 // String returns the string representation of the CheckType.
 func (c CheckType) String() string {
 	return [...]string{"TCP", "HTTP", "ICMP"}[c]
+}
+
+// Option defines a functional option for configuring a Checker.
+type Option interface {
+	apply(Checker)
+}
+
+// OptionFunc is a function that applies an Option to a Checker.
+type OptionFunc func(Checker)
+
+// apply calls the OptionFunc with the given Checker.
+func (f OptionFunc) apply(c Checker) {
+	f(c)
 }
 
 // Checker defines an interface for performing various types of checks, such as TCP, HTTP, or ICMP.
@@ -27,19 +42,33 @@ type Checker interface {
 	// Check performs a check and returns an error if the check fails.
 	Check(ctx context.Context) error
 
-	// String returns the name of the checker.
-	String() string
+	// GetName returns the name of the checker.
+	GetName() string
+
+	// GetType returns the type of the checker
+	GetType() string
+
+	// GetAddress returns the address of the ckecker
+	GetAddress() string
 }
 
-// Factory function that returns the appropriate Checker based on checkType.
-func NewChecker(checkType CheckType, name, address string, timeout time.Duration, getEnv func(string) string) (Checker, error) {
+// NewChecker creates a new Checker based on the specified CheckType, name, address, and options.
+func NewChecker(checkType CheckType, name, address string, opts ...Option) (Checker, error) {
 	switch checkType {
-	case HTTP: // HTTP and HTTPS checkers may need environment variables for proxy settings, etc.
-		return NewHTTPChecker(name, address, timeout, getEnv)
-	case TCP: // TCP checkers may not need environment variables
-		return NewTCPChecker(name, address, timeout)
-	case ICMP: // ICMP checkers may have a different timeout logic
-		return NewICMPChecker(name, address, timeout, getEnv)
+	case HTTP:
+		return newHTTPChecker(name, address, opts...)
+	case TCP:
+		// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
+		// so it must be removed before passing the address to other functions.
+		address = strings.TrimPrefix(address, "tcp://")
+
+		return newTCPChecker(name, address, opts...)
+	case ICMP:
+		// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
+		// so it must be removed before passing the address to other functions.
+		address = strings.TrimPrefix(address, "icmp://")
+
+		return newICMPChecker(name, address, opts...)
 	default:
 		return nil, fmt.Errorf("unsupported check type: %d", checkType)
 	}
