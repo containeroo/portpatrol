@@ -28,9 +28,19 @@ type HTTPChecker struct {
 	client              *http.Client
 }
 
+// Name returns the address of the checker.
+func (c *HTTPChecker) GetAddress() string {
+	return c.address
+}
+
 // Name returns the name of the checker.
-func (c *HTTPChecker) Name() string {
+func (c *HTTPChecker) GetName() string {
 	return c.name
+}
+
+// Name returns the type of the checker.
+func (c *HTTPChecker) GetType() string {
+	return HTTP.String()
 }
 
 // newHTTPChecker creates a new HTTPChecker with functional options.
@@ -107,9 +117,7 @@ func WithHTTPMethod(method string) Option {
 func WithHTTPHeaders(headers map[string]string) Option {
 	return OptionFunc(func(c Checker) {
 		if httpChecker, ok := c.(*HTTPChecker); ok {
-			for key, value := range headers {
-				httpChecker.headers[key] = value
-			}
+			httpChecker.headers = headers
 		}
 	})
 }
@@ -118,9 +126,7 @@ func WithHTTPHeaders(headers map[string]string) Option {
 func WithExpectedStatusCodes(codes []int) Option {
 	return OptionFunc(func(c Checker) {
 		if httpChecker, ok := c.(*HTTPChecker); ok {
-			if len(codes) > 0 {
-				httpChecker.expectedStatusCodes = codes
-			}
+			httpChecker.expectedStatusCodes = codes
 		}
 	})
 }
@@ -138,9 +144,7 @@ func WithHTTPSkipTLSVerify(skip bool) Option {
 func WithHTTPTimeout(timeout time.Duration) Option {
 	return OptionFunc(func(c Checker) {
 		if httpChecker, ok := c.(*HTTPChecker); ok {
-			if timeout > 0 {
-				httpChecker.timeout = timeout
-			}
+			httpChecker.timeout = timeout
 		}
 	})
 }

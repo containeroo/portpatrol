@@ -42,8 +42,14 @@ type Checker interface {
 	// Check performs a check and returns an error if the check fails.
 	Check(ctx context.Context) error
 
-	// Name returns the name of the checker.
-	Name() string
+	// GetName returns the name of the checker.
+	GetName() string
+
+	// GetType returns the type of the checker
+	GetType() string
+
+	// GetAddress returns the address of the ckecker
+	GetAddress() string
 }
 
 // NewChecker creates a new Checker based on the specified CheckType, name, address, and options.

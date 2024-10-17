@@ -6,45 +6,105 @@
 
 `PortPatrol` is a simple Go application that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated. Intended to run as a Kubernetes initContainer, `PortPatrol` helps verify whether a dependency is ready. Configuration is managed through environment variables; for more details, refer to the [Environment Variables](#EnvironmentVariables) section."
 
-## Environment Variables
+## Command-Line Flags
 
-`PortPatrol` accepts the following environment variables:
+`PortPatrol` accepts the following command-line flags:
 
-### Common Variables
+### Common Flags
 
-- `TARGET_NAME`: Name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, it's derived from the target address. For example, `http://postgres.default.svc.cluster.local:5432` is inferred as `postgres.default.svc.cluster.local`.
-- `TARGET_ADDRESS`: The target's address in the following formats:
+| Flag                  | Type     | Default | Description                                                                                   |
+|-----------------------|----------|---------|-----------------------------------------------------------------------------------------------|
+| `--default-interval`  | duration | `2s`    | Default interval between checks. Can be overridden for each target.                           |
+| `--debug`             | bool     | `false` | Enable logging of additional fields.                                                         |
+| `--version`           | bool     | `false` | Show version and exit.                                                                        |
+| `--help`, `-h`        | bool     | `false` | Show help.                                                                                    |
 
+### Target Flags
+
+Use the `--target.<name>.<property>=<value>` format to define targets.
+
+#### Common Target Properties
+
+- **`--target.<name>.address`** = `string`
+  The target's address. Supported formats:
   - **TCP**: `host:port` (port is required).
   - **HTTP**: `scheme://host[:port]` (scheme is required).
   - **ICMP**: `host` (no scheme and port allowed).
 
-  You can always specify a scheme (e.g., `http://`, `tcp://`, `icmp://`) in `TARGET_ADDRESS`, which automatically infers the `TARGET_CHECK_TYPE`, making the `TARGET_CHECK_TYPE` variable optional.
+  If a scheme (e.g., `http://`, `tcp://`, `icmp://`) is specified, the check type is automatically inferred, making the `--target.<name>.type` flag optional.
 
-- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http`, `https`, or `icmp`). If no scheme is provided in `TARGET_ADDRESS`, this variable determines the check type. If a scheme is provided, `TARGET_CHECK_TYPE` becomes obsolete.
-- `CHECK_INTERVAL`: Time between connection attempts (optional, default: `2s`).
-- `DIAL_TIMEOUT`: Maximum allowed time for each connection attempt (optional, default: `1s`).
-- `LOG_EXTRA_FIELDS`: Enable logging of additional fields (optional, default: `false`).
+- **`--target.<name>.name`** = `string`
+  The name of the target. If not specified, it is derived from the target address.
 
-### HTTP-Specific Variables
+- **`--target.<name>.type`** = `string`
+  The type of check to perform. Must be `tcp`, `http`, `https`, or `icmp`. If a scheme is specified in `--target.<name>.address`, this flag can be omitted as the type will be inferred.
 
-- `HTTP_METHOD`: HTTP method to use (optional, default: `GET`).
-- `HTTP_HEADERS`: Comma-separated list of HTTP headers in `key=value` format (optional). Examples:
-  - `Authorization=Bearer token`
-  - `Content-Type=application/json,Accept=application/json`
-- `HTTP_ALLOW_DUPLICATE_HEADERS`: Allow duplicate headers (optional, default: `false`).
-- `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`). You can specify individual status codes or ranges:
-  - `200,301,404`
-  - `200,300-302`
-  - `200,301-302,404,500-502`
-- `HTTP_SKIP_TLS_VERIFY`: Skip TLS verification (optional, default: `false`).
-- `HTTP_PROXY`: HTTP proxy to use (optional).
-- `HTTPS_PROXY`: HTTPS proxy to use (optional).
-- `NO_PROXY`: Comma-separated list of domains to exclude from proxying (optional).
+- **`--target.<name>.timeout`** = `duration`
+  The timeout for each connection attempt (e.g., `2s`, `500ms`).
 
-### ICMP-Specific Variables
+- **`--target.<name>.interval`** = `duration`
+  Override the default interval for this target (e.g., `5s`).
 
-- `ICMP_READ_TIMEOUT`: Maximum allowed time for each ICMP echo reply (optional, default: `1s`).
+#### HTTP-Specific Flags
+
+- **`--target.<name>.method`** = `string`
+  The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
+
+- **`--target.<name>.headers`** = `string`
+  A comma-separated list of HTTP headers in `key=value` format.
+  **Example:** `Authorization=Bearer token,Content-Type=application/json`
+
+- **`--target.<name>.allow-duplicate-headers`** = `bool`
+  Allow duplicate headers. Defaults to `false`.
+
+- **`--target.<name>.expected-status-codes`** = `string`
+  A comma-separated list of expected HTTP status codes or ranges (e.g., `200,301-302`). Defaults to `200`.
+
+- **`--target.<name>.skip-tls-verify`** = `bool`
+  Whether to skip TLS verification. Defaults to `false`.
+
+- **`--target.<name>.timeout`** = `duration`
+  The timeout for the HTTP request (e.g., `5s`). Defaults to `1s`.
+
+#### ICMP-Specific Flags
+
+- **`--target.<name>.read-timeout`** = `duration`
+  The read timeout for the ICMP connection (e.g., `1s`). Defaults to `1s`.
+
+- **`--target.<name>.write-timeout`** = `duration`
+  The write timeout for the ICMP connection (e.g., `1s`).Defaults to `1s`.
+
+### Examples
+
+#### Define an HTTP Target
+
+```sh
+portpatrol \
+  --target.web.type=http \
+  --target.web.address=http://example.com:80 \
+  --target.web.method=GET \
+  --target.web.expected-status-codes=200,204 \
+  --target.web.headers="Authorization=Bearer token,Content-Type=application/json" \
+  --target.web.skip-tls-verify=false \
+  --default-interval=5s \
+  --debug
+```
+
+#### Define Multiple Targets (HTTP and TCP) Running in Parallel
+
+```sh
+portpatrol \
+  --target.web.type=http \
+  --target.web.address=http://example.com:80 \
+  --target.db.type=tcp \
+  --target.db.address=tcp://localhost:5432 \
+  --default-interval=10s
+```
+
+#### Notes
+
+**Proxy Settings**: Proxy configurations (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) are managed via environment variables.
+**Type Inference**: If a scheme (`http://`, `tcp://`, `icmp://`) is provided in the `--target.<identifier>.address`, the `--target.<name>.type` flag becomes optional as the type is inferred from the scheme.
 
 ## Behavior Flowchart
 
@@ -280,8 +340,9 @@ initContainers:
     - --target.postgres.method=POST
     - --target.postgres.headers=Authorization=Bearer token
     - --target.postgres.expected-status-codes=200,202
-    - --target-address=http://postgres2.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
-    - --target-address=http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
+    - --target.redis.name=redis
+    - --target.redis.address=redis.default.svc.cluster.local:6437
+    - --target.redis.type=tcp
     env:
       - name: TARGET_ADDRESS
         value: http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready

@@ -16,9 +16,19 @@ type TCPChecker struct {
 	dialer  *net.Dialer
 }
 
+// Name returns the address of the checker.
+func (c *TCPChecker) GetAddress() string {
+	return c.address
+}
+
 // Name returns the name of the checker.
-func (c *TCPChecker) Name() string {
+func (c *TCPChecker) GetName() string {
 	return c.name
+}
+
+// Name returns the type of the checker.
+func (c *TCPChecker) GetType() string {
+	return TCP.String()
 }
 
 // newTCPChecker creates a new TCPChecker with functional options.

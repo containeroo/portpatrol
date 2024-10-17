@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const version = "0.4.7"
+const version = "0.5.0"
 
 // run is the main function of the application.
 func run(ctx context.Context, args []string, output io.Writer) error {
@@ -22,15 +22,24 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	f, err := flags.ParseFlags(args, version)
+	f, err := flags.ParseCommandLineFlags(args, version)
 	if err != nil {
-		return fmt.Errorf("configuration error: %w", err)
+		switch e := err.(type) {
+		case *flags.HelpRequested:
+			fmt.Fprintf(output, e.Message)
+			return nil
+		case *flags.VersionRequested:
+			fmt.Fprintf(output, e.Version)
+			return nil
+		default:
+			return fmt.Errorf("configuration error: %s", err)
+		}
 	}
 	f.Version = version
 
-	checkers, err := flags.ParseTargets(f.Targets, f.DefaultCheckInterval)
+	checkers, err := flags.InitializeTargetCheckers(f.Targets, f.DefaultCheckInterval)
 	if err != nil {
-		return fmt.Errorf("parse error: %w", err)
+		return fmt.Errorf("initalize target checkers error: %w", err)
 	}
 
 	logger := logger.SetupLogger(f, output)
@@ -42,7 +51,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		eg.Go(func() error {
 			err := wait.WaitUntilReady(ctx, checker.Interval, checker.Checker, logger)
 			if err != nil {
-				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.Name(), err)
+				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.GetName(), err)
 			}
 			return nil
 		})

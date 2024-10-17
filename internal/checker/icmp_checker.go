@@ -23,9 +23,19 @@ type ICMPChecker struct {
 	protocol     Protocol
 }
 
+// Name returns the address of the checker.
+func (c *ICMPChecker) GetAddress() string {
+	return c.address
+}
+
 // Name returns the name of the checker.
-func (c *ICMPChecker) Name() string {
+func (c *ICMPChecker) GetName() string {
 	return c.name
+}
+
+// Name returns the type of the checker.
+func (c *ICMPChecker) GetType() string {
+	return ICMP.String()
 }
 
 // newICMPChecker initializes a new ICMPChecker with functional options.
@@ -110,9 +120,7 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 func WithICMPReadTimeout(timeout time.Duration) Option {
 	return OptionFunc(func(c Checker) {
 		if icmpChecker, ok := c.(*ICMPChecker); ok {
-			if timeout > 0 {
-				icmpChecker.readTimeout = timeout
-			}
+			icmpChecker.readTimeout = timeout
 		}
 	})
 }
@@ -121,9 +129,7 @@ func WithICMPReadTimeout(timeout time.Duration) Option {
 func WithICMPWriteTimeout(timeout time.Duration) Option {
 	return OptionFunc(func(c Checker) {
 		if icmpChecker, ok := c.(*ICMPChecker); ok {
-			if timeout > 0 {
-				icmpChecker.writeTimeout = timeout
-			}
+			icmpChecker.writeTimeout = timeout
 		}
 	})
 }
