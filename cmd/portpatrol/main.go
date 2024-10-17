@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -24,20 +25,22 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 
 	f, err := flags.ParseCommandLineFlags(args, version)
 	if err != nil {
-		switch e := err.(type) {
-		case *flags.HelpRequested:
-			fmt.Fprintf(output, e.Message)
+		var helpErr *flags.HelpRequested
+		var versionErr *flags.VersionRequested
+		switch {
+		case errors.As(err, &helpErr):
+			fmt.Fprintf(output, helpErr.Message)
 			return nil
-		case *flags.VersionRequested:
-			fmt.Fprintf(output, e.Version)
+		case errors.As(err, &versionErr):
+			fmt.Fprintf(output, versionErr.Version)
 			return nil
 		default:
-			return fmt.Errorf("configuration error: %s", err)
+			return fmt.Errorf("configuration error: %w", err)
 		}
 	}
 	f.Version = version
 
-	checkers, err := flags.InitializeTargetCheckers(f.Targets, f.DefaultCheckInterval)
+	checkers, err := flags.BuildTargetCheckers(f.Targets, f.DefaultCheckInterval)
 	if err != nil {
 		return fmt.Errorf("initalize target checkers error: %w", err)
 	}
@@ -57,7 +60,12 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		})
 	}
 
-	return eg.Wait()
+	// Wait for all goroutines to finish
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {

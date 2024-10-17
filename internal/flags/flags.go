@@ -130,50 +130,6 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 	}, nil
 }
 
-// displayCheckerProperties appends checker properties documentation to the buffer, including the expected type for each flag.
-func displayCheckerProperties(buf *bytes.Buffer) {
-	// Initialize a new tab writer with 2-space indentation
-	w := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
-
-	// TCP Checker properties
-	fmt.Fprintln(w, "\nTCP Checker Properties:")
-	fmt.Fprintln(w, "  Flag\tDescription")
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe IP address or hostname of the target in the following format: tcp://hostname:port\n\tIf the (tcp://) is specified, the check type is automatically inferred,\n\tmaking the --%s.<IDENTIFIER>%s flag optional.\n", paramPrefix, paramAddress, paramPrefix, paramType)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe name of the target. If not specified, it's derived from the target address.\n", paramPrefix, paramName)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe type of check to perform. If the scheme (tcp://) is specified in --%s.<IDENTIFIER>.%s,\n\tthis flag can be omitted as the type will be inferred.\n", paramPrefix, paramType, paramPrefix, paramAddress)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\tThe timeout for the TCP connection (e.g., 2s, 500ms).\n", paramPrefix, paramTCPTimeout)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\toverride the default interval for this target (e.g., 5s).\n", paramPrefix, paramInterval)
-	fmt.Fprintln(w, "")
-
-	// HTTP Checker properties
-	fmt.Fprintln(w, "HTTP Checker Properties:")
-	fmt.Fprintln(w, "  Flag\tDescription")
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe IP address or hostname of the target in the following format: scheme://hostname:[port]\n\tIf a scheme (e.g. http://) is specified, the check type is automatically inferred,\n\tmaking the --%s.<IDENTIFIER>%s flag optional.\n", paramPrefix, paramAddress, paramPrefix, paramType)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe name of the target. If not specified, it's derived from the target address.\n", paramPrefix, paramName)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe type of check to perform. If a scheme (e.g. http://) is specified in --%s.<IDENTIFIER>.%s,\n\tthis flag can be omitted as the type will be inferred.\n", paramPrefix, paramType, paramPrefix, paramAddress)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe HTTP method to use (e.g., GET, POST). Defaults to \"GET\".\n", paramPrefix, paramHTTPMethod)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tA comma-separated list of HTTP headers to include in the request in \"key=value\" format.\n\tExample: Authorization=Bearer token,Content-Type=application/json\n", paramPrefix, paramHTTPHeaders)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tA comma-separated list of expected HTTP status codes or ranges. Defaults to 200.\n\tExample: \"200,301,404\" or \"200,300-302\" or \"200,301-302,404,500-502\"\n", paramPrefix, paramHTTPExpectedStatusCodes)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s bool\tWhether to skip TLS verification. Defaults to false.\n", paramPrefix, paramHTTPSkipTLSVerify)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\tThe timeout for the HTTP request (e.g., 5s).\n", paramPrefix, paramHTTPTimeout)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\t(Optional) Override the default interval for this target (e.g., 10s).\n", paramPrefix, paramInterval)
-	fmt.Fprintln(w, "")
-
-	// ICMP Checker properties
-	fmt.Fprintln(w, "ICMP Checker Properties:")
-	fmt.Fprintln(w, "  Flag\tDescription")
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe IP address or hostname of the target in the following format: icmp://hostname (no port allowed).\n\tIf the scheme (icmp://) is specified, the check type is automatically inferred,\n\tmaking the --%s.<IDENTIFIER>%s flag optional.\n", paramPrefix, paramAddress, paramPrefix, paramType)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe name of the target. If not specified, it's derived from the target address.\n", paramPrefix, paramName)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s string\tThe type of check to perform. If the scheme (icmp://) is specified in --%s.<IDENTIFIER>.%s,\n\tthis flag can be omitted as the type will be inferred.\n", paramPrefix, paramType, paramPrefix, paramAddress)
-
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\tThe read timeout for the ICMP connection (e.g., 1s).\n", paramPrefix, paramICMPReadTimeout)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\tThe write timeout for the ICMP connection (e.g., 1s).\n", paramPrefix, paramICMPWriteTimeout)
-	fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s duration\t(Optional) Override the default interval for this target (e.g., 5s).\n", paramPrefix, paramInterval)
-
-	// Flush the writer to ensure all data is written to the buffer
-	w.Flush()
-}
-
 // extractDynamicTargetFlags processes dynamic target flags and returns target configurations.
 func extractDynamicTargetFlags(dynamicArgs []string, buf bytes.Buffer) (map[string]map[string]string, error) {
 	targets := make(map[string]map[string]string)
