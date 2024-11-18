@@ -5,9 +5,8 @@ import (
 	"log/slog"
 )
 
-// SetupLogger configures the logger based on the configuration.
+// SetupLogger configures the application logger.
 func SetupLogger(version string, output io.Writer) *slog.Logger {
-	return slog.New(slog.NewTextHandler(output, &slog.HandlerOptions{})).With(
-		slog.String("version", version),
-	)
+	logger := slog.New(slog.NewTextHandler(output, &slog.HandlerOptions{}))
+	return logger.With(slog.String("version", version))
 }

@@ -20,15 +20,10 @@ const (
 	defaultHTTPSkipTLSVerify         bool   = false
 )
 
-// parseHTTPCheckerOptions parses HTTP checker specific options from parameters.
+// parseHTTPCheckerOptions parses HTTP checker-specific options from parameters.
 func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error) {
 	var opts []checker.Option
-
-	// Track unrecognized parameters
-	unrecognizedParams := make(map[string]struct{})
-	for key := range params {
-		unrecognizedParams[key] = struct{}{}
-	}
+	unrecognizedParams := trackUnrecognizedParams(params)
 
 	// HTTP Method
 	if method, ok := params[ParamHTTPMethod]; ok && method != "" {
@@ -71,7 +66,7 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error)
 	if skipStr, ok := params[ParamHTTPSkipTLSVerify]; ok && skipStr != "" {
 		skip, err := strconv.ParseBool(skipStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %s: %w", ParamHTTPSkipTLSVerify, err)
+			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPSkipTLSVerify, err)
 		}
 		opts = append(opts, checker.WithHTTPSkipTLSVerify(skip))
 		delete(unrecognizedParams, ParamHTTPSkipTLSVerify)
@@ -79,21 +74,17 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error)
 
 	// Timeout
 	if timeoutStr, ok := params[ParamHTTPTimeout]; ok && timeoutStr != "" {
-		t, err := time.ParseDuration(timeoutStr)
-		if err != nil || t <= 0 {
+		timeout, err := time.ParseDuration(timeoutStr)
+		if err != nil || timeout <= 0 {
 			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPTimeout, err)
 		}
-		opts = append(opts, checker.WithHTTPTimeout(t))
+		opts = append(opts, checker.WithHTTPTimeout(timeout))
 		delete(unrecognizedParams, ParamHTTPTimeout)
 	}
 
 	// Check for unrecognized parameters
 	if len(unrecognizedParams) > 0 {
-		var unknownKeys []string
-		for key := range unrecognizedParams {
-			unknownKeys = append(unknownKeys, key)
-		}
-		return nil, fmt.Errorf("unrecognized parameters for HTTP checker: %v", unknownKeys)
+		return nil, fmt.Errorf("unrecognized parameters for HTTP checker: %v", mapKeys(unrecognizedParams))
 	}
 
 	return opts, nil

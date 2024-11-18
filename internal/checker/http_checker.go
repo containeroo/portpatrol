@@ -32,28 +32,24 @@ func (c *HTTPChecker) GetAddress() string { return c.address }
 func (c *HTTPChecker) GetName() string    { return c.name }
 func (c *HTTPChecker) GetType() string    { return HTTP.String() }
 func (c *HTTPChecker) Check(ctx context.Context) error {
-	// Create the HTTP request
 	req, err := http.NewRequestWithContext(ctx, c.method, c.address, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Add headers to the request
 	for key, value := range c.headers {
 		req.Header.Add(key, value)
 	}
 
-	// Perform the HTTP request
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Check the response status code
 	for _, code := range c.expectedStatusCodes {
 		if resp.StatusCode == code {
-			return nil // Return nil if the status code matches
+			return nil
 		}
 	}
 
@@ -72,12 +68,10 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 		timeout:             defaultHTTPTimeout,
 	}
 
-	// Apply options
 	for _, opt := range opts {
 		opt.apply(checker)
 	}
 
-	// Initialize the HTTP client
 	checker.client = &http.Client{
 		Timeout: checker.timeout,
 		Transport: &http.Transport{

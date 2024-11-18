@@ -35,8 +35,6 @@ func InitializeTargetCheckers(targets map[string]map[string]string, defaultInter
 		// Determine the check type
 		checkTypeStr, ok := params[ParamType]
 		if !ok || checkTypeStr == "" {
-			// Try to infer the type from the address scheme
-			address := params[ParamAddress]
 			parts := strings.SplitN(address, "://", 2)
 			if len(parts) != 2 {
 				return nil, fmt.Errorf("missing %q parameter for target %q", ParamType, targetName)
@@ -71,28 +69,9 @@ func InitializeTargetCheckers(targets map[string]map[string]string, defaultInter
 		delete(params, ParamInterval)
 
 		// Collect functional options based on the check type
-		var options []checker.Option
-		switch checkType {
-		case checker.HTTP:
-			httpOpts, err := parseHTTPCheckerOptions(params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse HTTP options for target %q: %w", targetName, err)
-			}
-			options = append(options, httpOpts...)
-		case checker.TCP:
-			tcpOpts, err := parseTCPCheckerOptions(params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse TCP options for target '%s': %w", targetName, err)
-			}
-			options = append(options, tcpOpts...)
-		case checker.ICMP:
-			icmpOpts, err := parseICMPCheckerOptions(params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse ICMP options for target %q: %w", targetName, err)
-			}
-			options = append(options, icmpOpts...)
-		default:
-			return nil, fmt.Errorf("unsupported check type %q for target %q", checkTypeStr, targetName)
+		options, err := collectCheckerOptions(checkType, params, targetName)
+		if err != nil {
+			return nil, err
 		}
 
 		// Create the checker using the functional options
@@ -108,4 +87,18 @@ func InitializeTargetCheckers(targets map[string]map[string]string, defaultInter
 	}
 
 	return targetCheckers, nil
+}
+
+// collectCheckerOptions collects functional options for a specific check type.
+func collectCheckerOptions(checkType checker.CheckType, params map[string]string, targetName string) ([]checker.Option, error) {
+	switch checkType {
+	case checker.HTTP:
+		return parseHTTPCheckerOptions(params)
+	case checker.TCP:
+		return parseTCPCheckerOptions(params)
+	case checker.ICMP:
+		return parseICMPCheckerOptions(params)
+	default:
+		return nil, fmt.Errorf("unsupported check type for target %q", targetName)
+	}
 }

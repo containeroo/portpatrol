@@ -23,26 +23,27 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	// Create a new context that listens for interrupt signals
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-
+	// Parse command-line flags
 	f, err := flags.ParseCommandLineFlags(args, version)
 	if err != nil {
 		var helpErr *flags.HelpRequested
 		if errors.As(err, &helpErr) {
-			fmt.Fprintf(output, helpErr.Message)
+			fmt.Fprint(output, helpErr.Message)
 			return nil
 		}
 		return fmt.Errorf("configuration error: %w", err)
 	}
 
+	// Initialize target checkers
 	checkers, err := parser.InitializeTargetCheckers(f.Targets, f.DefaultCheckInterval)
 	if err != nil {
-		return fmt.Errorf("initalize target checkers error: %w", err)
+		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}
 
 	logger := logger.SetupLogger(version, output)
 
+	// Run checkers concurrently
 	eg, ctx := errgroup.WithContext(ctx)
-
 	for _, chk := range checkers {
 		checker := chk // Capture loop variable
 		eg.Go(func() error {
@@ -54,6 +55,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		})
 	}
 
+	// Wait for all checkers to finish or return error
 	if err := eg.Wait(); err != nil {
 		return err
 	}
@@ -62,11 +64,11 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 }
 
 func main() {
-	// Create a root context with no cancellation or deadline.
+	// Create a root context
 	ctx := context.Background()
 
 	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

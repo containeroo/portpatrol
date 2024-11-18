@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Constants and parameter keys
 const (
 	defaultDebug         bool          = false
 	paramDefaultInterval string        = "default-interval"
@@ -36,7 +35,7 @@ type ParsedFlags struct {
 	Targets              map[string]map[string]string
 }
 
-// ParseCommandLineFlags parses command line arguments and returns the parsed flags.
+// ParseCommandLineFlags parses command-line arguments and returns the parsed flags.
 func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) {
 	var knownArgs []string
 	var dynamicArgs []string
@@ -52,7 +51,7 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 		dynamicArgs = append(dynamicArgs, arg)
 		// Check if the next argument is not a flag (happens when "--target.identifier.param value" has no = between param and value)
 		if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
-			i++ // Use next argument as value
+			i++ // Append the next argument as the value
 			dynamicArgs = append(dynamicArgs, args[i])
 		}
 	}
@@ -61,7 +60,7 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 	flagSet := pflag.NewFlagSet(flagSetName, pflag.ContinueOnError)
 	flagSet.SortFlags = false
 
-	// Buffer to capture help and error messages
+	// Buffer for capturing help and error messages
 	var buf bytes.Buffer
 	flagSet.SetOutput(&buf)
 
@@ -73,7 +72,7 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 	}
 
 	// Define known flags
-	checkInterval := flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overwritten for each target.")
+	checkInterval := flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
 	showVersion := flagSet.Bool("version", false, "Show version and exit.")
 	showHelp := flagSet.BoolP("help", "h", false, "Show help.")
 
@@ -85,18 +84,18 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 		return nil, errors.New(buf.String())
 	}
 
-	// Handle help
+	// Handle help request
 	if *showHelp {
 		flagSet.Usage()
 		return nil, &HelpRequested{Message: buf.String()}
 	}
 
-	// Handle version
+	// Handle version request
 	if *showVersion {
 		return nil, &HelpRequested{Message: fmt.Sprintf("%s version %s", flagSetName, version)}
 	}
 
-	// Process dynamic target flags
+	// Parse dynamic target flags
 	targets, err := extractDynamicTargetFlags(dynamicArgs, buf)
 	if err != nil {
 		return nil, err
@@ -108,13 +107,12 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 	}, nil
 }
 
-// extractDynamicTargetFlags processes dynamic target flags and returns target configurations.
+// extractDynamicTargetFlags parses and validates dynamic target flags.
 func extractDynamicTargetFlags(dynamicArgs []string, buf bytes.Buffer) (map[string]map[string]string, error) {
 	targets := make(map[string]map[string]string)
 
 	for i := 0; i < len(dynamicArgs); i++ {
 		arg := dynamicArgs[i]
-
 		flagName := strings.TrimPrefix(arg, "--")
 
 		var value string
@@ -126,14 +124,13 @@ func extractDynamicTargetFlags(dynamicArgs []string, buf bytes.Buffer) (map[stri
 		} else if i+1 < len(dynamicArgs) && !strings.HasPrefix(dynamicArgs[i+1], "--") {
 			// Handle "--target.name.param value" format
 			value = dynamicArgs[i+1]
-			i++ // Skip the value in the next iteration
+			i++ // Skip the next value
 		} else {
 			return nil, fmt.Errorf("missing value for flag: %s\n\n%s", arg, buf.String())
 		}
 
-		// Split the flag name into parts
-		nameParts := strings.Split(flagName, ".")
-		if len(nameParts) < 3 {
+		parts := strings.Split(flagName, ".")
+		if len(parts) < 3 {
 			return nil, fmt.Errorf("invalid target flag format: %s\n\n%s", flagName, buf.String())
 		}
 

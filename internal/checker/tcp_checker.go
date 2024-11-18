@@ -24,7 +24,7 @@ func (c *TCPChecker) Check(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	conn.Close()
+	defer conn.Close()
 	return nil
 }
 
@@ -33,7 +33,6 @@ func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) {
 	checker := &TCPChecker{
 		name:    name,
 		address: address,
-		timeout: defaultTCPTimeout,
 		dialer: &net.Dialer{
 			Timeout: defaultTCPTimeout,
 		},
@@ -50,7 +49,7 @@ func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) {
 func WithTCPTimeout(timeout time.Duration) Option {
 	return OptionFunc(func(c Checker) {
 		if tcpChecker, ok := c.(*TCPChecker); ok {
-			tcpChecker.timeout = timeout
+			tcpChecker.dialer.Timeout = timeout
 		}
 	})
 }
