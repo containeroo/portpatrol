@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 )
 
 // CheckType represents the type of check to perform.
@@ -15,8 +14,6 @@ const (
 	HTTP                  // HTTP represents a check over the HTTP protocol.
 	ICMP                  // ICMP represents a check using the ICMP protocol (ping).
 )
-
-const defaultCheckInterval time.Duration = 1 * time.Second
 
 // String returns the string representation of the CheckType.
 func (c CheckType) String() string {

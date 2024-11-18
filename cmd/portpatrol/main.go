@@ -39,6 +39,10 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}
 
+	if len(checkers) == 0 {
+		return errors.New("configuration error: no checkers configured")
+	}
+
 	logger := logging.SetupLogger(version, output)
 
 	// Run checkers concurrently

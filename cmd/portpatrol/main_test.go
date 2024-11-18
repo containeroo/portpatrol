@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -11,266 +10,146 @@ import (
 	"time"
 )
 
-func TestRun(t *testing.T) {
+func TestRunHTTPReady(t *testing.T) {
 	t.Parallel()
 
-	const (
-		envTargetName          string = "TARGET_NAME"
-		envTargetAddress       string = "TARGET_ADDRESS"
-		envTargetCheckType     string = "TARGET_CHECK_TYPE"
-		envCheckInterval       string = "CHECK_INTERVAL"
-		envDialTimeout         string = "DIAL_TIMEOUT"
-		envLogAdditionalFields string = "LOG_EXTRA_FIELDS"
-		envHTTPHeaders         string = "HTTP_HEADERS"
-	)
+	args := []string{
+		"--target.httpcheck.name=HTTPServer",
+		"--target.httpcheck.address=http://localhost:8081",
+		"--target.httpcheck.interval=1s",
+		"--target.httpcheck.timeout=1s",
+		"--target.httpcheck.type=http",
+	}
 
-	t.Run("HTTP Target is ready", func(t *testing.T) {
-		t.Parallel()
-
-		env := map[string]string{
-			envTargetAddress:   "http://localhost:8081",
-			envCheckInterval:   "1s",
-			envDialTimeout:     "1s",
-			envTargetCheckType: "http",
-		}
-
-		mockEnv := func(key string) string {
-			return env[key]
-		}
-
-		server := &http.Server{Addr: ":8081"}
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		})
-
-		go func() { // make linter happy
-			_ = server.ListenAndServe()
-		}()
-		defer server.Close()
-
-		var output strings.Builder
-
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		// cancel after 2 Seconds
-		go func() {
-			time.Sleep(2 * time.Second)
-			cancel()
-		}()
-
-		err := run(ctx, mockEnv, &output)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
-		last := len(outputEntries) - 1
-
-		expected := "localhost is ready ✓"
-		if !strings.Contains(outputEntries[last], expected) {
-			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
-		}
+	server := &http.Server{Addr: ":8081"}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
 
-	t.Run("TCP Target is ready", func(t *testing.T) {
-		t.Parallel()
+	go func() { _ = server.ListenAndServe() }()
+	defer server.Close()
 
-		env := map[string]string{
-			envTargetAddress: "localhost:8082",
-			envCheckInterval: "1s",
-			envDialTimeout:   "1s",
-		}
+	var output strings.Builder
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-		mockEnv := func(key string) string {
-			return env[key]
-		}
+	err := run(ctx, args, &output)
+	if err != nil {
+		t.Fatalf("Expected no error, got %q", err)
+	}
 
-		listener, err := net.Listen("tcp", "localhost:8082")
-		if err != nil {
-			t.Fatalf("Failed to start TCP server: %q", err)
-		}
-		defer listener.Close()
+	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
+	last := len(outputEntries) - 1
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+	expected := "HTTPServer is ready ✓"
+	if !strings.Contains(outputEntries[last], expected) {
+		t.Errorf("Expected output to contain %q but got %q", expected, output.String())
+	}
+}
 
-		// cancel after 2 Seconds
-		go func() {
-			time.Sleep(2 * time.Second)
-			cancel()
-		}()
+func TestRunTCPReady(t *testing.T) {
+	t.Parallel()
 
-		var output strings.Builder
+	args := []string{
+		"--target.tcptest.name=TCPServer",
+		"--target.tcptest.address=localhost:8082",
+		"--target.tcptest.interval=1s",
+		"--target.tcptest.timeout=1s",
+		"--target.tcptest.type=tcp",
+	}
 
-		err = run(ctx, mockEnv, &output)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+	listener, err := net.Listen("tcp", "localhost:8082")
+	if err != nil {
+		t.Fatalf("Failed to start TCP server: %q", err)
+	}
+	defer listener.Close()
 
-		outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
-		last := len(outputEntries) - 1
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-		expected := "localhost is ready ✓"
-		if !strings.Contains(outputEntries[last], expected) {
-			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
-		}
-	})
+	var output strings.Builder
+	err = run(ctx, args, &output)
+	if err != nil {
+		t.Fatalf("Expected no error, got %q", err)
+	}
 
-	t.Run("ICMP Target is ready", func(t *testing.T) {
-		t.Parallel()
+	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
+	last := len(outputEntries) - 1
 
-		env := map[string]string{
-			envTargetAddress:   "icmp://127.0.0.1",
-			envCheckInterval:   "1s",
-			envDialTimeout:     "1s",
-			envTargetCheckType: "icmp",
-		}
+	expected := "TCPServer is ready ✓"
+	if !strings.Contains(outputEntries[last], expected) {
+		t.Errorf("Expected output to contain %q but got %q", expected, output.String())
+	}
+}
 
-		mockEnv := func(key string) string {
-			return env[key]
-		}
+func TestRunConfigErrorMissingTarget(t *testing.T) {
+	t.Parallel()
 
-		var output strings.Builder
+	args := []string{}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-		// cancel after 2 Seconds
-		go func() {
-			time.Sleep(2 * time.Second)
-			cancel()
-		}()
+	var output bytes.Buffer
+	err := run(ctx, args, &output)
+	if err == nil {
+		t.Fatalf("Expected configuration error, got none")
+	}
 
-		err := run(ctx, mockEnv, &output)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+	expected := "configuration error: no checkers configured"
+	if err.Error() != expected {
+		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
+	}
+}
 
-		outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
-		last := len(outputEntries) - 1
+func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
+	t.Parallel()
 
-		expected := "127.0.0.1 is ready ✓"
-		if !strings.Contains(outputEntries[last], expected) {
-			t.Errorf("Expected output to contain %q but got %q", expected, output.String())
-		}
-	})
+	args := []string{
+		"--target.unsupported.name=TestService",
+		"--target.unsupported.address=localhost:8080",
+		"--target.unsupported.interval=1s",
+		"--target.unsupported.timeout=1s",
+		"--target.unsupported.type=unsupported",
+	}
 
-	t.Run("Config error: variable is required", func(t *testing.T) {
-		t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-		env := map[string]string{}
+	var output bytes.Buffer
+	err := run(ctx, args, &output)
+	if err == nil {
+		t.Fatal("Expected error, got none")
+	}
 
-		mockEnv := func(key string) string {
-			return env[key]
-		}
+	expected := "failed to initialize target checkers: unsupported check type \"unsupported\" for target \"unsupported\""
+	if err.Error() != expected {
+		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
+	}
+}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+func TestRunConfigErrorInvalidHeaders(t *testing.T) {
+	t.Parallel()
 
-		var output bytes.Buffer
+	args := []string{
+		"--target.invalidheaders.name=TestService",
+		"--target.invalidheaders.address=http://localhost:8080",
+		"--target.invalidheaders.interval=1s",
+		"--target.invalidheaders.timeout=1s",
+		"--target.invalidheaders.headers=InvalidHeader",
+	}
 
-		err := run(ctx, mockEnv, &output)
-		if err == nil {
-			t.Fatalf("Expected configuration error, got none")
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-		expected := fmt.Sprintf("configuration error: %s environment variable is required", envTargetAddress)
-		if err.Error() != expected {
-			t.Errorf("Expected configuration error, got %q", err)
-		}
-	})
+	var output bytes.Buffer
+	err := run(ctx, args, &output)
+	if err == nil {
+		t.Fatal("Expected error, got none")
+	}
 
-	t.Run("Config error: unsupported check type", func(t *testing.T) {
-		t.Parallel()
-
-		env := map[string]string{
-			envTargetName:      "TestService",
-			envTargetAddress:   "localhost:8080",
-			envCheckInterval:   "1s",
-			envDialTimeout:     "1s",
-			envTargetCheckType: "invalid",
-		}
-
-		mockEnv := func(key string) string {
-			return env[key]
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		var output bytes.Buffer
-
-		err := run(ctx, mockEnv, &output)
-		if err == nil {
-			t.Error("Expected error, got none")
-		}
-
-		expected := "configuration error: invalid check type from environment: unsupported check type: invalid"
-		if err.Error() != expected {
-			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
-		}
-	})
-
-	t.Run("Inizalize error: unknown check type", func(t *testing.T) {
-		t.Parallel()
-
-		env := map[string]string{
-			envTargetName:    "TestService",
-			envTargetAddress: "htp://localhost:8080",
-			envCheckInterval: "1s",
-			envDialTimeout:   "1s",
-			envHTTPHeaders:   "Auportpatrolization Bearer token",
-		}
-
-		mockEnv := func(key string) string {
-			return env[key]
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		var output bytes.Buffer
-
-		err := run(ctx, mockEnv, &output)
-		if err == nil {
-			t.Error("Expected error, got none")
-		}
-
-		expected := "configuration error: could not infer check type from address htp://localhost:8080: unsupported check type: htp"
-		if err.Error() != expected {
-			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
-		}
-	})
-
-	t.Run("Inizalize error: invalid headers", func(t *testing.T) {
-		t.Parallel()
-
-		env := map[string]string{
-			envTargetName:    "TestService",
-			envTargetAddress: "http://localhost:8080",
-			envCheckInterval: "1s",
-			envDialTimeout:   "1s",
-			envHTTPHeaders:   "Auportpatrolization Bearer token",
-		}
-
-		mockEnv := func(key string) string {
-			return env[key]
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-
-		var output bytes.Buffer
-
-		err := run(ctx, mockEnv, &output)
-		if err == nil {
-			t.Error("Expected error, got none")
-		}
-
-		expected := fmt.Sprintf("failed to initialize checker: invalid %s value: invalid header format: Auportpatrolization Bearer token", envHTTPHeaders)
-		if err.Error() != expected {
-			t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
-		}
-	})
+	expected := "failed to initialize target checkers: invalid \"headers\": invalid header format: InvalidHeader"
+	if !strings.Contains(err.Error(), expected) {
+		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
+	}
 }

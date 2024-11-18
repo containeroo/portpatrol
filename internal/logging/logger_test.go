@@ -1,79 +1,54 @@
 package logging
 
 import (
-	"bytes"
-	"log/slog"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/containeroo/portpatrol/internal/checks"
-	"github.com/containeroo/portpatrol/internal/config"
 )
 
 func TestSetupLogger(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Log with additional fields", func(t *testing.T) {
+	// Test that the logger includes the version and outputs correctly.
+	t.Run("Logger includes version and writes to output", func(t *testing.T) {
 		t.Parallel()
 
-		cfg := config.Config{
-			Version:         "0.0.1",
-			TargetAddress:   "localhost:8080",
-			CheckInterval:   1 * time.Second,
-			DialTimeout:     2 * time.Second,
-			TargetCheckType: checks.HTTP,
-			LogExtraFields:  true,
-		}
-		var buf bytes.Buffer
+		var output strings.Builder
+		version := "1.0.0"
 
-		logger := SetupLogger(cfg, &buf)
-		logger.Info("Test log")
-
-		logOutput := buf.String()
-
-		expected := "target_address=localhost:8080"
-		if !strings.Contains(logOutput, expected) {
-			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		logger := SetupLogger(version, &output)
+		if logger == nil {
+			t.Fatalf("Expected a logger instance, got nil")
 		}
 
-		expected = "interval=1s"
-		if !strings.Contains(logOutput, expected) {
-			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		logger.Info("Test log message")
+
+		logOutput := output.String()
+		if !strings.Contains(logOutput, "Test log message") {
+			t.Errorf("Expected log output to contain 'Test log message', got %q", logOutput)
 		}
 
-		expected = "dial_timeout=2s"
-		if !strings.Contains(logOutput, expected) {
-			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
-		}
-
-		expected = "checker_type=HTTP"
-		if !strings.Contains(logOutput, expected) {
-			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
-		}
-
-		expected = "version=0.0.1"
-		if !strings.Contains(logOutput, expected) {
-			t.Errorf("Expected log output to contain %q, got %q", expected, logOutput)
+		if !strings.Contains(logOutput, "version=1.0.0") {
+			t.Errorf("Expected log output to contain 'version=1.0.0', got %q", logOutput)
 		}
 	})
 
-	t.Run("Log without additional fields", func(t *testing.T) {
+	// Test that the logger writes output to the correct writer.
+	t.Run("Logger writes to specified output", func(t *testing.T) {
 		t.Parallel()
 
-		cfg := config.Config{
-			LogExtraFields: false,
+		var output strings.Builder
+		version := "2.0.0"
+
+		logger := SetupLogger(version, &output)
+		if logger == nil {
+			t.Fatalf("Expected a logger instance, got nil")
 		}
-		var buf bytes.Buffer
 
-		logger := SetupLogger(cfg, &buf)
-		logger.Error("Test error", slog.String("error", "some error"))
+		logger.Warn("This is a warning")
 
-		logOutput := buf.String()
-
-		expected := "error=some error"
-		if strings.Contains(logOutput, expected) {
-			t.Errorf("Expected error to contain %q, got %q", expected, logOutput)
+		logOutput := output.String()
+		if !strings.Contains(logOutput, "This is a warning") {
+			t.Errorf("Expected log output to contain 'This is a warning', got %q", logOutput)
 		}
 	})
 }
