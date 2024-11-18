@@ -1,11 +1,11 @@
-package parser
+package config
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/portpatrol/internal/checks"
 )
 
 const (
@@ -19,11 +19,11 @@ const (
 // TargetChecker represents a checker with its interval.
 type TargetChecker struct {
 	Interval time.Duration
-	Checker  checker.Checker
+	Checker  checks.Checker
 }
 
-// InitializeTargetCheckers creates a slice of TargetChecker based on the provided target configurations.
-func InitializeTargetCheckers(targets map[string]map[string]string, defaultInterval time.Duration) ([]TargetChecker, error) {
+// LoadTargetCheckers creates a slice of TargetChecker based on the provided target configurations.
+func LoadTargetCheckers(targets map[string]map[string]string, defaultInterval time.Duration) ([]TargetChecker, error) {
 	var targetCheckers []TargetChecker
 
 	for targetName, params := range targets {
@@ -42,7 +42,7 @@ func InitializeTargetCheckers(targets map[string]map[string]string, defaultInter
 			checkTypeStr = parts[0]
 		}
 
-		checkType, err := checker.GetCheckTypeFromString(checkTypeStr)
+		checkType, err := checks.GetCheckTypeFromString(checkTypeStr)
 		if err != nil {
 			return nil, fmt.Errorf("unsupported check type %q for target %q", checkTypeStr, targetName)
 		}
@@ -75,7 +75,7 @@ func InitializeTargetCheckers(targets map[string]map[string]string, defaultInter
 		}
 
 		// Create the checker using the functional options
-		chk, err := checker.NewChecker(checkType, name, address, options...)
+		chk, err := checks.NewChecker(checkType, name, address, options...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create checker for target %q: %w", targetName, err)
 		}
@@ -90,13 +90,13 @@ func InitializeTargetCheckers(targets map[string]map[string]string, defaultInter
 }
 
 // collectCheckerOptions collects functional options for a specific check type.
-func collectCheckerOptions(checkType checker.CheckType, params map[string]string, targetName string) ([]checker.Option, error) {
+func collectCheckerOptions(checkType checks.CheckType, params map[string]string, targetName string) ([]checks.Option, error) {
 	switch checkType {
-	case checker.HTTP:
+	case checks.HTTP:
 		return parseHTTPCheckerOptions(params)
-	case checker.TCP:
+	case checks.TCP:
 		return parseTCPCheckerOptions(params)
-	case checker.ICMP:
+	case checks.ICMP:
 		return parseICMPCheckerOptions(params)
 	default:
 		return nil, fmt.Errorf("unsupported check type for target %q", targetName)

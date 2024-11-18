@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/portpatrol/internal/checks"
 )
 
 // WaitUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
-func WaitUntilReady(ctx context.Context, interval time.Duration, checker checker.Checker, logger *slog.Logger) error {
+func WaitUntilReady(ctx context.Context, interval time.Duration, checker checks.Checker, logger *slog.Logger) error {
 	logger = logger.With(
 		slog.String("target", checker.GetName()),
 		slog.String("type", checker.GetType()),

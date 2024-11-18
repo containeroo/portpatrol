@@ -1,4 +1,4 @@
-package logger
+package logging
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/portpatrol/internal/checks"
 	"github.com/containeroo/portpatrol/internal/config"
 )
 
@@ -22,7 +22,7 @@ func TestSetupLogger(t *testing.T) {
 			TargetAddress:   "localhost:8080",
 			CheckInterval:   1 * time.Second,
 			DialTimeout:     2 * time.Second,
-			TargetCheckType: checker.HTTP,
+			TargetCheckType: checks.HTTP,
 			LogExtraFields:  true,
 		}
 		var buf bytes.Buffer

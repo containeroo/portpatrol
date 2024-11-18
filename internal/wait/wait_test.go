@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/portpatrol/internal/checks"
 	"github.com/containeroo/portpatrol/internal/config"
-	"github.com/containeroo/portpatrol/internal/logger"
+	"github.com/containeroo/portpatrol/internal/logging"
 	"github.com/containeroo/portpatrol/internal/testutils"
 
 	"golang.org/x/net/icmp"
@@ -53,7 +53,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checks.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
@@ -103,7 +103,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checks.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
@@ -133,7 +133,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			TargetAddress:   "http://localhost:6081/success",
 			CheckInterval:   500 * time.Millisecond,
 			DialTimeout:     500 * time.Millisecond,
-			TargetCheckType: checker.HTTP,
+			TargetCheckType: checks.HTTP,
 			LogExtraFields:  true,
 			Version:         "1.0.0",
 		}
@@ -188,13 +188,13 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checks.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
 
 		var stdOut strings.Builder
-		logger := logger.SetupLogger(cfg, &stdOut)
+		logger := logging.SetupLogger(cfg, &stdOut)
 
 		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
@@ -257,7 +257,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			TargetAddress:   "http://localhost:2081/wrong",
 			CheckInterval:   500 * time.Millisecond,
 			DialTimeout:     500 * time.Millisecond,
-			TargetCheckType: checker.HTTP,
+			TargetCheckType: checks.HTTP,
 			LogExtraFields:  true,
 			Version:         "1.0.0",
 		}
@@ -302,13 +302,13 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checks.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
 
 		var stdOut strings.Builder
-		logger := logger.SetupLogger(cfg, &stdOut)
+		logger := logging.SetupLogger(cfg, &stdOut)
 
 		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
@@ -369,7 +369,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			TargetAddress:   "http://localhost:7083/fail",
 			CheckInterval:   50 * time.Millisecond,
 			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: checker.HTTP,
+			TargetCheckType: checks.HTTP,
 		}
 
 		mockEnv := func(key string) string {
@@ -380,7 +380,7 @@ func TestLoopUntilReadyHTTP(t *testing.T) {
 			return env[key]
 		}
 
-		checker, err := checker.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
+		checker, err := checks.NewHTTPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, mockEnv)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
@@ -430,10 +430,10 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetAddress:   listener.Addr().String(),
 			CheckInterval:   50 * time.Millisecond,
 			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: checker.TCP,
+			TargetCheckType: checks.TCP,
 		}
 
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
+		checker, err := checks.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -471,7 +471,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			DialTimeout:   50 * time.Millisecond,
 		}
 
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
+		checker, err := checks.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -501,7 +501,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetAddress:   "localhost:5081",
 			CheckInterval:   500 * time.Millisecond,
 			DialTimeout:     500 * time.Millisecond,
-			TargetCheckType: checker.TCP,
+			TargetCheckType: checks.TCP,
 			LogExtraFields:  true,
 			Version:         "1.0.0",
 		}
@@ -529,13 +529,13 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.CheckInterval*4)
 		defer cancel()
 
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
+		checker, err := checks.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create HTTPChecker: %q", err)
 		}
 
 		var stdOut strings.Builder
-		logger := logger.SetupLogger(cfg, &stdOut)
+		logger := logging.SetupLogger(cfg, &stdOut)
 
 		err = WaitUntilReady(ctx, cfg.CheckInterval, checker, logger)
 		if err != nil {
@@ -601,7 +601,7 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			DialTimeout:   50 * time.Millisecond,
 		}
 
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
+		checker, err := checks.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -640,10 +640,10 @@ func TestLoopUntilReadyTCP(t *testing.T) {
 			TargetAddress:   "localhost:7084",
 			CheckInterval:   50 * time.Millisecond,
 			DialTimeout:     50 * time.Millisecond,
-			TargetCheckType: checker.TCP,
+			TargetCheckType: checks.TCP,
 		}
 
-		checker, err := checker.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
+		checker, err := checks.NewTCPChecker(cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout)
 		if err != nil {
 			t.Fatalf("Failed to create TCPChecker: %q", err)
 		}
@@ -737,7 +737,7 @@ func TestICMPChecker_Check_SuccessfulICMPCheck(t *testing.T) {
 			},
 		}
 
-		checker := &checker.ICMPChecker{
+		checker := &checks.ICMPChecker{
 			Name:        "TestChecker",
 			Address:     "127.0.0.1",
 			Protocol:    mockProtocol,

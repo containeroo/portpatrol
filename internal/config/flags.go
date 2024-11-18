@@ -1,4 +1,4 @@
-package flags
+package config
 
 import (
 	"bytes"
@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/containeroo/portpatrol/internal/parser"
 
 	"github.com/spf13/pflag"
 )
@@ -35,15 +33,15 @@ type ParsedFlags struct {
 	Targets              map[string]map[string]string
 }
 
-// ParseCommandLineFlags parses command-line arguments and returns the parsed flags.
-func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) {
+// ParseFlags parses command-line arguments and returns the parsed flags.
+func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	var knownArgs []string
 	var dynamicArgs []string
 
 	// Separate known flags and dynamic target flags
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", parser.ParamPrefix)) {
+		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", ParamPrefix)) {
 			knownArgs = append(knownArgs, arg)
 			continue
 		}
@@ -66,7 +64,7 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 
 	// Custom usage function
 	flagSet.Usage = func() {
-		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY> value]\n\nOptions:\n", flagSetName, parser.ParamPrefix)
+		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY> value]\n\nOptions:\n", flagSetName, ParamPrefix)
 		flagSet.PrintDefaults()
 		displayCheckerProperties(&buf)
 	}
@@ -134,8 +132,8 @@ func extractDynamicTargetFlags(dynamicArgs []string, buf bytes.Buffer) (map[stri
 			return nil, fmt.Errorf("invalid target flag format: %s\n\n%s", flagName, buf.String())
 		}
 
-		targetName := nameParts[1]                    // e.g., "web"
-		parameter := strings.Join(nameParts[2:], ".") // e.g., "address"
+		targetName := parts[1]                    // e.g., "web"
+		parameter := strings.Join(parts[2:], ".") // e.g., "address"
 
 		// Initialize target map if necessary
 		if _, exists := targets[targetName]; !exists {
