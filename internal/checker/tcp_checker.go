@@ -16,19 +16,16 @@ type TCPChecker struct {
 	dialer  *net.Dialer
 }
 
-// Name returns the address of the checker.
-func (c *TCPChecker) GetAddress() string {
-	return c.address
-}
-
-// Name returns the name of the checker.
-func (c *TCPChecker) GetName() string {
-	return c.name
-}
-
-// Name returns the type of the checker.
-func (c *TCPChecker) GetType() string {
-	return TCP.String()
+func (c *TCPChecker) GetAddress() string { return c.address }
+func (c *TCPChecker) GetName() string    { return c.name }
+func (c *TCPChecker) GetType() string    { return TCP.String() }
+func (c *TCPChecker) Check(ctx context.Context) error {
+	conn, err := c.dialer.DialContext(ctx, "tcp", c.address)
+	if err != nil {
+		return err
+	}
+	conn.Close()
+	return nil
 }
 
 // newTCPChecker creates a new TCPChecker with functional options.
@@ -47,16 +44,6 @@ func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) {
 	}
 
 	return checker, nil
-}
-
-// Check performs a TCP connection check.
-func (c *TCPChecker) Check(ctx context.Context) error {
-	conn, err := c.dialer.DialContext(ctx, "tcp", c.address)
-	if err != nil {
-		return err
-	}
-	conn.Close()
-	return nil
 }
 
 // WithTCPTimeout sets the timeout for the TCPChecker.

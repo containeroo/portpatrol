@@ -1,4 +1,4 @@
-package flags
+package parser
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/checker"
 )
 
-const paramTCPTimeout string = "timeout"
+const ParamTCPTimeout string = "timeout"
 
 // parseTCPCheckerOptions parses TCP checker specific options from parameters.
 func parseTCPCheckerOptions(params map[string]string) ([]checker.Option, error) {
@@ -20,13 +20,13 @@ func parseTCPCheckerOptions(params map[string]string) ([]checker.Option, error) 
 	}
 
 	// TCP Timeout
-	if timeoutStr, ok := params[paramTCPTimeout]; ok && timeoutStr != "" {
+	if timeoutStr, ok := params[ParamTCPTimeout]; ok && timeoutStr != "" {
 		t, err := time.ParseDuration(timeoutStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %q: %w", paramTCPTimeout, err)
+			return nil, fmt.Errorf("invalid %q: %w", ParamTCPTimeout, err)
 		}
 		opts = append(opts, checker.WithTCPTimeout(t))
-		delete(unrecognizedParams, paramTCPTimeout)
+		delete(unrecognizedParams, ParamTCPTimeout)
 	}
 
 	// Check for unrecognized parameters

@@ -11,6 +11,7 @@ import (
 
 	"github.com/containeroo/portpatrol/internal/flags"
 	"github.com/containeroo/portpatrol/internal/logger"
+	"github.com/containeroo/portpatrol/internal/parser"
 	"github.com/containeroo/portpatrol/internal/wait"
 	"golang.org/x/sync/errgroup"
 )
@@ -26,26 +27,19 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	f, err := flags.ParseCommandLineFlags(args, version)
 	if err != nil {
 		var helpErr *flags.HelpRequested
-		var versionErr *flags.VersionRequested
-		switch {
-		case errors.As(err, &helpErr):
+		if errors.As(err, &helpErr) {
 			fmt.Fprintf(output, helpErr.Message)
 			return nil
-		case errors.As(err, &versionErr):
-			fmt.Fprintf(output, versionErr.Version)
-			return nil
-		default:
-			return fmt.Errorf("configuration error: %w", err)
 		}
+		return fmt.Errorf("configuration error: %w", err)
 	}
-	f.Version = version
 
-	checkers, err := flags.BuildTargetCheckers(f.Targets, f.DefaultCheckInterval)
+	checkers, err := parser.InitializeTargetCheckers(f.Targets, f.DefaultCheckInterval)
 	if err != nil {
 		return fmt.Errorf("initalize target checkers error: %w", err)
 	}
 
-	logger := logger.SetupLogger(f, output)
+	logger := logger.SetupLogger(version, output)
 
 	eg, ctx := errgroup.WithContext(ctx)
 
@@ -60,7 +54,6 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		})
 	}
 
-	// Wait for all goroutines to finish
 	if err := eg.Wait(); err != nil {
 		return err
 	}

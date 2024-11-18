@@ -1,5 +1,3 @@
-// flags/flags.go
-
 package flags
 
 import (
@@ -7,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"text/tabwriter"
 	"time"
+
+	"github.com/containeroo/portpatrol/internal/parser"
 
 	"github.com/spf13/pflag"
 )
@@ -18,12 +17,6 @@ const (
 	defaultDebug         bool          = false
 	paramDefaultInterval string        = "default-interval"
 	defaultCheckInterval time.Duration = 2 * time.Second
-
-	paramPrefix   string = "target"
-	paramType     string = "type"
-	paramName     string = "name"
-	paramAddress  string = "address"
-	paramInterval string = "interval"
 )
 
 type HelpRequested struct {
@@ -32,14 +25,6 @@ type HelpRequested struct {
 
 func (e *HelpRequested) Error() string {
 	return e.Message
-}
-
-type VersionRequested struct {
-	Version string
-}
-
-func (e *VersionRequested) Error() string {
-	return e.Version
 }
 
 // ParsedFlags holds the parsed command-line flags.
@@ -59,7 +44,7 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 	// Separate known flags and dynamic target flags
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", paramPrefix)) {
+		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", parser.ParamPrefix)) {
 			knownArgs = append(knownArgs, arg)
 			continue
 		}
@@ -82,7 +67,7 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 
 	// Custom usage function
 	flagSet.Usage = func() {
-		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY> value]\n\nOptions:\n", flagSetName, paramPrefix)
+		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY> value]\n\nOptions:\n", flagSetName, parser.ParamPrefix)
 		flagSet.PrintDefaults()
 		displayCheckerProperties(&buf)
 	}
@@ -108,20 +93,13 @@ func ParseCommandLineFlags(args []string, version string) (*ParsedFlags, error) 
 
 	// Handle version
 	if *showVersion {
-		return nil, &VersionRequested{Version: fmt.Sprintf("%s version %s", flagSetName, version)}
+		return nil, &HelpRequested{Message: fmt.Sprintf("%s version %s", flagSetName, version)}
 	}
 
 	// Process dynamic target flags
 	targets, err := extractDynamicTargetFlags(dynamicArgs, buf)
 	if err != nil {
 		return nil, err
-	}
-
-	// Check for unknown arguments
-	for _, arg := range flagSet.Args() {
-		if strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, fmt.Sprintf("--%s.", paramPrefix)) {
-			return nil, fmt.Errorf("Warning: Unknown flag ignored: %s\n", arg)
-		}
 	}
 
 	return &ParsedFlags{
@@ -137,7 +115,6 @@ func extractDynamicTargetFlags(dynamicArgs []string, buf bytes.Buffer) (map[stri
 	for i := 0; i < len(dynamicArgs); i++ {
 		arg := dynamicArgs[i]
 
-		// Remove the "--" prefix
 		flagName := strings.TrimPrefix(arg, "--")
 
 		var value string
@@ -166,6 +143,11 @@ func extractDynamicTargetFlags(dynamicArgs []string, buf bytes.Buffer) (map[stri
 		// Initialize target map if necessary
 		if _, exists := targets[targetName]; !exists {
 			targets[targetName] = make(map[string]string)
+		}
+
+		// Check for duplicate flags
+		if targets[targetName][parameter] != "" {
+			return nil, fmt.Errorf("duplicate target flag: %s\n\n%s", arg, buf.String())
 		}
 
 		// Assign parameter value

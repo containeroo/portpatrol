@@ -1,4 +1,4 @@
-package flags
+package parser
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	paramHTTPMethod                  string = "method"
-	paramHTTPHeaders                 string = "headers"
-	paramHTTPAllowDuplicateHeaders   string = "allow-duplicate-headers"
-	paramHTTPExpectedStatusCodes     string = "expected-status-codes"
-	paramHTTPSkipTLSVerify           string = "skip-tls-verify"
-	paramHTTPTimeout                 string = "timeout"
+	ParamHTTPMethod                  string = "method"
+	ParamHTTPHeaders                 string = "headers"
+	ParamHTTPAllowDuplicateHeaders   string = "allow-duplicate-headers"
+	ParamHTTPExpectedStatusCodes     string = "expected-status-codes"
+	ParamHTTPSkipTLSVerify           string = "skip-tls-verify"
+	ParamHTTPTimeout                 string = "timeout"
 	defaultHTTPAllowDuplicateHeaders bool   = false
 	defaultHTTPSkipTLSVerify         bool   = false
 )
@@ -31,60 +31,60 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error)
 	}
 
 	// HTTP Method
-	if method, ok := params[paramHTTPMethod]; ok && method != "" {
+	if method, ok := params[ParamHTTPMethod]; ok && method != "" {
 		opts = append(opts, checker.WithHTTPMethod(method))
-		delete(unrecognizedParams, paramHTTPMethod)
+		delete(unrecognizedParams, ParamHTTPMethod)
 	}
 
 	// Allow Duplicate Headers
 	allowDupHeaders := defaultHTTPAllowDuplicateHeaders
-	if allowDupHeadersStr, ok := params[paramHTTPAllowDuplicateHeaders]; ok && allowDupHeadersStr != "" {
+	if allowDupHeadersStr, ok := params[ParamHTTPAllowDuplicateHeaders]; ok && allowDupHeadersStr != "" {
 		var err error
 		allowDupHeaders, err = strconv.ParseBool(allowDupHeadersStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %q: %w", paramHTTPAllowDuplicateHeaders, err)
+			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPAllowDuplicateHeaders, err)
 		}
-		delete(unrecognizedParams, paramHTTPAllowDuplicateHeaders)
+		delete(unrecognizedParams, ParamHTTPAllowDuplicateHeaders)
 	}
 
 	// Headers
-	if headersStr, ok := params[paramHTTPHeaders]; ok && headersStr != "" {
+	if headersStr, ok := params[ParamHTTPHeaders]; ok && headersStr != "" {
 		headers, err := httputils.ParseHeaders(headersStr, allowDupHeaders)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %q: %w", paramHTTPHeaders, err)
+			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPHeaders, err)
 		}
 		opts = append(opts, checker.WithHTTPHeaders(headers))
-		delete(unrecognizedParams, paramHTTPHeaders)
+		delete(unrecognizedParams, ParamHTTPHeaders)
 	}
 
 	// Expected Status Codes
-	if codesStr, ok := params[paramHTTPExpectedStatusCodes]; ok && codesStr != "" {
+	if codesStr, ok := params[ParamHTTPExpectedStatusCodes]; ok && codesStr != "" {
 		codes, err := httputils.ParseStatusCodes(codesStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %q: %w", paramHTTPExpectedStatusCodes, err)
+			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPExpectedStatusCodes, err)
 		}
 		opts = append(opts, checker.WithExpectedStatusCodes(codes))
-		delete(unrecognizedParams, paramHTTPExpectedStatusCodes)
+		delete(unrecognizedParams, ParamHTTPExpectedStatusCodes)
 	}
 
 	// Skip TLS Verify
-	if skipStr, ok := params[paramHTTPSkipTLSVerify]; ok && skipStr != "" {
+	if skipStr, ok := params[ParamHTTPSkipTLSVerify]; ok && skipStr != "" {
 		skip, err := strconv.ParseBool(skipStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid %s: %w", paramHTTPSkipTLSVerify, err)
+			return nil, fmt.Errorf("invalid %s: %w", ParamHTTPSkipTLSVerify, err)
 		}
 		opts = append(opts, checker.WithHTTPSkipTLSVerify(skip))
-		delete(unrecognizedParams, paramHTTPSkipTLSVerify)
+		delete(unrecognizedParams, ParamHTTPSkipTLSVerify)
 	}
 
 	// Timeout
-	if timeoutStr, ok := params[paramHTTPTimeout]; ok && timeoutStr != "" {
+	if timeoutStr, ok := params[ParamHTTPTimeout]; ok && timeoutStr != "" {
 		t, err := time.ParseDuration(timeoutStr)
 		if err != nil || t <= 0 {
-			return nil, fmt.Errorf("invalid %q: %w", paramHTTPTimeout, err)
+			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPTimeout, err)
 		}
 		opts = append(opts, checker.WithHTTPTimeout(t))
-		delete(unrecognizedParams, paramHTTPTimeout)
+		delete(unrecognizedParams, ParamHTTPTimeout)
 	}
 
 	// Check for unrecognized parameters

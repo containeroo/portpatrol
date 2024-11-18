@@ -28,19 +28,36 @@ type HTTPChecker struct {
 	client              *http.Client
 }
 
-// Name returns the address of the checker.
-func (c *HTTPChecker) GetAddress() string {
-	return c.address
-}
+func (c *HTTPChecker) GetAddress() string { return c.address }
+func (c *HTTPChecker) GetName() string    { return c.name }
+func (c *HTTPChecker) GetType() string    { return HTTP.String() }
+func (c *HTTPChecker) Check(ctx context.Context) error {
+	// Create the HTTP request
+	req, err := http.NewRequestWithContext(ctx, c.method, c.address, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
 
-// Name returns the name of the checker.
-func (c *HTTPChecker) GetName() string {
-	return c.name
-}
+	// Add headers to the request
+	for key, value := range c.headers {
+		req.Header.Add(key, value)
+	}
 
-// Name returns the type of the checker.
-func (c *HTTPChecker) GetType() string {
-	return HTTP.String()
+	// Perform the HTTP request
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Check the response status code
+	for _, code := range c.expectedStatusCodes {
+		if resp.StatusCode == code {
+			return nil // Return nil if the status code matches
+		}
+	}
+
+	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.expectedStatusCodes)
 }
 
 // newHTTPChecker creates a new HTTPChecker with functional options.
@@ -72,36 +89,6 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 	}
 
 	return checker, nil
-}
-
-// Check performs an HTTP request and checks the response.
-func (c *HTTPChecker) Check(ctx context.Context) error {
-	// Create the HTTP request
-	req, err := http.NewRequestWithContext(ctx, c.method, c.address, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Add headers to the request
-	for key, value := range c.headers {
-		req.Header.Add(key, value)
-	}
-
-	// Perform the HTTP request
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check the response status code
-	for _, code := range c.expectedStatusCodes {
-		if resp.StatusCode == code {
-			return nil // Return nil if the status code matches
-		}
-	}
-
-	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.expectedStatusCodes)
 }
 
 // WithHTTPMethod sets the HTTP method for the HTTPChecker.
