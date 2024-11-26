@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checks"
+	"github.com/containeroo/portpatrol/internal/checker"
 )
 
 const (
@@ -13,8 +13,8 @@ const (
 )
 
 // parseICMPCheckerOptions parses ICMP checker-specific options from parameters.
-func parseICMPCheckerOptions(params map[string]string) ([]checks.Option, error) {
-	var opts []checks.Option
+func parseICMPCheckerOptions(params map[string]string) ([]checker.Option, error) {
+	var opts []checker.Option
 	unrecognizedParams := trackUnusedParams(params)
 
 	// ICMP Read Timeout
@@ -23,7 +23,7 @@ func parseICMPCheckerOptions(params map[string]string) ([]checks.Option, error) 
 		if err != nil {
 			return nil, fmt.Errorf("invalid %q: %w", ParamICMPReadTimeout, err)
 		}
-		opts = append(opts, checks.WithICMPReadTimeout(readTimeout))
+		opts = append(opts, checker.WithICMPReadTimeout(readTimeout))
 		delete(unrecognizedParams, ParamICMPReadTimeout)
 	}
 
@@ -33,7 +33,7 @@ func parseICMPCheckerOptions(params map[string]string) ([]checks.Option, error) 
 		if err != nil {
 			return nil, fmt.Errorf("invalid %q: %w", ParamICMPWriteTimeout, err)
 		}
-		opts = append(opts, checks.WithICMPWriteTimeout(writeTimeout))
+		opts = append(opts, checker.WithICMPWriteTimeout(writeTimeout))
 		delete(unrecognizedParams, ParamICMPWriteTimeout)
 	}
 

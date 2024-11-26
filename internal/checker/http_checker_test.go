@@ -1,4 +1,4 @@
-package checks
+package checker
 
 import (
 	"context"
@@ -93,7 +93,12 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Invalid URL for HTTP check", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := newHTTPChecker("example", "://invalid-url")
+		checker, err := newHTTPChecker("example", "://invalid-url")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		err = checker.Check(context.Background()) // Run the check to trigger the error.
 		if err == nil {
 			t.Fatal("expected an error, got none")
 		}

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checks"
+	"github.com/containeroo/portpatrol/internal/checker"
 	"github.com/containeroo/portpatrol/pkg/httputils"
 )
 
@@ -21,13 +21,13 @@ const (
 )
 
 // parseHTTPCheckerOptions parses HTTP checker-specific options from parameters.
-func parseHTTPCheckerOptions(params map[string]string) ([]checks.Option, error) {
-	var opts []checks.Option
+func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error) {
+	var opts []checker.Option
 	unrecognizedParams := trackUnusedParams(params)
 
 	// HTTP Method
 	if method, ok := params[ParamHTTPMethod]; ok && method != "" {
-		opts = append(opts, checks.WithHTTPMethod(method))
+		opts = append(opts, checker.WithHTTPMethod(method))
 		delete(unrecognizedParams, ParamHTTPMethod)
 	}
 
@@ -48,7 +48,7 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checks.Option, error) 
 		if err != nil {
 			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPHeaders, err)
 		}
-		opts = append(opts, checks.WithHTTPHeaders(headers))
+		opts = append(opts, checker.WithHTTPHeaders(headers))
 		delete(unrecognizedParams, ParamHTTPHeaders)
 	}
 
@@ -58,7 +58,7 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checks.Option, error) 
 		if err != nil {
 			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPExpectedStatusCodes, err)
 		}
-		opts = append(opts, checks.WithExpectedStatusCodes(codes))
+		opts = append(opts, checker.WithExpectedStatusCodes(codes))
 		delete(unrecognizedParams, ParamHTTPExpectedStatusCodes)
 	}
 
@@ -68,7 +68,7 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checks.Option, error) 
 		if err != nil {
 			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPSkipTLSVerify, err)
 		}
-		opts = append(opts, checks.WithHTTPSkipTLSVerify(skip))
+		opts = append(opts, checker.WithHTTPSkipTLSVerify(skip))
 		delete(unrecognizedParams, ParamHTTPSkipTLSVerify)
 	}
 
@@ -78,7 +78,7 @@ func parseHTTPCheckerOptions(params map[string]string) ([]checks.Option, error) 
 		if err != nil || timeout <= 0 {
 			return nil, fmt.Errorf("invalid %q: %w", ParamHTTPTimeout, err)
 		}
-		opts = append(opts, checks.WithHTTPTimeout(timeout))
+		opts = append(opts, checker.WithHTTPTimeout(timeout))
 		delete(unrecognizedParams, ParamHTTPTimeout)
 	}
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checks"
+	"github.com/containeroo/portpatrol/internal/checker"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 // TargetChecker represents a checker with its interval.
 type TargetChecker struct {
 	Interval time.Duration
-	Checker  checks.Checker
+	Checker  checker.Checker
 }
 
 // LoadTargetCheckers creates a slice of TargetChecker based on the provided target configurations.
@@ -42,7 +42,7 @@ func LoadTargetCheckers(targets map[string]map[string]string, defaultInterval ti
 			checkTypeStr = parts[0]
 		}
 
-		checkType, err := checks.GetCheckTypeFromString(checkTypeStr)
+		checkType, err := checker.GetCheckTypeFromString(checkTypeStr)
 		if err != nil {
 			return nil, fmt.Errorf("unsupported check type %q for target %q", checkTypeStr, targetName)
 		}
@@ -75,7 +75,7 @@ func LoadTargetCheckers(targets map[string]map[string]string, defaultInterval ti
 		}
 
 		// Create the checker using the functional options
-		chk, err := checks.NewChecker(checkType, name, address, options...)
+		chk, err := checker.NewChecker(checkType, name, address, options...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create checker for target %q: %w", targetName, err)
 		}
@@ -90,13 +90,13 @@ func LoadTargetCheckers(targets map[string]map[string]string, defaultInterval ti
 }
 
 // collectCheckerOptions collects functional options for a specific check type.
-func collectCheckerOptions(checkType checks.CheckType, params map[string]string, targetName string) ([]checks.Option, error) {
+func collectCheckerOptions(checkType checker.CheckType, params map[string]string, targetName string) ([]checker.Option, error) {
 	switch checkType {
-	case checks.HTTP:
+	case checker.HTTP:
 		return parseHTTPCheckerOptions(params)
-	case checks.TCP:
+	case checker.TCP:
 		return parseTCPCheckerOptions(params)
-	case checks.ICMP:
+	case checker.ICMP:
 		return parseICMPCheckerOptions(params)
 	default:
 		return nil, fmt.Errorf("unsupported check type for target %q", targetName)

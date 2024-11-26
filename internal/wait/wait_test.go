@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checks"
+	"github.com/containeroo/portpatrol/internal/checker"
 )
 
 // TestWaitUntilReady_ReadyHTTP ensures WaitUntilReady returns success when the HTTP target is ready.
@@ -17,13 +17,13 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	t.Parallel()
 
 	server := &http.Server{Addr: ":9082"}
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close()
 
-	checker, err := checks.NewChecker(checks.HTTP, "HTTPServer", "http://localhost:9082")
+	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9082/ready")
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -50,14 +50,14 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	t.Parallel()
 
 	server := &http.Server{Addr: ":9083"}
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/fail", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond) // Simulate a delayed start
 		w.WriteHeader(http.StatusOK)
 	})
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close()
 
-	checker, err := checks.NewChecker(checks.HTTP, "HTTPServer", "http://localhost:9083")
+	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9083/fail")
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -84,13 +84,14 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	t.Parallel()
 
 	server := &http.Server{Addr: ":9084"}
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/canceled", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	})
 	go func() { _ = server.ListenAndServe() }()
 	defer server.Close()
 
-	checker, err := checks.NewChecker(checks.HTTP, "HTTPServer", "http://localhost:9084")
+	checker, err := checker.NewChecker(checker.HTTP, "HTTPServer", "http://localhost:9084/canceled")
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	}
 	defer ln.Close()
 
-	checker, err := checks.NewChecker(checks.TCP, "TCPServer", "localhost:9085")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9085")
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -163,7 +164,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 		}
 	}()
 
-	checker, err := checks.NewChecker(checks.TCP, "TCPServer", "localhost:9086")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9086")
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -189,7 +190,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checks.NewChecker(checks.TCP, "TCPServer", "localhost:9087")
+	checker, err := checker.NewChecker(checker.TCP, "TCPServer", "localhost:9087")
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
