@@ -9,8 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/containeroo/portpatrol/internal/config"
+	"github.com/containeroo/portpatrol/internal/flags"
 	"github.com/containeroo/portpatrol/internal/logging"
+	"github.com/containeroo/portpatrol/internal/parser"
 	"github.com/containeroo/portpatrol/internal/wait"
 	"golang.org/x/sync/errgroup"
 )
@@ -23,9 +24,9 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	// Parse command-line flags
-	f, err := config.ParseFlags(args, version)
+	f, err := flags.ParseFlags(args, parser.ParamPrefix, version, parser.GenerateDocs())
 	if err != nil {
-		var helpErr *config.HelpRequested
+		var helpErr *flags.HelpRequested
 		if errors.As(err, &helpErr) {
 			fmt.Fprint(output, helpErr.Message)
 			return nil
@@ -34,7 +35,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	}
 
 	// Initialize target checkers
-	checkers, err := config.LoadTargetCheckers(f.Targets, f.DefaultCheckInterval)
+	checkers, err := parser.LoadTargetCheckers(f.Targets, f.DefaultCheckInterval)
 	if err != nil {
 		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}

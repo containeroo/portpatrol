@@ -1,4 +1,4 @@
-package config
+package flags
 
 import (
 	"bytes"
@@ -34,14 +34,14 @@ type ParsedFlags struct {
 }
 
 // ParseFlags parses command-line arguments and returns the parsed flags.
-func ParseFlags(args []string, version string) (*ParsedFlags, error) {
+func ParseFlags(args []string, paramPrefix, version string, flagDocs map[string][]FlagDoc) (*ParsedFlags, error) {
 	var knownArgs []string
 	var dynamicArgs []string
 
 	// Separate known flags and dynamic target flags
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", ParamPrefix)) {
+		if !strings.HasPrefix(arg, fmt.Sprintf("--%s.", paramPrefix)) {
 			knownArgs = append(knownArgs, arg)
 			continue
 		}
@@ -64,9 +64,9 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 
 	// Custom usage function
 	flagSet.Usage = func() {
-		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY> value]\n\nOptions:\n", flagSetName, ParamPrefix)
+		fmt.Fprintf(&buf, "Usage: %s [OPTIONS] [--%s.<IDENTIFIER>.<PROPERTY> value]\n\nOptions:\n", flagSetName, paramPrefix)
 		flagSet.PrintDefaults()
-		displayCheckerProperties(&buf)
+		displayCheckerProperties(&buf, flagDocs)
 	}
 
 	// Define known flags
