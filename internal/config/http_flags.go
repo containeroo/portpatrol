@@ -1,4 +1,4 @@
-package parser
+package config
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/containeroo/portpatrol/internal/checker"
-	"github.com/containeroo/portpatrol/internal/flags"
 	"github.com/containeroo/portpatrol/pkg/httputils"
 )
 
@@ -20,45 +19,6 @@ const (
 	defaultHTTPAllowDuplicateHeaders bool   = false
 	defaultHTTPSkipTLSVerify         bool   = false
 )
-
-var httpFlagDocs = []flags.FlagDoc{
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=string", ParamPrefix, ParamAddress),
-		Description: "The IP address or hostname of the target in the following format: scheme://hostname[:port]",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=string", ParamPrefix, ParamName),
-		Description: "The name of the target. If not specified, it's derived from the target address.",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=string", ParamPrefix, ParamType),
-		Description: "The type of check to perform. If a scheme (e.g. http://) is specified in --%s.<identifier>.address, this flag can be omitted as the type will be inferred.",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=string", ParamPrefix, ParamHTTPMethod),
-		Description: "The HTTP method to use (e.g., GET, POST). Defaults to \"GET\".",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=string", ParamPrefix, ParamHTTPHeaders),
-		Description: "A comma-separated list of HTTP headers to include in the request in \"key=value\" format.\n\tExample: Authorization=Bearer token,Content-Type=application/json",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>%s=string", ParamPrefix, ParamHTTPExpectedStatusCodes),
-		Description: "A comma-separated list of expected HTTP status codes or ranges. Defaults to 200.\n\tExample: \"200,301,404\" or \"200,300-302\" or \"200,301-302,404,500-502\"",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=bool", ParamPrefix, ParamHTTPSkipTLSVerify),
-		Description: "Whether to skip TLS verification. Defaults to false.",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=duration", ParamPrefix, ParamHTTPTimeout),
-		Description: "The timeout for the HTTP request (e.g., 5s).",
-	},
-	{
-		Flag:        fmt.Sprintf("--%s.<identifier>.%s=duration", ParamPrefix, ParamInterval),
-		Description: "Override the default interval for this target (e.g., 10s).",
-	},
-}
 
 // parseHTTPCheckerOptions parses HTTP checker-specific options from parameters.
 func parseHTTPCheckerOptions(params map[string]string) ([]checker.Option, error) {
