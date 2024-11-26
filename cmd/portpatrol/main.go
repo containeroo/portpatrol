@@ -23,7 +23,6 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	// Create a new context that listens for interrupt signals
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-
 	// Parse command-line flags
 	f, err := flags.ParseFlags(args, parser.ParamPrefix, version, parser.GenerateDocs())
 	if err != nil {
