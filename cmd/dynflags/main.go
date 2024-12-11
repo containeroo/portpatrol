@@ -10,13 +10,12 @@ import (
 
 func main() {
 	// Initialize DynFlags
-	dynFlags := dynflags.New(true)
+	dynFlags := dynflags.New(dynflags.ContinueOnError)
 
 	// Define HTTP group
 	httpGroup := dynFlags.Group("http")
 	httpGroup.String("method", "GET", "HTTP method to use")
 	httpGroup.URL("address", "", "HTTP target URL")
-	httpGroup.String("headers", "", "HTTP headers to include in the request in \"key=value\" format")
 	httpGroup.Bool("secure", true, "Use secure connection (HTTPS)")
 	httpGroup.Int("retries", 3, "Number of retries")
 	httpGroup.Float("timeout", 1.5, "Timeout in seconds")

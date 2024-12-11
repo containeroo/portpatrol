@@ -5,17 +5,29 @@ import (
 	"strings"
 )
 
+// ParseBehavior defines how the parser handles errors
+type ParseBehavior int
+
+const (
+	// ContinueOnError skips unregistered flags but continues parsing
+	ContinueOnError ParseBehavior = iota
+	// ExitOnError stops parsing and exits on encountering an unregistered flag
+	ExitOnError
+	// IgnoreUnknown silently ignores unregistered flags
+	IgnoreUnknown
+)
+
 // DynFlags manages all groups and flags
 type DynFlags struct {
-	Groups          map[string]map[string]*Group
-	ContinueOnError bool
+	Groups        map[string]map[string]*Group
+	ParseBehavior ParseBehavior
 }
 
-// New initializes a new DynFlags instance
-func New(continueOnError bool) *DynFlags {
+// New initializes a new DynFlags instance with a specific parsing behavior
+func New(behavior ParseBehavior) *DynFlags {
 	return &DynFlags{
-		Groups:          make(map[string]map[string]*Group),
-		ContinueOnError: continueOnError,
+		Groups:        make(map[string]map[string]*Group),
+		ParseBehavior: behavior,
 	}
 }
 
@@ -71,10 +83,15 @@ func (df *DynFlags) Parse(args []string) error {
 		group := df.Groups[groupName][identifier]
 		flag, exists := group.Flags[flagName]
 		if !exists {
-			if !df.ContinueOnError {
+			switch df.ParseBehavior {
+			case ExitOnError:
 				return fmt.Errorf("unknown flag '%s' in group '%s.%s'", flagName, groupName, identifier)
+			case ContinueOnError:
+				continue
+			case IgnoreUnknown:
+				// Do nothing and continue parsing
+				continue
 			}
-			continue
 		}
 
 		parsedValue, err := flag.Parser.Parse(value)
