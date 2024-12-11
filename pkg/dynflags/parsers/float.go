@@ -14,3 +14,7 @@ func (p *FloatParser) Parse(value string) (interface{}, error) {
 	}
 	return parsedValue, nil
 }
+
+func (p *FloatParser) Type() string {
+	return "float"
+}

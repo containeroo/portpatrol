@@ -14,3 +14,7 @@ func (p *BoolParser) Parse(value string) (interface{}, error) {
 	}
 	return parsedValue, nil
 }
+
+func (p *BoolParser) Type() string {
+	return "bool"
+}

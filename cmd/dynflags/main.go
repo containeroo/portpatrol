@@ -32,21 +32,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Display parsed HTTP flags
-	fmt.Println("HTTP Flags:")
-	for identifier, group := range dynFlags.GroupFlags("http") {
-		fmt.Printf("Identifier: %s\n", identifier)
-		for flagName, flag := range group.Flags {
-			fmt.Printf("  %s: %v\n", flagName, flag.Value)
-		}
-	}
-
-	// Display parsed TCP flags
-	fmt.Println("\nTCP Flags:")
-	for identifier, group := range dynFlags.GroupFlags("tcp") {
-		fmt.Printf("Identifier: %s\n", identifier)
-		for flagName, flag := range group.Flags {
-			fmt.Printf("  %s: %v\n", flagName, flag.Value)
-		}
-	}
+	dynFlags.Usage()
 }

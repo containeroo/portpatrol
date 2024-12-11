@@ -14,3 +14,7 @@ func (p *IntParser) Parse(value string) (interface{}, error) {
 	}
 	return parsedValue, nil
 }
+
+func (p *IntParser) Type() string {
+	return "int"
+}

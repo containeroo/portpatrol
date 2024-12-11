@@ -18,3 +18,7 @@ func (p *URLParser) Parse(value string) (interface{}, error) {
 	}
 	return parsedValue, nil
 }
+
+func (p *URLParser) Type() string {
+	return "url"
+}

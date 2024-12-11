@@ -14,3 +14,7 @@ func (p *DurationParser) Parse(value string) (interface{}, error) {
 	}
 	return parsedValue, nil
 }
+
+func (p *DurationParser) Type() string {
+	return "duration"
+}
