@@ -4,80 +4,178 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 // ParseBehavior defines how the parser handles errors
 type ParseBehavior int
 
 const (
-	// ContinueOnError skips unregistered flags but continues parsing
 	ContinueOnError ParseBehavior = iota
-	// ExitOnError stops parsing and exits on encountering an unregistered flag
 	ExitOnError
-	// IgnoreUnknown silently ignores unregistered flags
 	IgnoreUnknown
 )
 
-// DynFlags manages all groups and flags
+// DynFlags manages configuration and parsed values
 type DynFlags struct {
-	Groups        map[string]map[string]*Group
-	ParseBehavior ParseBehavior
-	Output        io.Writer
-	Usage         func()
+	configGroups  map[string]*GroupConfig   // Static parent groups
+	parsedGroups  map[string][]*ParsedGroup // Parsed child groups organized by parent group
+	parseBehavior ParseBehavior             // Parsing behavior
+	output        io.Writer                 // Output for usage/help
+	usage         func()                    // Customizable usage function
 }
 
-// New initializes a new DynFlags instance with a specific parsing behavior
+// New initializes a new DynFlags instance
 func New(behavior ParseBehavior) *DynFlags {
 	df := &DynFlags{
-		Groups:        make(map[string]map[string]*Group),
-		ParseBehavior: behavior,
-		Output:        os.Stdout, // Default output to stdout
+		configGroups:  make(map[string]*GroupConfig),
+		parsedGroups:  make(map[string][]*ParsedGroup),
+		parseBehavior: behavior,
+		output:        os.Stdout,
 	}
-	df.Usage = func() { df.DefaultUsage() }
+	df.usage = func() { df.Usage() }
 	return df
 }
 
-// Group retrieves or creates a new group under the given prefix
-func (df *DynFlags) Group(prefix string) *Group {
-	if _, exists := df.Groups[prefix]; !exists {
-		df.Groups[prefix] = make(map[string]*Group)
+// Group defines a new static group or retrieves an existing one
+func (df *DynFlags) Group(name string) (*GroupConfig, error) {
+	if _, exists := df.configGroups[name]; exists {
+		return nil, fmt.Errorf("group '%s' already exists", name)
 	}
-	return &Group{
-		Name:  prefix,
+	group := &GroupConfig{
+		Name:  name,
 		Flags: make(map[string]*Flag),
 	}
+	df.configGroups[name] = group
+	return group, nil
 }
 
-// GroupFlags retrieves all flags for a specific group
-func (df *DynFlags) GroupFlags(groupPrefix string) map[string]*Group {
-	return df.Groups[groupPrefix]
+// GetParsedGroups retrieves all parsed child groups for a parent group
+func (df *DynFlags) GetParsedGroups(parentName string) ([]*ParsedGroup, error) {
+	groups, exists := df.parsedGroups[parentName]
+	if !exists {
+		return nil, fmt.Errorf("no parsed groups found for parent '%s'", parentName)
+	}
+	return groups, nil
 }
 
-// SetOutput sets the output destination for the Usage function
-func (df *DynFlags) SetOutput(output io.Writer) {
-	df.Output = output
-}
+// Parse parses the CLI arguments and populates parsed groups
+func (df *DynFlags) Parse(args []string) error {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if !strings.HasPrefix(arg, "--") {
+			return fmt.Errorf("invalid flag format: %s", arg)
+		}
 
-// PrintDefaults prints all registered flags in a tabular format
-func (df *DynFlags) PrintDefaults() {
-	w := tabwriter.NewWriter(df.Output, 0, 8, 2, ' ', 0)
-	defer w.Flush()
+		var fullKey, value string
+		if strings.Contains(arg, "=") {
+			parts := strings.SplitN(arg[2:], "=", 2)
+			fullKey, value = parts[0], parts[1]
+		} else {
+			fullKey = arg[2:]
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				value = args[i+1]
+				i++
+			} else {
+				return fmt.Errorf("missing value for flag: %s", fullKey)
+			}
+		}
 
-	fmt.Fprintln(w, "FLAG\tTYPE\tDEFAULT\tDESCRIPTION")
-	fmt.Fprintln(w, df.Groups)
-	for groupName, group := range df.Groups {
-		for _, identifierGroup := range group {
-			for flagName, flag := range identifierGroup.Flags {
-				fmt.Fprintf(w, "--%s.%s.%s\t%s\t%v\t%s\n",
-					groupName, flagName, identifierGroup.Name, flag.Type, flag.Default, flag.Description)
+		keyParts := strings.Split(fullKey, ".")
+		if len(keyParts) < 3 {
+			return fmt.Errorf("flag must follow the pattern: --<group>.<identifier>.<flag>=value")
+		}
+		parentName := keyParts[0]
+		identifier := keyParts[1]
+		flagName := keyParts[2]
+
+		parsedGroup := df.createOrGetParsedGroup(parentName, identifier)
+		if parsedGroup == nil {
+			return fmt.Errorf("unknown parent group: '%s'", parentName)
+		}
+
+		flag, exists := parsedGroup.Parent.Flags[flagName]
+		if !exists {
+			switch df.parseBehavior {
+			case ExitOnError:
+				return fmt.Errorf("unknown flag '%s' in group '%s'", flagName, parentName)
+			case ContinueOnError, IgnoreUnknown:
+				continue
+			}
+		}
+
+		parsedValue, err := flag.Parser.Parse(value)
+		if err != nil {
+			return fmt.Errorf("failed to parse value for flag '%s': %v", fullKey, err)
+		}
+
+		parsedGroup.Values[flagName] = parsedValue
+
+		// Update the bound variable if applicable
+		switch flag.Type {
+		case "string":
+			if ptr, ok := flag.Value.(*string); ok {
+				*ptr = parsedValue.(string)
+			}
+		case "int":
+			if ptr, ok := flag.Value.(*int); ok {
+				*ptr = parsedValue.(int)
+			}
+		case "bool":
+			if ptr, ok := flag.Value.(*bool); ok {
+				*ptr = parsedValue.(bool)
+			}
+		case "duration":
+			if ptr, ok := flag.Value.(*time.Duration); ok {
+				*ptr = parsedValue.(time.Duration)
+			}
+		case "float":
+			if ptr, ok := flag.Value.(*float64); ok {
+				*ptr = parsedValue.(float64)
 			}
 		}
 	}
+	return nil
+}
+
+// createOrGetParsedGroup creates or retrieves a child group for a parent group
+func (df *DynFlags) createOrGetParsedGroup(parentName, identifier string) *ParsedGroup {
+	parentGroup, exists := df.configGroups[parentName]
+	if !exists {
+		return nil
+	}
+
+	for _, group := range df.parsedGroups[parentName] {
+		if group.Name == identifier {
+			return group
+		}
+	}
+
+	parsedGroup := &ParsedGroup{
+		Parent: parentGroup,
+		Name:   identifier,
+		Values: make(map[string]interface{}),
+	}
+	df.parsedGroups[parentName] = append(df.parsedGroups[parentName], parsedGroup)
+	return parsedGroup
 }
 
 // DefaultUsage provides the default usage output
-func (df *DynFlags) DefaultUsage() {
-	fmt.Fprintf(df.Output, "Usage: [OPTIONS] [--<group>.<identifier>.<property> value]\n\n")
+func (df *DynFlags) Usage() {
+	fmt.Fprintf(df.output, "Usage: [OPTIONS] [--<group>.<identifier>.<flag> value]\n\n")
 	df.PrintDefaults()
+}
+
+// PrintDefaults prints all registered flags
+func (df *DynFlags) PrintDefaults() {
+	w := tabwriter.NewWriter(df.output, 0, 8, 2, ' ', 0)
+	defer w.Flush()
+	fmt.Fprintln(w, "GROUP\tFLAG\tTYPE\tDEFAULT\tDESCRIPTION")
+	for groupName, group := range df.configGroups {
+		for flagName, flag := range group.Flags {
+			fmt.Fprintf(w, "%s\t--%s\t%s\t%v\t%s\n", groupName, flagName, flag.Type, flag.Default, flag.Description)
+		}
+	}
 }
