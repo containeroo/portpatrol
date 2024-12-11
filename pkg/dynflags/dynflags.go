@@ -172,10 +172,14 @@ func (df *DynFlags) Usage() {
 func (df *DynFlags) PrintDefaults() {
 	w := tabwriter.NewWriter(df.output, 0, 8, 2, ' ', 0)
 	defer w.Flush()
-	fmt.Fprintln(w, "GROUP\tFLAG\tTYPE\tDEFAULT\tDESCRIPTION")
+	fmt.Fprintln(w, "FLAG\tDESCRIPTION")
 	for groupName, group := range df.configGroups {
 		for flagName, flag := range group.Flags {
-			fmt.Fprintf(w, "%s\t--%s\t%s\t%v\t%s\n", groupName, flagName, flag.Type, flag.Default, flag.Description)
+			description := flag.Description
+			if flag.Default != nil && flag.Default != "" {
+				description = fmt.Sprintf("%s (defaults to %v)", flag.Description, flag.Default)
+			}
+			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, strings.ToUpper(flag.Type), description)
 		}
 	}
 }
