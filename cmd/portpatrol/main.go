@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/containeroo/portpatrol/internal/config"
+	"github.com/containeroo/portpatrol/internal/factory"
 	"github.com/containeroo/portpatrol/internal/logging"
 	"github.com/containeroo/portpatrol/internal/wait"
 	"golang.org/x/sync/errgroup"
@@ -22,6 +23,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	// Create a new context that listens for interrupt signals
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
 	// Parse command-line flags
 	f, err := config.ParseFlags(args, version)
 	if err != nil {
@@ -34,7 +36,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	}
 
 	// Initialize target checkers
-	checkers, err := config.LoadTargetCheckers(f.Targets, f.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(f.DynFlags, f.DefaultCheckInterval)
 	if err != nil {
 		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}

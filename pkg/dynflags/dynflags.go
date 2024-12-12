@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 // ParseBehavior defines how the parser handles errors
@@ -121,15 +122,17 @@ func (df *DynFlags) Parse(args []string) error {
 func (df *DynFlags) createOrGetParsedGroup(parentName, identifier string) *ParsedGroup {
 	parentGroup, exists := df.configGroups[parentName]
 	if !exists {
-		return nil
+		return nil // Return nil if parent group doesn't exist
 	}
 
+	// Check if the group already exists
 	for _, group := range df.parsedGroups[parentName] {
 		if group.Name == identifier {
 			return group
 		}
 	}
 
+	// Create a new parsed group
 	parsedGroup := &ParsedGroup{
 		Parent: parentGroup,
 		Name:   identifier,
@@ -171,4 +174,70 @@ func (df *DynFlags) SetOutput(buf io.Writer) {
 // GetAllParsedGroups returns all parsed groups
 func (df *DynFlags) GetAllParsedGroups() map[string][]*ParsedGroup {
 	return df.parsedGroups
+}
+
+// GetValue returns the value of a flag with the given name
+func (pg *ParsedGroup) GetValue(flagName string) interface{} {
+	return pg.Values[flagName]
+}
+
+// GetString returns the string value of a flag with the given name
+func (pg *ParsedGroup) GetString(flagName string) (string, error) {
+	value, exists := pg.Values[flagName]
+	if !exists {
+		return "", fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
+	}
+	if str, ok := value.(string); ok {
+		return str, nil
+	}
+
+	return "", fmt.Errorf("flag '%s' is not a string", flagName)
+}
+
+// GetBool returns the bool value of a flag with the given name
+func (pg *ParsedGroup) GetBool(flagName string) (bool, error) {
+	value, exists := pg.Values[flagName]
+	if !exists {
+		return false, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
+	}
+	if boolVal, ok := value.(bool); ok {
+		return boolVal, nil
+	}
+	return false, fmt.Errorf("flag '%s' is not a bool", flagName)
+}
+
+// GetInt returns the int value of a flag with the given name
+func (pg *ParsedGroup) GetInt(flagName string) (int, error) {
+	value, exists := pg.Values[flagName]
+	if !exists {
+		return 0, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
+	}
+	if intVal, ok := value.(int); ok {
+		return intVal, nil
+	}
+	return 0, fmt.Errorf("flag '%s' is not an int", flagName)
+}
+
+// GetFloat64 returns the float64 value of a flag with the given name
+func (pg *ParsedGroup) GetFloat64(flagName string) (float64, error) {
+	value, exists := pg.Values[flagName]
+	if !exists {
+		return 0, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
+	}
+	if floatVal, ok := value.(float64); ok {
+		return floatVal, nil
+	}
+	return 0, fmt.Errorf("flag '%s' is not a float64", flagName)
+}
+
+// GetDuration returns the time.Duration value of a flag with the given name
+func (pg *ParsedGroup) GetDuration(flagName string) (time.Duration, error) {
+	vaue, exists := pg.Values[flagName]
+	if !exists {
+		return 0, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
+	}
+	if durationVal, ok := vaue.(time.Duration); ok {
+		return durationVal, nil
+	}
+	return 0, fmt.Errorf("flag '%s' is not a time.Duration", flagName)
 }

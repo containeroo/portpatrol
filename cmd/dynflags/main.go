@@ -45,6 +45,7 @@ func main() {
 	}
 
 	fmt.Println("blabla", *httpMethod)
+	fmt.Println(dynFlags)
 
 	dynFlags.Usage()
 
