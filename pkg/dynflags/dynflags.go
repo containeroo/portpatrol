@@ -149,14 +149,16 @@ func (df *DynFlags) Usage() {
 func (df *DynFlags) PrintDefaults() {
 	w := tabwriter.NewWriter(df.output, 0, 8, 2, ' ', 0)
 	defer w.Flush()
-	fmt.Fprintln(w, "FLAG\tDESCRIPTION")
+
+	fmt.Fprintln(w, "FLAG\tUSAGE")
+
 	for groupName, group := range df.configGroups {
 		for flagName, flag := range group.Flags {
-			description := flag.Description
+			usage := flag.Usage
 			if flag.Default != nil && flag.Default != "" {
-				description = fmt.Sprintf("%s (defaults to %v)", flag.Description, flag.Default)
+				usage = fmt.Sprintf("%s (default: %v)", flag.Usage, flag.Default)
 			}
-			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, description)
+			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, usage)
 		}
 	}
 }
@@ -166,25 +168,7 @@ func (df *DynFlags) SetOutput(buf io.Writer) {
 	df.output = buf
 }
 
-// GetValue retrieves a parsed value by flag name from a ParsedGroup
-func (pg *ParsedGroup) GetValue(flagName string) (interface{}, error) {
-	value, exists := pg.Values[flagName]
-	if !exists {
-		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
-	}
-	return value, nil
+// GetAllParsedGroups returns all parsed groups
+func (df *DynFlags) GetAllParsedGroups() map[string][]*ParsedGroup {
+	return df.parsedGroups
 }
-
-// GetString retrieves a parsed string value by flag name
-func (pg *ParsedGroup) GetString(flagName string) (string, error) {
-	value, err := pg.GetValue(flagName)
-	if err != nil {
-		return "", err
-	}
-	if str, ok := value.(string); ok {
-		return str, nil
-	}
-	return "", fmt.Errorf("flag '%s' is not a string", flagName)
-}
-
-// Add similar methods for GetInt, GetBool, etc.

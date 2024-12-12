@@ -70,7 +70,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 	}
 
 	// Define known flags
-	checkInterval := flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
+	checkInterval := flagSet.Int(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
 	showVersion := flagSet.Bool("version", false, "Show version and exit.")
 	showHelp := flagSet.BoolP("help", "h", false, "Show help.")
 

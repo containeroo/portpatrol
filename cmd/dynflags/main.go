@@ -49,14 +49,14 @@ func main() {
 	dynFlags.Usage()
 
 	// Print parsed groups and their flag values
-	// fmt.Println("\nParsed Groups:")
-	// for parentName, childGroups := range dynFlags.GetAllParsedGroups() {
-	// 	fmt.Printf("Parent Group: %s\n", parentName)
-	// 	for _, group := range childGroups {
-	// 		fmt.Printf("  Child Group: %s\n", group.Name)
-	// 		for flagName, value := range group.Values {
-	// 			fmt.Printf("    %s: %v\n", flagName, value)
-	// 		}
-	// 	}
-	// }
+	fmt.Println("\nParsed Groups:")
+	for parentName, childGroups := range dynFlags.GetAllParsedGroups() {
+		fmt.Printf("Parent Group: %s\n", parentName)
+		for _, group := range childGroups {
+			fmt.Printf("  Child Group: %s\n", group.Name)
+			for flagName, value := range group.Values {
+				fmt.Printf("    %s: %v\n", flagName, value)
+			}
+		}
+	}
 }

@@ -13,10 +13,10 @@ const (
 
 // Flag represents a single configuration flag
 type Flag struct {
-	Default     interface{} // Default value for the flag
-	Type        FlagType    // Type of the flag
-	Description string      // Description for usage
-	Value       FlagValue   // Encapsulated parsing and value-setting logic
+	Default interface{} // Default value for the flag
+	Type    FlagType    // Type of the flag
+	Usage   string      // Description for usage
+	Value   FlagValue   // Encapsulated parsing and value-setting logic
 }
 
 // FlagValue interface encapsulates parsing and value-setting logic

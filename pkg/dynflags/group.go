@@ -14,82 +14,123 @@ type GroupConfig struct {
 	Flags map[string]*Flag // Flags within the group
 }
 
-// String registers a string flag in the group and binds it to a string pointer
-func (g *GroupConfig) String(flagName, defaultValue, description string) *string {
-	bound := &defaultValue
-	g.Flags[flagName] = &Flag{
-		Type:        FlagTypeString,
-		Default:     defaultValue,
-		Description: description,
-		Value:       &types.StringValue{Bound: bound},
+// StringVar defines a string flag with specified name, default value, and usage string.
+// The argument p points to a string variable in which to store the value of the flag.
+func (g *GroupConfig) StringVar(p *string, name, value, usage string) {
+	*p = *g.String(name, value, usage)
+}
+
+// String defines a string flag with specified name, default value, and usage string.
+// The return value is the address of a string variable that stores the value of the flag.
+func (g *GroupConfig) String(name, value, usage string) *string {
+	bound := &value
+	g.Flags[name] = &Flag{
+		Type:    FlagTypeString,
+		Default: value,
+		Usage:   usage,
+		Value:   &types.StringValue{Bound: bound},
 	}
 	return bound
 }
 
-// Int registers an integer flag in the group and binds it to an int pointer
-func (g *GroupConfig) Int(flagName string, defaultValue int, description string) *int {
-	bound := &defaultValue
-	g.Flags[flagName] = &Flag{
-		Type:        FlagTypeInt,
-		Default:     defaultValue,
-		Description: description,
-		Value:       &types.IntValue{Bound: bound},
+// IntVar defines an int flag with specified name, default value, and usage string.
+// The argument p points to an int variable in which to store the value of the flag.
+func (g *GroupConfig) IntVar(p *int, name string, value int, usage string) {
+	*p = *g.Int(name, value, usage)
+}
+
+// Int defines an int flag with specified name, default value, and usage string.
+// The return value is the address of an int variable that stores the value of the flag.
+func (g *GroupConfig) Int(name string, value int, usage string) *int {
+	bound := &value
+	g.Flags[name] = &Flag{
+		Type:    FlagTypeInt,
+		Default: value,
+		Usage:   usage,
+		Value:   &types.IntValue{Bound: bound},
 	}
 	return bound
 }
 
-// Int registers an integer flag in the group and binds it to an int pointer
-func (g *GroupConfig) Float64(flagName string, defaultValue float64, description string) *float64 {
-	bound := &defaultValue
-	g.Flags[flagName] = &Flag{
-		Type:        FlagTypeInt,
-		Default:     defaultValue,
-		Description: description,
-		Value:       &types.Float64Value{Bound: bound},
+// Float64Var defines a float64 flag with specified name, default value, and usage string.
+// The argument p points to a float64 variable in which to store the value of the flag.
+func (g *GroupConfig) Float64Var(p *float64, name string, value float64, usage string) {
+	*p = *g.Float64(name, value, usage)
+}
+
+// Float64 defines a float64 flag with specified name, default value, and usage string.
+// The return value is the address of a float64 variable that stores the value of the flag.
+func (g *GroupConfig) Float64(name string, value float64, usage string) *float64 {
+	bound := &value
+	g.Flags[name] = &Flag{
+		Type:    FlagTypeInt,
+		Default: value,
+		Usage:   usage,
+		Value:   &types.Float64Value{Bound: bound},
 	}
 	return bound
 }
 
-// Bool registers a boolean flag in the group and binds it to a bool pointer
-func (g *GroupConfig) Bool(flagName string, defaultValue bool, description string) *bool {
-	bound := &defaultValue
-	g.Flags[flagName] = &Flag{
-		Type:        FlagTypeBool,
-		Default:     defaultValue,
-		Description: description,
-		Value:       &types.BoolValue{Bound: bound},
+// BoolVar defines a bool flag with specified name, default value, and usage string.
+// The argument p points to a bool variable in which to store the value of the flag.
+func (g *GroupConfig) BoolVar(p *bool, name string, value bool, usage string) {
+	*p = *g.Bool(name, value, usage)
+}
+
+// Bool defines a bool flag with specified name, default value, and usage string.
+// The return value is the address of a bool variable that stores the value of the flag.
+func (g *GroupConfig) Bool(name string, value bool, usage string) *bool {
+	bound := &value
+	g.Flags[name] = &Flag{
+		Type:    FlagTypeBool,
+		Default: value,
+		Usage:   usage,
+		Value:   &types.BoolValue{Bound: bound},
 	}
 	return bound
 }
 
-// Duration registers a duration flag in the group and binds it to a time.Duration pointer
+// DurationVar defines a duration flag with specified name, default value, and usage string.
+// The argument p points to a time.Duration variable in which to store the value of the flag.
+func (g *GroupConfig) DurationVar(p *time.Duration, name string, value time.Duration, usage string) {
+	*p = *g.Duration(name, value, usage)
+}
 
-func (g *GroupConfig) Duration(flagName string, defaultValue time.Duration, description string) *time.Duration {
-	bound := &defaultValue
-	g.Flags[flagName] = &Flag{
-		Type:        FlagTypeDuration,
-		Default:     defaultValue,
-		Description: description,
-		Value:       &types.DurationValue{Bound: bound},
+// Duration defines a duration flag with specified name, default value, and usage string.
+// The return value is the address of a time.Duration variable that stores the value of the flag.
+func (g *GroupConfig) Duration(name string, value time.Duration, usage string) *time.Duration {
+	bound := &value
+	g.Flags[name] = &Flag{
+		Type:    FlagTypeDuration,
+		Default: value,
+		Usage:   usage,
+		Value:   &types.DurationValue{Bound: bound},
 	}
 	return bound
 }
 
-// URL registers a URL flag in the group and binds it to a url.URL pointer
-func (g *GroupConfig) URL(flagName, defaultValue, description string) *url.URL {
+// URLVar defines a URL flag with specified name, default value, and usage string.
+// The argument p points to a url.URL variable in which to store the value of the flag.
+func (g *GroupConfig) URLVar(p *url.URL, name, value, usage string) {
+	*p = *g.URL(name, value, usage)
+}
+
+// URL defines a URL flag with specified name, default value, and usage string.
+// The return value is the address of a url.URL variable that stores the value of the flag.
+func (g *GroupConfig) URL(name, value, usage string) *url.URL {
 	bound := new(url.URL)
-	if defaultValue != "" {
-		parsed, err := url.Parse(defaultValue)
+	if value != "" {
+		parsed, err := url.Parse(value)
 		if err != nil {
-			panic(fmt.Sprintf("invalid default URL for flag '%s': %s", flagName, err))
+			panic(fmt.Sprintf("invalid default URL for flag '%s': %s", name, err))
 		}
 		*bound = *parsed // Copy the parsed URL into bound
 	}
-	g.Flags[flagName] = &Flag{
-		Type:        FlagTypeURL,
-		Default:     defaultValue,
-		Description: description,
-		Value:       &types.URLValue{Bound: bound},
+	g.Flags[name] = &Flag{
+		Type:    FlagTypeURL,
+		Default: value,
+		Usage:   usage,
+		Value:   &types.URLValue{Bound: bound},
 	}
 	return bound
 }
