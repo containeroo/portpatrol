@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
-	"time"
 )
 
 // ParseBehavior defines how the parser handles errors
@@ -25,6 +24,13 @@ type DynFlags struct {
 	parseBehavior ParseBehavior             // Parsing behavior
 	output        io.Writer                 // Output for usage/help
 	usage         func()                    // Customizable usage function
+}
+
+// ParsedGroup represents a runtime group with parsed values
+type ParsedGroup struct {
+	Parent *GroupConfig           // Reference to the parent static group
+	Name   string                 // Identifier for the child group (e.g., "IDENTIFIER1")
+	Values map[string]interface{} // Parsed values for the group's flags
 }
 
 // New initializes a new DynFlags instance
@@ -50,15 +56,6 @@ func (df *DynFlags) Group(name string) (*GroupConfig, error) {
 	}
 	df.configGroups[name] = group
 	return group, nil
-}
-
-// GetParsedGroups retrieves all parsed child groups for a parent group
-func (df *DynFlags) GetParsedGroups(parentName string) ([]*ParsedGroup, error) {
-	groups, exists := df.parsedGroups[parentName]
-	if !exists {
-		return nil, fmt.Errorf("no parsed groups found for parent '%s'", parentName)
-	}
-	return groups, nil
 }
 
 // Parse parses the CLI arguments and populates parsed groups
@@ -106,36 +103,16 @@ func (df *DynFlags) Parse(args []string) error {
 			}
 		}
 
-		parsedValue, err := flag.Parser.Parse(value)
+		parsedValue, err := flag.Value.Parse(value)
 		if err != nil {
 			return fmt.Errorf("failed to parse value for flag '%s': %v", fullKey, err)
 		}
 
-		parsedGroup.Values[flagName] = parsedValue
-
-		// Update the bound variable if applicable
-		switch flag.Type {
-		case "string":
-			if ptr, ok := flag.Value.(*string); ok {
-				*ptr = parsedValue.(string)
-			}
-		case "int":
-			if ptr, ok := flag.Value.(*int); ok {
-				*ptr = parsedValue.(int)
-			}
-		case "bool":
-			if ptr, ok := flag.Value.(*bool); ok {
-				*ptr = parsedValue.(bool)
-			}
-		case "duration":
-			if ptr, ok := flag.Value.(*time.Duration); ok {
-				*ptr = parsedValue.(time.Duration)
-			}
-		case "float":
-			if ptr, ok := flag.Value.(*float64); ok {
-				*ptr = parsedValue.(float64)
-			}
+		if err := flag.Value.Set(parsedValue); err != nil {
+			return fmt.Errorf("failed to set value for flag '%s': %v", fullKey, err)
 		}
+
+		parsedGroup.Values[flagName] = parsedValue
 	}
 	return nil
 }
@@ -179,7 +156,35 @@ func (df *DynFlags) PrintDefaults() {
 			if flag.Default != nil && flag.Default != "" {
 				description = fmt.Sprintf("%s (defaults to %v)", flag.Description, flag.Default)
 			}
-			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, strings.ToUpper(flag.Type), description)
+			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, description)
 		}
 	}
 }
+
+// SetOutput sets the output writer
+func (df *DynFlags) SetOutput(buf io.Writer) {
+	df.output = buf
+}
+
+// GetValue retrieves a parsed value by flag name from a ParsedGroup
+func (pg *ParsedGroup) GetValue(flagName string) (interface{}, error) {
+	value, exists := pg.Values[flagName]
+	if !exists {
+		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
+	}
+	return value, nil
+}
+
+// GetString retrieves a parsed string value by flag name
+func (pg *ParsedGroup) GetString(flagName string) (string, error) {
+	value, err := pg.GetValue(flagName)
+	if err != nil {
+		return "", err
+	}
+	if str, ok := value.(string); ok {
+		return str, nil
+	}
+	return "", fmt.Errorf("flag '%s' is not a string", flagName)
+}
+
+// Add similar methods for GetInt, GetBool, etc.

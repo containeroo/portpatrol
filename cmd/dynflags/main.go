@@ -21,7 +21,7 @@ func main() {
 	httpGroup.URL("address", "", "HTTP target URL")
 	httpGroup.Bool("secure", true, "Use secure connection (HTTPS)")
 	httpGroup.Int("retries", 3, "Number of retries")
-	httpGroup.Float("timeout", 1.5, "Timeout in seconds")
+	httpGroup.Float64("timeout", 1.5, "Timeout in seconds")
 
 	// Define the TCP parent group with static configuration
 	tcpGroup, err := dynFlags.Group("tcp")

@@ -1,10 +1,9 @@
 package dynflags
 
 import (
+	"fmt"
 	"net/url"
 	"time"
-
-	"github.com/containeroo/portpatrol/pkg/dynflags/parsers"
 )
 
 // GroupConfig represents the static configuration for a group
@@ -13,111 +12,82 @@ type GroupConfig struct {
 	Flags map[string]*Flag // Flags within the group
 }
 
-// ParsedGroup represents a runtime group with parsed values
-type ParsedGroup struct {
-	Parent *GroupConfig           // Reference to the parent static group
-	Name   string                 // Identifier for the child group
-	Values map[string]interface{} // Parsed values for the group's flags
-}
-
-// String registers a string flag in the group and binds it to the provided variable
+// String registers a string flag in the group and binds it to a string pointer
 func (g *GroupConfig) String(flagName, defaultValue, description string) *string {
-	parsedValue := new(string)
-	*parsedValue = defaultValue // Initialize with the default value
-
-	flag := &Flag{
-		Type:        "string",
+	bound := &defaultValue
+	g.Flags[flagName] = &Flag{
+		Type:        FlagTypeString,
 		Default:     defaultValue,
 		Description: description,
-		Value:       parsedValue, // Store the pointer in the flag
-		Parser:      &parsers.StringParser{},
+		Value:       &StringValue{Bound: bound},
 	}
-	g.Flags[flagName] = flag
-	return parsedValue // Return the pointer
+	return bound
 }
 
-// Int registers an integer flag in the group
+// Int registers an integer flag in the group and binds it to an int pointer
 func (g *GroupConfig) Int(flagName string, defaultValue int, description string) *int {
-	parsedValue := new(int)
-	*parsedValue = defaultValue
-
-	flag := &Flag{
-		Type:        "int",
+	bound := &defaultValue
+	g.Flags[flagName] = &Flag{
+		Type:        FlagTypeInt,
 		Default:     defaultValue,
 		Description: description,
-		Value:       parsedValue,
-		Parser:      &parsers.IntParser{},
+		Value:       &IntValue{Bound: bound},
 	}
-	g.Flags[flagName] = flag
-	return parsedValue
+	return bound
 }
 
-// Bool registers a boolean flag in the group
+// Int registers an integer flag in the group and binds it to an int pointer
+func (g *GroupConfig) Float64(flagName string, defaultValue float64, description string) *float64 {
+	bound := &defaultValue
+	g.Flags[flagName] = &Flag{
+		Type:        FlagTypeInt,
+		Default:     defaultValue,
+		Description: description,
+		Value:       &Float64Value{Bound: bound},
+	}
+	return bound
+}
+
+// Bool registers a boolean flag in the group and binds it to a bool pointer
 func (g *GroupConfig) Bool(flagName string, defaultValue bool, description string) *bool {
-	parsedValue := new(bool)
-	*parsedValue = defaultValue
-
-	flag := &Flag{
-		Type:        "bool",
+	bound := &defaultValue
+	g.Flags[flagName] = &Flag{
+		Type:        FlagTypeBool,
 		Default:     defaultValue,
 		Description: description,
-		Value:       parsedValue,
-		Parser:      &parsers.BoolParser{},
+		Value:       &BoolValue{Bound: bound},
 	}
-	g.Flags[flagName] = flag
-	return parsedValue
+	return bound
 }
 
-// Duration registers a duration flag in the group
+// Duration registers a duration flag in the group and binds it to a time.Duration pointer
+
 func (g *GroupConfig) Duration(flagName string, defaultValue time.Duration, description string) *time.Duration {
-	parsedValue := new(time.Duration)
-	*parsedValue = defaultValue
-
-	flag := &Flag{
-		Type:        "duration",
+	bound := &defaultValue
+	g.Flags[flagName] = &Flag{
+		Type:        FlagTypeDuration,
 		Default:     defaultValue,
 		Description: description,
-		Value:       defaultValue,
-		Parser:      &parsers.DurationParser{},
+		Value:       &DurationValue{Bound: bound},
 	}
-	g.Flags[flagName] = flag
-	return parsedValue
+	return bound
 }
 
-// Float registers a float flag in the group
-func (g *GroupConfig) Float(flagName string, defaultValue float64, description string) *float64 {
-	parsedValue := new(float64)
-	*parsedValue = defaultValue
-
-	flag := &Flag{
-		Type:        "float",
-		Default:     defaultValue,
-		Description: description,
-		Value:       defaultValue,
-		Parser:      &parsers.FloatParser{},
-	}
-	g.Flags[flagName] = flag
-	return parsedValue
-}
-
-// URL registers a URL flag in the group and binds it to a `url.URL` pointer
+// URL registers a URL flag in the group and binds it to a url.URL pointer
 func (g *GroupConfig) URL(flagName, defaultValue, description string) *url.URL {
-	parsedValue := new(url.URL)
-
+	bound := new(url.URL)
 	if defaultValue != "" {
-		parsedURL, err := url.Parse(defaultValue)
-		if err == nil {
-			*parsedValue = *parsedURL
+		parsed, err := url.Parse(defaultValue)
+		if err != nil {
+			panic(fmt.Sprintf("invalid default URL for flag '%s': %s", flagName, err))
 		}
+		*bound = *parsed // Copy the parsed URL into bound
 	}
-
-	flag := &Flag{
-		Type:        "url",
+	g.Flags[flagName] = &Flag{
+		Type:        FlagTypeURL,
 		Default:     defaultValue,
 		Description: description,
-		Value:       parsedValue,
-		Parser:      &parsers.URLParser{},
+		Value:       &URLValue{Bound: bound},
 	}
-	g.Flags[flagName] = flag
-	return parsedValue
+	return bound
 }
