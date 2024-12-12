@@ -93,10 +93,10 @@ func setupGlobalFlags() *pflag.FlagSet {
 // setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
 func setupDynamicFlags() (*dynflags.DynFlags, error) {
 	dynFlags := dynflags.New(dynflags.ContinueOnError)
-	dynFlags.AddEpilog("For more information, see https://github.com/containeroo/portpatrol")
+	dynFlags.SetEpilog("For more information, see https://github.com/containeroo/portpatrol")
 
 	// HTTP flags
-	httpFlags, _ := dynFlags.Group("http")
+	httpFlags := dynFlags.Group("http")
 	httpFlags.String("name", "", "Name of the HTTP checker")
 	httpFlags.String("method", "GET", "HTTP method to use")
 	httpFlags.String("address", "", "HTTP target URL")
@@ -108,14 +108,14 @@ func setupDynamicFlags() (*dynflags.DynFlags, error) {
 	httpFlags.Duration("timeout", 2*time.Second, "Timeout in seconds")
 
 	// ICMP flags
-	icmpFlags, _ := dynFlags.Group("icmp")
+	icmpFlags := dynFlags.Group("icmp")
 	icmpFlags.String("name", "", "Name of the ICMP checker")
 	icmpFlags.String("address", "", "ICMP target address")
 	icmpFlags.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read")
 	icmpFlags.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write")
 
 	// TCP flags
-	tcpFlags, _ := dynFlags.Group("tcp")
+	tcpFlags := dynFlags.Group("tcp")
 	tcpFlags.String("name", "", "Name of the TCP checker")
 	tcpFlags.String("address", "", "TCP target address")
 	tcpFlags.Duration("timeout", 2*time.Second, "Timeout for TCP connection")
@@ -126,9 +126,9 @@ func setupDynamicFlags() (*dynflags.DynFlags, error) {
 // setupUsage sets the custom usage function.
 func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
 	flagSet.Usage = func() {
-		fmt.Fprintln(output, "Usage: portpatrol [OPTIONS]")
+		fmt.Fprintln(output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
 
-		fmt.Fprintln(output, "\nStatic Flags:")
+		fmt.Fprintln(output, "\nGlobal Flags:")
 		flagSet.PrintDefaults()
 
 		fmt.Fprintln(output, "\nDynamic Flags:")
