@@ -1,9 +1,9 @@
 package config
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -36,28 +36,28 @@ type ParsedFlags struct {
 }
 
 // ParseFlags parses command-line arguments and returns the parsed flags.
-func ParseFlags(args []string, version string) (*ParsedFlags, error) {
+func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, error) {
+	// Create global flagSet and dynamic flags
 	flagSet := setupGlobalFlags()
 	dynFlags, _ := setupDynamicFlags()
 
-	// Buffer for capturing help and error messages
-	var buf bytes.Buffer
-	flagSet.SetOutput(&buf)
-	dynFlags.SetOutput(&buf)
+	// Set output for flagSet and dynFlags
+	flagSet.SetOutput(output)
+	dynFlags.SetOutput(output)
 
-	// Set up custom usage
-	setupUsage(flagSet, dynFlags)
+	// Set up custom usage function
+	setupUsage(output, flagSet, dynFlags)
 
 	// Separate known and unknown flags
 	knownArgs, unknownArgs := separateKnownAndUnknownArgs(args, flagSet)
 
 	// Parse known flags
 	if err := flagSet.Parse(knownArgs); err != nil {
-		return parseAndHandleErrors(err, &buf, flagSet, dynFlags)
+		return parseAndHandleErrors(err, output, flagSet, dynFlags)
 	}
 
-	// Handle special flags
-	if err := handleSpecialFlags(flagSet, &buf, version); err != nil {
+	// Handle special flags (e.g., --help or --version)
+	if err := handleSpecialFlags(flagSet, output, version); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +66,7 @@ func ParseFlags(args []string, version string) (*ParsedFlags, error) {
 		return nil, fmt.Errorf("error parsing dynamic flags: %w", err)
 	}
 
-	// Get the default interval
+	// Retrieve the default interval value
 	defaultInterval, err := getDurationFlag(flagSet, paramDefaultInterval, defaultCheckInterval)
 	if err != nil {
 		return nil, err
@@ -83,10 +83,9 @@ func setupGlobalFlags() *pflag.FlagSet {
 	flagSet := pflag.NewFlagSet("portpatrol", pflag.ContinueOnError)
 	flagSet.SortFlags = false
 
-	flagSet.ParseErrorsWhitelist.UnknownFlags = true
+	flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
 	flagSet.Bool("version", false, "Show version and exit.")
 	flagSet.BoolP("help", "h", false, "Show help.")
-	flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
 
 	return flagSet
 }
@@ -94,6 +93,7 @@ func setupGlobalFlags() *pflag.FlagSet {
 // setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
 func setupDynamicFlags() (*dynflags.DynFlags, error) {
 	dynFlags := dynflags.New(dynflags.ContinueOnError)
+	dynFlags.AddEpilog("For more information, see https://github.com/containeroo/portpatrol")
 
 	// HTTP flags
 	httpFlags, _ := dynFlags.Group("http")
@@ -124,34 +124,35 @@ func setupDynamicFlags() (*dynflags.DynFlags, error) {
 }
 
 // setupUsage sets the custom usage function.
-func setupUsage(flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
+func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
 	flagSet.Usage = func() {
-		fmt.Println("Usage: portpatrol [OPTIONS]")
-		fmt.Println("\nOptions:")
+		fmt.Fprintln(output, "Usage: portpatrol [OPTIONS]")
+
+		fmt.Fprintln(output, "\nStatic Flags:")
 		flagSet.PrintDefaults()
-		fmt.Println("\nDynamic Flags:")
+
+		fmt.Fprintln(output, "\nDynamic Flags:")
 		dynFlags.PrintDefaults()
 	}
 }
 
 // parseAndHandleErrors processes errors during flag parsing.
-func parseAndHandleErrors(err error, buf *bytes.Buffer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) (*ParsedFlags, error) {
-	buf.WriteString(err.Error())
-	buf.WriteString("\n\n")
+func parseAndHandleErrors(err error, output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) (*ParsedFlags, error) {
+	fmt.Fprintf(output, "%s\n\n", err.Error())
 	flagSet.Usage()
-	return nil, errors.New(buf.String())
+	return nil, errors.New(fmt.Sprintf("Flag parsing error: %s", err.Error()))
 }
 
 // handleSpecialFlags handles help and version flags.
-func handleSpecialFlags(flagSet *pflag.FlagSet, buf *bytes.Buffer, version string) error {
+func handleSpecialFlags(flagSet *pflag.FlagSet, output io.Writer, version string) error {
 	if flagSet.Lookup("help").Value.String() == "true" {
 		flagSet.Usage()
-		buf.WriteString("\n")
-		return &HelpRequested{Message: buf.String()}
+		return &HelpRequested{Message: ""}
 	}
 
 	if flagSet.Lookup("version").Value.String() == "true" {
-		return &HelpRequested{Message: fmt.Sprintf("PortPatrol version %s\n", version)}
+		fmt.Fprintf(output, "PortPatrol version %s\n", version)
+		return &HelpRequested{Message: ""}
 	}
 
 	return nil

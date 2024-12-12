@@ -25,7 +25,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	defer cancel()
 
 	// Parse command-line flags
-	f, err := config.ParseFlags(args, version)
+	f, err := config.ParseFlags(args, version, output)
 	if err != nil {
 		var helpErr *config.HelpRequested
 		if errors.As(err, &helpErr) {

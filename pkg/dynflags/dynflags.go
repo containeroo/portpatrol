@@ -25,6 +25,9 @@ type DynFlags struct {
 	parseBehavior ParseBehavior             // Parsing behavior
 	output        io.Writer                 // Output for usage/help
 	usage         func()                    // Customizable usage function
+	title         string                    // Title in the help message
+	description   string                    // Description after the title in the help message
+	epilog        string                    // Epilog in the help message
 }
 
 // ParsedGroup represents a runtime group with parsed values
@@ -44,6 +47,21 @@ func New(behavior ParseBehavior) *DynFlags {
 	}
 	df.usage = func() { df.Usage() }
 	return df
+}
+
+// AddTitle adds a title to the help message
+func (df *DynFlags) AddTitle(title string) {
+	df.title = title
+}
+
+// AddDescription adds a descripton after the Title
+func (df *DynFlags) AddDescription(description string) {
+	df.description = description
+}
+
+// AddEpilog adds an epilog after the description of the dynamic flags to the help message
+func (df *DynFlags) AddEpilog(epilog string) {
+	df.epilog = epilog
 }
 
 // Group defines a new static group or retrieves an existing one
@@ -144,7 +162,7 @@ func (df *DynFlags) createOrGetParsedGroup(parentName, identifier string) *Parse
 
 // DefaultUsage provides the default usage output
 func (df *DynFlags) Usage() {
-	fmt.Fprintf(df.output, "Usage: [OPTIONS] [--<group>.<identifier>.<flag> value]\n\n")
+	fmt.Fprintf(df.output, "Usage: [--<group>.<identifier>.<flag> value]\n\n")
 	df.PrintDefaults()
 }
 
@@ -153,9 +171,17 @@ func (df *DynFlags) PrintDefaults() {
 	w := tabwriter.NewWriter(df.output, 0, 8, 2, ' ', 0)
 	defer w.Flush()
 
-	fmt.Fprintln(w, "FLAG\tUSAGE")
+	if df.title != "" {
+		fmt.Fprintln(w, df.title)
+	}
+
+	if df.description != "" {
+		fmt.Fprintln(w, df.description)
+	}
 
 	for groupName, group := range df.configGroups {
+		fmt.Fprintln(w, strings.ToUpper(groupName))
+		fmt.Fprintln(w, "  Flag\tUsage")
 		for flagName, flag := range group.Flags {
 			usage := flag.Usage
 			if flag.Default != nil && flag.Default != "" {
@@ -163,6 +189,11 @@ func (df *DynFlags) PrintDefaults() {
 			}
 			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, usage)
 		}
+		fmt.Fprintln(w, "")
+	}
+
+	if df.epilog != "" {
+		fmt.Fprintln(w, df.epilog)
 	}
 }
 
