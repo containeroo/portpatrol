@@ -21,58 +21,66 @@
 
 ### Target Flags
 
-Use the `--target.<name>.<property>=<value>` format to define targets.
+Use the `--<TYPE>.<IDENTIFIER>.<PROPERTY>=<VALUE>` format to define targets.
+Types are: `http`, `icmp` or `tcp`.
 
-#### Common Target Properties
+#### HTTP-Flags
 
-- **`--target.<name>.address`** = `string`
-  The target's address. Supported formats:
-  - **TCP**: `host:port` (port is required).
-  - **HTTP**: `scheme://host[:port]` (scheme is required).
-  - **ICMP**: `host` (no scheme and port allowed).
+- **`--http.<IDENTIFIER>.name`** = `string`
+  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
 
-  If a scheme (e.g., `http://`, `tcp://`, `icmp://`) is specified, the check type is automatically inferred, making the `--target.<name>.type` flag optional.
+- **`--http.<IDENTIFIER>.address`** = `string`
+  The target's address.
 
-- **`--target.<name>.name`** = `string`
-  The name of the target. If not specified, it is derived from the target address.
+  - **`--http.<IDENTIFIER>.interval`** = `duration`
+  The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
 
-- **`--target.<name>.type`** = `string`
-  The type of check to perform. Must be `tcp`, `http`, `https`, or `icmp`. If a scheme is specified in `--target.<name>.address`, this flag can be omitted as the type will be inferred.
-
-- **`--target.<name>.timeout`** = `duration`
-  The timeout for each connection attempt (e.g., `2s`, `500ms`).
-
-- **`--target.<name>.interval`** = `duration`
-  Override the default interval for this target (e.g., `5s`).
-
-#### HTTP-Specific Flags
-
-- **`--target.<name>.method`** = `string`
+- **`--http.<IDENTIFIER>.method`** = `string`
   The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
 
-- **`--target.<name>.headers`** = `string`
+- **`--http.<IDENTIFIER>.headers`** = `string`
   A comma-separated list of HTTP headers in `key=value` format.
   **Example:** `Authorization=Bearer token,Content-Type=application/json`
 
-- **`--target.<name>.allow-duplicate-headers`** = `bool`
+- **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
   Allow duplicate headers. Defaults to `false`.
 
-- **`--target.<name>.expected-status-codes`** = `string`
+- **`--http.<IDENTIFIER>.expected-status-codes`** = `string`
   A comma-separated list of expected HTTP status codes or ranges (e.g., `200,301-302`). Defaults to `200`.
 
-- **`--target.<name>.skip-tls-verify`** = `bool`
+- **`--http.<IDENTIFIER>.skip-tls-verify`** = `bool`
   Whether to skip TLS verification. Defaults to `false`.
 
-- **`--target.<name>.timeout`** = `duration`
+- **`--http.<IDENTIFIER>.timeout`** = `duration`
   The timeout for the HTTP request (e.g., `5s`). Defaults to `1s`.
 
-#### ICMP-Specific Flags
+#### ICMP Flags
 
-- **`--target.<name>.read-timeout`** = `duration`
+- **`--icmp.<IDENTIFIER>.name`** = `string`
+  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+
+- **`--icmp.<IDENTIFIER>.address`** = `string`
+  The target's address.
+
+- **`--icmp.<IDENTIFIER>.interval`** = `duration`
+  The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+- **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
   The read timeout for the ICMP connection (e.g., `1s`). Defaults to `1s`.
 
-- **`--target.<name>.write-timeout`** = `duration`
+- **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
   The write timeout for the ICMP connection (e.g., `1s`).Defaults to `1s`.
+
+### TCP Flags
+
+- **`--tcp.<IDENTIFIER>.name`** = `string`
+  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+
+- **`--tcp.<IDENTIFIER>.address`** = `string`
+  The target's address.
+
+- **`--tcp.<IDENTIFIER>.interval`** = `duration`
+  The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
 
 ### Examples
 
@@ -80,12 +88,11 @@ Use the `--target.<name>.<property>=<value>` format to define targets.
 
 ```sh
 portpatrol \
-  --target.web.type=http \
-  --target.web.address=http://example.com:80 \
-  --target.web.method=GET \
-  --target.web.expected-status-codes=200,204 \
-  --target.web.headers="Authorization=Bearer token,Content-Type=application/json" \
-  --target.web.skip-tls-verify=false \
+  --http.web.address=http://example.com:80 \
+  --http.web.method=GET \
+  --http.web.expected-status-codes=200,204 \
+  --http.web.headers="Authorization=Bearer token,Content-Type=application/json" \
+  --http.web.skip-tls-verify=false \
   --default-interval=5s \
   --debug
 ```
@@ -94,17 +101,15 @@ portpatrol \
 
 ```sh
 portpatrol \
-  --target.web.type=http \
-  --target.web.address=http://example.com:80 \
-  --target.db.type=tcp \
-  --target.db.address=tcp://localhost:5432 \
+  --http.web.address=http://example.com:80 \
+  --tcp.db.address=tcp://localhost:5432 \
   --default-interval=10s
 ```
 
 #### Notes
 
 **Proxy Settings**: Proxy configurations (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) are managed via environment variables.
-**Type Inference**: If a scheme (`http://`, `tcp://`, `icmp://`) is provided in the `--target.<identifier>.address`, the `--target.<name>.type` flag becomes optional as the type is inferred from the scheme.
+**Type Inference**: If a scheme (`http://`, `tcp://`, `icmp://`) is provided in the `--target.<identifier>.address`, the `--target.<IDENTIFIER>.type` flag becomes optional as the type is inferred from the scheme.
 
 ## Behavior Flowchart
 
