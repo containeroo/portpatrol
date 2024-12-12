@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
+	"github.com/containeroo/portpatrol/pkg/dynflags/types"
 )
 
 // GroupConfig represents the static configuration for a group
@@ -19,7 +21,7 @@ func (g *GroupConfig) String(flagName, defaultValue, description string) *string
 		Type:        FlagTypeString,
 		Default:     defaultValue,
 		Description: description,
-		Value:       &StringValue{Bound: bound},
+		Value:       &types.StringValue{Bound: bound},
 	}
 	return bound
 }
@@ -31,7 +33,7 @@ func (g *GroupConfig) Int(flagName string, defaultValue int, description string)
 		Type:        FlagTypeInt,
 		Default:     defaultValue,
 		Description: description,
-		Value:       &IntValue{Bound: bound},
+		Value:       &types.IntValue{Bound: bound},
 	}
 	return bound
 }
@@ -43,7 +45,7 @@ func (g *GroupConfig) Float64(flagName string, defaultValue float64, description
 		Type:        FlagTypeInt,
 		Default:     defaultValue,
 		Description: description,
-		Value:       &Float64Value{Bound: bound},
+		Value:       &types.Float64Value{Bound: bound},
 	}
 	return bound
 }
@@ -55,7 +57,7 @@ func (g *GroupConfig) Bool(flagName string, defaultValue bool, description strin
 		Type:        FlagTypeBool,
 		Default:     defaultValue,
 		Description: description,
-		Value:       &BoolValue{Bound: bound},
+		Value:       &types.BoolValue{Bound: bound},
 	}
 	return bound
 }
@@ -68,7 +70,7 @@ func (g *GroupConfig) Duration(flagName string, defaultValue time.Duration, desc
 		Type:        FlagTypeDuration,
 		Default:     defaultValue,
 		Description: description,
-		Value:       &DurationValue{Bound: bound},
+		Value:       &types.DurationValue{Bound: bound},
 	}
 	return bound
 }
@@ -87,7 +89,7 @@ func (g *GroupConfig) URL(flagName, defaultValue, description string) *url.URL {
 		Type:        FlagTypeURL,
 		Default:     defaultValue,
 		Description: description,
-		Value:       &URLValue{Bound: bound},
+		Value:       &types.URLValue{Bound: bound},
 	}
 	return bound
 }
