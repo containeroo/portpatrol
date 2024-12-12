@@ -70,14 +70,8 @@ func NewChecker(checkType CheckType, name, address string, opts ...Option) (Chec
 	case HTTP:
 		return newHTTPChecker(name, address, opts...)
 	case TCP:
-		// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
-		// so it must be removed before passing the address to other functions.
-		address = strings.TrimPrefix(address, "tcp://")
 		return newTCPChecker(name, address, opts...)
 	case ICMP:
-		// The "icmp://" prefix is used to identify the check type and is not needed for further processing,
-		// so it must be removed before passing the address to other functions.
-		address = strings.TrimPrefix(address, "icmp://")
 		return newICMPChecker(name, address, opts...)
 	default:
 		return nil, fmt.Errorf("unsupported check type: %d", checkType)

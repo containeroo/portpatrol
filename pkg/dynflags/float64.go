@@ -11,7 +11,7 @@ type Float64Value struct {
 }
 
 func (i *Float64Value) Parse(value string) (interface{}, error) {
-	return strconv.Atoi(value)
+	return strconv.ParseFloat(value, 64)
 }
 
 func (i *Float64Value) Set(value interface{}) error {
