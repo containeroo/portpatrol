@@ -14,11 +14,10 @@ func TestRunHTTPReady(t *testing.T) {
 	t.Parallel()
 
 	args := []string{
-		"--target.httpcheck.name=HTTPServer",
-		"--target.httpcheck.address=http://localhost:8081",
-		"--target.httpcheck.interval=1s",
-		"--target.httpcheck.timeout=1s",
-		"--target.httpcheck.type=http",
+		"--http.httpcheck.name=HTTPServer",
+		"--http.httpcheck.address=http://localhost:8081",
+		"--http.httpcheck.interval=1s",
+		"--http.httpcheck.timeout=1s",
 	}
 
 	server := &http.Server{Addr: ":8081"}
@@ -51,11 +50,10 @@ func TestRunTCPReady(t *testing.T) {
 	t.Parallel()
 
 	args := []string{
-		"--target.tcptest.name=TCPServer",
-		"--target.tcptest.address=localhost:8082",
-		"--target.tcptest.interval=1s",
-		"--target.tcptest.timeout=1s",
-		"--target.tcptest.type=tcp",
+		"--tcp.tcptest.name=TCPServer",
+		"--tcp.tcptest.address=localhost:8082",
+		"--tcp.tcptest.interval=1s",
+		"--tcp.tcptest.timeout=1s",
 	}
 
 	listener, err := net.Listen("tcp", "localhost:8082")
@@ -147,7 +145,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 		t.Fatal("Expected error, got none")
 	}
 
-	expected := "failed to initialize target checkers: invalid \"InvalidHeader\": invalid header format: InvalidHeader"
+	expected := "failed to initialize target checkers: invalid \"--http.invalidheaders.headers\": invalid header format: InvalidHeader"
 	if !strings.Contains(err.Error(), expected) {
 		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 	}
