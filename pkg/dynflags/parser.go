@@ -82,7 +82,6 @@ func (df *DynFlags) handleUnknownGroup(parsedGroup *ParsedGroup, parentName, fla
 	case ExitOnError:
 		return fmt.Errorf("unknown group: '%s'", parentName)
 	case ContinueOnError:
-		// Log the unknown group for debugging or tracking but continue parsing
 		return nil
 	case IgnoreUnknown:
 		// Store the unknown flag and its value in the parsedGroup
