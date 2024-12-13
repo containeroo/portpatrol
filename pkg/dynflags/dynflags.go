@@ -123,8 +123,13 @@ func (pg *ParsedGroup) Unknown() map[string]interface{} {
 }
 
 // GetValue returns the value of a flag with the given name
-func (pg *ParsedGroup) GetValue(name string) interface{} {
-	return pg.Values[name]
+// GetValue returns the value of a flag with the given name
+func (pg *ParsedGroup) GetValue(name string) (interface{}, error) {
+	value, exists := pg.Values[name]
+	if !exists {
+		return "", fmt.Errorf("flag '%s' not found in group '%s'", name, pg.Name)
+	}
+	return value, nil
 }
 
 // GetUnknownValue retrieves the value for a specific group, identifier, and flag name.
@@ -136,7 +141,7 @@ func (df *DynFlags) GetParsedValue(group, identifier, flagName string) (interfac
 
 	for _, parsedGroup := range parsedGroups {
 		if parsedGroup.Name == identifier {
-			return parsedGroup.GetValue(flagName), nil
+			return parsedGroup.GetValue(flagName)
 		}
 	}
 
