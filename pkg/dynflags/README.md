@@ -39,17 +39,18 @@ func main() {
   dynFlags := dynflags.New(dynflags.ContinueOnError)
 
   // Add a title and description for the usage output
-  dynFlags.AddTitle("DynFlags Example Application")
-  dynFlags.AddDescription("This application demonstrates the usage of DynFlags for managing hierarchical flags dynamically.")
+  dynFlags.Title("DynFlags Example Application")
+  dynFlags.Description("This application demonstrates the usage of DynFlags for managing hierarchical flags dynamically.")
+  dynFlags.Epilogue("For more information, see https://github.com/containerish/portpatrol")
 
   // Register groups and flags
-  httpGroup, _ := dynFlags.Group("http")
+  httpGroup := dynFlags.Group("http")
   httpGroup.String("method", "GET", "HTTP method to use")
   httpGroup.String("address", "", "HTTP target URL")
   httpGroup.Bool("secure", true, "Use secure connection (HTTPS)")
   httpGroup.Duration("timeout", 5*time.Second, "Request timeout")
 
-  tcpGroup, _ := dynFlags.Group("tcp")
+  tcpGroup := dynFlags.Group("tcp")
   tcpGroup.String("address", "", "TCP target address")
   tcpGroup.Duration("timeout", 10*time.Second, "TCP timeout")
 
