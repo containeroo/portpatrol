@@ -44,7 +44,7 @@ func (g *GroupConfig) IP(name, value, usage string) *net.IP {
 		*bound = &parsed // Copy the parsed URL into bound
 	}
 	g.Flags[name] = &Flag{
-		Type:    FlagTypeURL,
+		Type:    FlagTypeIP,
 		Default: value,
 		Usage:   usage,
 		Value:   &IPValue{Bound: *bound},

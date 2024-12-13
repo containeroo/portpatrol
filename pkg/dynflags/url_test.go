@@ -73,6 +73,18 @@ func TestGroupConfigURL(t *testing.T) {
 		assert.Equal(t, defaultValue, group.Flags["urlFlag"].Default)
 	})
 
+	t.Run("Define URL flag with invalid default", func(t *testing.T) {
+		t.Parallel()
+
+		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+
+		assert.PanicsWithValue(t,
+			"invalid default URL for flag 'urlFlag': parse \"http://i nvalid-url\": invalid character \" \" in host name",
+			func() {
+				group.URL("urlFlag", "http://i nvalid-url", "Invalid URL flag")
+			})
+	})
+
 	t.Run("Define URLVar and set value", func(t *testing.T) {
 		t.Parallel()
 
