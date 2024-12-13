@@ -27,9 +27,8 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	// Parse command-line flags
 	f, err := config.ParseFlags(args, version, output)
 	if err != nil {
-		var helpErr *config.HelpRequested
-		if errors.As(err, &helpErr) {
-			fmt.Fprint(output, helpErr.Message)
+		if errors.Is(err, &config.HelpRequested{}) {
+			fmt.Fprint(output, err.Error())
 			return nil
 		}
 		return fmt.Errorf("configuration error: %w", err)

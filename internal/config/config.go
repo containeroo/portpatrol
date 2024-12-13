@@ -25,6 +25,12 @@ func (e *HelpRequested) Error() string {
 	return e.Message
 }
 
+// Is returns true if the error is a HelpRequested error.
+func (e *HelpRequested) Is(target error) bool {
+	_, ok := target.(*HelpRequested)
+	return ok
+}
+
 // ParsedFlags holds the parsed command-line flags.
 type ParsedFlags struct {
 	ShowHelp             bool
@@ -53,7 +59,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 
 	// Parse known flags
 	if err := flagSet.Parse(knownArgs); err != nil {
-		return parseAndHandleErrors(err, output, flagSet, dynFlags)
+		return parseAndHandleErrors(err, output, flagSet)
 	}
 
 	// TODO: is this necessary?
@@ -143,7 +149,7 @@ func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.Dyn
 }
 
 // parseAndHandleErrors processes errors during flag parsing.
-func parseAndHandleErrors(err error, output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) (*ParsedFlags, error) {
+func parseAndHandleErrors(err error, output io.Writer, flagSet *pflag.FlagSet) (*ParsedFlags, error) {
 	fmt.Fprintf(output, "%s\n\n", err.Error())
 	flagSet.Usage()
 	return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
@@ -157,8 +163,7 @@ func handleSpecialFlags(flagSet *pflag.FlagSet, output io.Writer, version string
 	}
 
 	if flagSet.Lookup("version").Value.String() == "true" {
-		fmt.Fprintf(output, "PortPatrol version %s\n", version)
-		return &HelpRequested{Message: ""}
+		return &HelpRequested{Message: fmt.Sprintf("PortPatrol version %s\n", version)}
 	}
 
 	return nil
