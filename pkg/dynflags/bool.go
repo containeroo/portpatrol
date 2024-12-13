@@ -38,6 +38,7 @@ func (g *GroupConfig) Bool(name string, value bool, usage string) *bool {
 		Usage:   usage,
 		Value:   &BoolValue{Bound: bound},
 	}
+	g.flagOrder = append(g.flagOrder, name)
 	return bound
 }
 

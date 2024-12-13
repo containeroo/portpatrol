@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -39,7 +38,7 @@ type ParsedFlags struct {
 func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, error) {
 	// Create global flagSet and dynamic flags
 	flagSet := setupGlobalFlags()
-	dynFlags, _ := setupDynamicFlags()
+	dynFlags := setupDynamicFlags()
 
 	// Set output for flagSet and dynFlags
 	flagSet.SetOutput(output)
@@ -49,7 +48,8 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	setupUsage(output, flagSet, dynFlags)
 
 	// Separate known and unknown flags
-	knownArgs, unknownArgs := separateKnownAndUnknownArgs(args, flagSet)
+	groups := getGroups(dynFlags)
+	knownArgs, unknownArgs := separateKnownAndUnknownArgs(args, flagSet, groups)
 
 	// Parse known flags
 	if err := flagSet.Parse(knownArgs); err != nil {
@@ -91,9 +91,11 @@ func setupGlobalFlags() *pflag.FlagSet {
 }
 
 // setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
-func setupDynamicFlags() (*dynflags.DynFlags, error) {
+func setupDynamicFlags() *dynflags.DynFlags {
 	dynFlags := dynflags.New(dynflags.ContinueOnError)
-	dynFlags.SetEpilog("For more information, see https://github.com/containeroo/portpatrol")
+	dynFlags.Epilog("For more information, see https://github.com/containeroo/portpatrol")
+	dynFlags.SortGroups = true
+	dynFlags.SortFlags = true
 
 	// HTTP flags
 	httpFlags := dynFlags.Group("http")
@@ -120,7 +122,7 @@ func setupDynamicFlags() (*dynflags.DynFlags, error) {
 	tcpFlags.String("address", "", "TCP target address")
 	tcpFlags.Duration("timeout", 2*time.Second, "Timeout for TCP connection")
 
-	return dynFlags, nil
+	return dynFlags
 }
 
 // setupUsage sets the custom usage function.
@@ -140,7 +142,7 @@ func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.Dyn
 func parseAndHandleErrors(err error, output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) (*ParsedFlags, error) {
 	fmt.Fprintf(output, "%s\n\n", err.Error())
 	flagSet.Usage()
-	return nil, errors.New(fmt.Sprintf("Flag parsing error: %s", err.Error()))
+	return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
 }
 
 // handleSpecialFlags handles help and version flags.
@@ -175,22 +177,66 @@ func getDurationFlag(flagSet *pflag.FlagSet, name string, defaultValue time.Dura
 }
 
 // separateKnownAndUnknownArgs separates known and unknown flags from the command-line arguments.
-func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet) (known []string, unknown []string) {
-	for _, arg := range args {
+func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, groups []string) (known []string, unknown []string) {
+	isGroupFlag := func(flagName string) bool {
+		for _, group := range groups {
+			if strings.HasPrefix(flagName, group+".") {
+				return true
+			}
+		}
+		return false
+	}
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+
 		if !strings.HasPrefix(arg, "--") {
-			known = append(known, arg) // Positional arguments are considered known
+			// Positional argument
+			known = append(known, arg)
 			continue
 		}
-		// Extract the flag name
+
+		// Extract flag name and value
 		parts := strings.SplitN(arg[2:], "=", 2)
 		flagName := parts[0]
 
-		// Check if the flag is known
-		if flagSet.Lookup(flagName) != nil {
-			known = append(known, arg)
-		} else {
+		// Determine whether the flag belongs to a group or is known
+		switch {
+		case isGroupFlag(flagName):
+			// Handle grouped flags
+			if len(parts) == 2 {
+				unknown = append(unknown, arg) // `--group.identifier.flag=value`
+			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				unknown = append(unknown, arg, args[i+1]) // `--group.identifier.flag value`
+				i++
+			} else {
+				unknown = append(unknown, arg) // `--group.identifier.flag` without a value
+			}
+
+		case flagSet.Lookup(flagName) != nil:
+			// Handle known flags
+			if len(parts) == 2 {
+				known = append(known, arg) // `--flag=value`
+			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				known = append(known, arg, args[i+1]) // `--flag value`
+				i++
+			} else {
+				known = append(known, arg) // `--flag` without a value
+			}
+
+		default:
+			// Unknown flag
 			unknown = append(unknown, arg)
 		}
 	}
+
 	return known, unknown
+}
+
+func getGroups(df *dynflags.DynFlags) []string {
+	groups := make([]string, 0, len(df.Groups()))
+	for groupName := range df.Groups() {
+		groups = append(groups, groupName)
+	}
+	return groups
 }

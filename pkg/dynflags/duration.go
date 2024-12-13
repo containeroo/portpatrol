@@ -38,6 +38,7 @@ func (g *GroupConfig) Duration(name string, value time.Duration, usage string) *
 		Usage:   usage,
 		Value:   &DurationValue{Bound: bound},
 	}
+	g.flagOrder = append(g.flagOrder, name)
 	return bound
 }
 

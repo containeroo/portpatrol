@@ -18,11 +18,13 @@ func (df *DynFlags) Parse(args []string) error {
 			return err
 		}
 
+		// Split the fullKey into group, identifier, and flag name
 		parentName, identifier, flagName, err := df.splitKey(fullKey)
 		if err != nil {
 			return err
 		}
 
+		// Handle the parsed group and flags
 		parsedGroup := df.createOrGetParsedGroup(parentName, identifier)
 		if parsedGroup.Parent == nil {
 			if err := df.handleUnknownGroup(parsedGroup, parentName, flagName, value); err != nil {
@@ -39,6 +41,7 @@ func (df *DynFlags) Parse(args []string) error {
 			continue
 		}
 
+		// Set the parsed flag value
 		if err := df.setFlagValue(parsedGroup, flag, flagName, value); err != nil {
 			return err
 		}
@@ -48,19 +51,20 @@ func (df *DynFlags) Parse(args []string) error {
 
 // extractKeyValue extracts the key and value from a flag argument
 func (df *DynFlags) extractKeyValue(arg string, args []string, index *int) (string, string, error) {
+	// If the argument contains an equals sign, split it into key and value
 	if strings.Contains(arg, "=") {
 		parts := strings.SplitN(arg[2:], "=", 2)
 		return parts[0], parts[1], nil
 	}
 
-	key := arg[2:]
+	key := arg[2:] // Remove leading '--'
+	// Check if the next argument is available and is not another flag
 	if *index+1 < len(args) && !strings.HasPrefix(args[*index+1], "--") {
-		// If the next argument is not a flag, return the current key and the next argument as the value
-		*index++
+		*index++ // Move to the next argument
 		return key, args[*index], nil
 	}
 
-	return "", "", fmt.Errorf("missing value for flag: %s", key)
+	return key, "", fmt.Errorf("missing value for flag: %s", key)
 }
 
 // splitKey splits a key into its parent group, identifier, and flag name

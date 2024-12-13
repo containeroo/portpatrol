@@ -18,6 +18,9 @@ const (
 // DynFlags manages configuration and parsed values
 type DynFlags struct {
 	configGroups  map[string]*GroupConfig   // Static parent groups
+	groupOrder    []string                  // Order of group names
+	SortGroups    bool                      // Sort groups in help message
+	SortFlags     bool                      // Sort flags in help message
 	parsedGroups  map[string][]*ParsedGroup // Parsed child groups organized by parent group
 	unknownGroups map[string][]*ParsedGroup // Unknown parent groups and their parsed values
 	parseBehavior ParseBehavior             // Parsing behavior
@@ -30,9 +33,10 @@ type DynFlags struct {
 
 // GroupConfig represents the static configuration for a group
 type GroupConfig struct {
-	Name  string           // Name of the group
-	usage string           // Title for usage
-	Flags map[string]*Flag // Flags within the group
+	Name      string           // Name of the group
+	usage     string           // Title for usage
+	Flags     map[string]*Flag // Flags within the group
+	flagOrder []string         // Order of flags
 }
 
 // ParsedGroup represents a runtime group with parsed values
@@ -56,17 +60,17 @@ func New(behavior ParseBehavior) *DynFlags {
 }
 
 // AddTitle adds a title to the help message
-func (df *DynFlags) SetTitle(title string) {
+func (df *DynFlags) Title(title string) {
 	df.title = title
 }
 
 // AddDescription adds a descripton after the Title
-func (df *DynFlags) SetDescription(description string) {
+func (df *DynFlags) Description(description string) {
 	df.description = description
 }
 
 // AddEpilog adds an epilog after the description of the dynamic flags to the help message
-func (df *DynFlags) SetEpilog(epilog string) {
+func (df *DynFlags) Epilog(epilog string) {
 	df.epilog = epilog
 }
 
@@ -76,6 +80,8 @@ func (df *DynFlags) Group(name string) *GroupConfig {
 		panic(fmt.Sprintf("group '%s' already exists", name))
 	}
 
+	df.groupOrder = append(df.groupOrder, name)
+
 	group := &GroupConfig{
 		Name:  name,
 		Flags: make(map[string]*Flag),
@@ -84,9 +90,19 @@ func (df *DynFlags) Group(name string) *GroupConfig {
 	return group
 }
 
-// SetTitle sets the title for the group usage
-func (g *GroupConfig) SetTitle(title string) {
-	g.usage = title
+// Groups returns all configured Groups
+func (df *DynFlags) Groups() map[string]*GroupConfig {
+	return df.configGroups
+}
+
+// Parsed returns all parsed groups
+func (df *DynFlags) Parsed() map[string][]*ParsedGroup {
+	return df.parsedGroups
+}
+
+// Unknown returns alls Unknown parsed groups
+func (df *DynFlags) Unknown() map[string][]*ParsedGroup {
+	return df.unknownGroups
 }
 
 // DefaultUsage provides the default usage output
@@ -100,22 +116,12 @@ func (df *DynFlags) SetOutput(buf io.Writer) {
 	df.output = buf
 }
 
-// GetAllParsedGroups returns all parsed groups
-func (df *DynFlags) GetAllParsedGroups() map[string][]*ParsedGroup {
-	return df.parsedGroups
-}
-
-// GetUnknownGroups returns all unrecognized groups
-func (df *DynFlags) GetUnknownGroups() map[string][]*ParsedGroup {
-	return df.unknownGroups
-}
-
 // GetUnknownValues returns all unrecognized flags in a group
 func (pg *ParsedGroup) GetUnknownValues() map[string]interface{} {
 	return pg.unknownValues
 }
 
 // GetValue returns the value of a flag with the given name
-func (pg *ParsedGroup) GetValue(flagName string) interface{} {
-	return pg.Values[flagName]
+func (pg *ParsedGroup) GetValue(name string) interface{} {
+	return pg.Values[name]
 }

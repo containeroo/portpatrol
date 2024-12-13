@@ -35,6 +35,7 @@ func (g *GroupConfig) String(name, value, usage string) *string {
 		Usage:   usage,
 		Value:   &StringValue{Bound: bound},
 	}
+	g.flagOrder = append(g.flagOrder, name)
 	return bound
 }
 

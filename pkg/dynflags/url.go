@@ -45,6 +45,7 @@ func (g *GroupConfig) URL(name, value, usage string) *url.URL {
 		Usage:   usage,
 		Value:   &URLValue{Bound: bound},
 	}
+	g.flagOrder = append(g.flagOrder, name)
 	return bound
 }
 

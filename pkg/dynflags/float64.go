@@ -38,6 +38,7 @@ func (g *GroupConfig) Float64(name string, value float64, usage string) *float64
 		Usage:   usage,
 		Value:   &Float64Value{Bound: bound},
 	}
+	g.flagOrder = append(g.flagOrder, name)
 	return bound
 }
 

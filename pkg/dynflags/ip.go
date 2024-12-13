@@ -49,6 +49,7 @@ func (g *GroupConfig) IP(name, value, usage string) *net.IP {
 		Usage:   usage,
 		Value:   &IPValue{Bound: *bound},
 	}
+	g.flagOrder = append(g.flagOrder, name)
 	return *bound
 }
 
