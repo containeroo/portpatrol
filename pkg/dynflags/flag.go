@@ -6,6 +6,7 @@ const (
 	FlagTypeStringSlice FlagType = "..STRING"
 	FlagTypeString      FlagType = "STRING"
 	FlagTypeInt         FlagType = "INT"
+	FlagTypeIntSlice    FlagType = "..INT"
 	FlagTypeBool        FlagType = "BOOL"
 	FlagTypeDuration    FlagType = "DURATION"
 	FlagTypeFloat       FlagType = "FLOAT"
