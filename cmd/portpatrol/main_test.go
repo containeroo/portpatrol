@@ -110,7 +110,6 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 		"--target.unsupported.address=localhost:8080",
 		"--target.unsupported.interval=1s",
 		"--target.unsupported.timeout=1s",
-		"--target.unsupported.type=unsupported",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -122,7 +121,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 		t.Fatal("Expected error, got none")
 	}
 
-	expected := "failed to initialize target checkers: unsupported check type \"unsupported\" for target \"unsupported\""
+	expected := "configuration error: error parsing dynamic flags: unknown group: 'target'"
 	if err.Error() != expected {
 		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 	}
@@ -132,11 +131,11 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	t.Parallel()
 
 	args := []string{
-		"--target.invalidheaders.name=TestService",
-		"--target.invalidheaders.address=http://localhost:8080",
-		"--target.invalidheaders.interval=1s",
-		"--target.invalidheaders.timeout=1s",
-		"--target.invalidheaders.headers=InvalidHeader",
+		"--http.invalidheaders.name=TestService",
+		"--http.invalidheaders.address=http://localhost:8080",
+		"--http.invalidheaders.interval=1s",
+		"--http.invalidheaders.timeout=1s",
+		"--http.invalidheaders.headers=InvalidHeader",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -148,7 +147,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 		t.Fatal("Expected error, got none")
 	}
 
-	expected := "failed to initialize target checkers: invalid \"headers\": invalid header format: InvalidHeader"
+	expected := "failed to initialize target checkers: invalid \"InvalidHeader\": invalid header format: InvalidHeader"
 	if !strings.Contains(err.Error(), expected) {
 		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 	}

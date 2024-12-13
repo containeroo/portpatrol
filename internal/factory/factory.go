@@ -50,7 +50,7 @@ func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) (
 				if headers, err := group.GetString("headers"); err == nil && headers != "" {
 					headersMap, err := httputils.ParseHeaders(headers, true)
 					if err != nil {
-						return nil, fmt.Errorf("invalid %q: %w", headers, err)
+						return nil, fmt.Errorf("invalid \"--%s.%s.headers\": %w", parentName, group.Name, err)
 					}
 					opts = append(opts, checker.WithHTTPHeaders(headersMap))
 				}

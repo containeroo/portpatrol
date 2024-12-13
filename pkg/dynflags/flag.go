@@ -3,12 +3,13 @@ package dynflags
 type FlagType string
 
 const (
-	FlagTypeString   FlagType = "STRING"
-	FlagTypeInt      FlagType = "INT"
-	FlagTypeBool     FlagType = "BOOL"
-	FlagTypeDuration FlagType = "DURATION"
-	FlagTypeFloat    FlagType = "FLOAT"
-	FlagTypeURL      FlagType = "URL"
+	FlagTypeStringSlice FlagType = "..STRING"
+	FlagTypeString      FlagType = "STRING"
+	FlagTypeInt         FlagType = "INT"
+	FlagTypeBool        FlagType = "BOOL"
+	FlagTypeDuration    FlagType = "DURATION"
+	FlagTypeFloat       FlagType = "FLOAT"
+	FlagTypeURL         FlagType = "URL"
 )
 
 // Flag represents a single configuration flag

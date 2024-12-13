@@ -29,7 +29,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid TCP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(TCP, "example", "tcp://example.com:80")
+		check, err := NewChecker(TCP, "example", "example.com:80")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
@@ -48,7 +48,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid ICMP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(ICMP, "example", "icmp://example.com")
+		check, err := NewChecker(ICMP, "example", "example.com")
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}

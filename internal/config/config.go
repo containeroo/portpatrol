@@ -92,7 +92,7 @@ func setupGlobalFlags() *pflag.FlagSet {
 
 // setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
 func setupDynamicFlags() *dynflags.DynFlags {
-	dynFlags := dynflags.New(dynflags.ContinueOnError)
+	dynFlags := dynflags.New(dynflags.ExitOnError)
 	dynFlags.Epilog("For more information, see https://github.com/containeroo/portpatrol")
 	dynFlags.SortGroups = true
 	dynFlags.SortFlags = true
@@ -102,7 +102,7 @@ func setupDynamicFlags() *dynflags.DynFlags {
 	httpFlags.String("name", "", "Name of the HTTP checker")
 	httpFlags.String("method", "GET", "HTTP method to use")
 	httpFlags.String("address", "", "HTTP target URL")
-	httpFlags.Bool("secure", true, "Use secure connection (HTTPS)")
+	httpFlags.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.")
 	httpFlags.String("headers", "", "HTTP headers to send")
 	httpFlags.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
 	httpFlags.String("expected-status-codes", "", "Expected HTTP status codes")
@@ -113,6 +113,7 @@ func setupDynamicFlags() *dynflags.DynFlags {
 	icmpFlags := dynFlags.Group("icmp")
 	icmpFlags.String("name", "", "Name of the ICMP checker")
 	icmpFlags.String("address", "", "ICMP target address")
+	icmpFlags.Duration("interval", 1*time.Second, "Time between ICMP requests. Can be overwritten with --default-interval.")
 	icmpFlags.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read")
 	icmpFlags.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write")
 
@@ -121,6 +122,7 @@ func setupDynamicFlags() *dynflags.DynFlags {
 	tcpFlags.String("name", "", "Name of the TCP checker")
 	tcpFlags.String("address", "", "TCP target address")
 	tcpFlags.Duration("timeout", 2*time.Second, "Timeout for TCP connection")
+	tcpFlags.Duration("interval", 1*time.Second, "Time between TCP requests. Can be overwritten with --default-interval.")
 
 	return dynFlags
 }

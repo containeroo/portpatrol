@@ -52,6 +52,7 @@ func New(behavior ParseBehavior) *DynFlags {
 	df := &DynFlags{
 		configGroups:  make(map[string]*GroupConfig),
 		parsedGroups:  make(map[string][]*ParsedGroup),
+		unknownGroups: make(map[string][]*ParsedGroup),
 		parseBehavior: behavior,
 		output:        os.Stdout,
 	}
@@ -59,22 +60,22 @@ func New(behavior ParseBehavior) *DynFlags {
 	return df
 }
 
-// AddTitle adds a title to the help message
+// Title adds a title to the help message
 func (df *DynFlags) Title(title string) {
 	df.title = title
 }
 
-// AddDescription adds a descripton after the Title
+// Description adds a descripton after the Title
 func (df *DynFlags) Description(description string) {
 	df.description = description
 }
 
-// AddEpilog adds an epilog after the description of the dynamic flags to the help message
+// Epilog adds an epilog after the description of the dynamic flags to the help message
 func (df *DynFlags) Epilog(epilog string) {
 	df.epilog = epilog
 }
 
-// Group defines a new static group or retrieves an existing one
+// Group defines a new group or retrieves an existing one
 func (df *DynFlags) Group(name string) *GroupConfig {
 	if _, exists := df.configGroups[name]; exists {
 		panic(fmt.Sprintf("group '%s' already exists", name))
