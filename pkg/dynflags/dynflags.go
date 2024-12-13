@@ -117,6 +117,11 @@ func (df *DynFlags) SetOutput(buf io.Writer) {
 	df.output = buf
 }
 
+// Unknown returns alls Unknown parsed groups
+func (pg *ParsedGroup) Unknown() map[string]interface{} {
+	return pg.unknownValues
+}
+
 // GetValue returns the value of a flag with the given name
 func (pg *ParsedGroup) GetValue(name string) interface{} {
 	return pg.Values[name]

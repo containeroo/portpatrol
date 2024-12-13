@@ -1,6 +1,6 @@
 # DynFlags
 
-**DynFlags** is a Go package designed for dynamically managing hierarchical command-line flags. It supports parsing flags with a structure like `--group.identifier.flag=value` while allowing dynamic group and flag registration at runtime.
+**DynFlags** is a Go package designed for dynamically managing hierarchical command-line flags. It supports parsing flags with a structure like `--group.identifier.flag=value` while allowing dynamic group and flag registration at runtime. For "POSIX/GNU-style --flags" use the library [pflag](https://github.com/spf13/pflag).
 
 ## Features
 
@@ -123,16 +123,16 @@ DynFlags supports three behaviors for handling unknown flags:
 
 - `ExitOnError`: Stops execution with an error.
 - `ContinueOnError`: Skips unknown flags and continues parsing.
-- `IgnoreUnknown`: Collects unknown flags and groups them under `unknownGroups`.
+- `IgnoreUnknown`: Collects unknown flags and groups them under `unknown`. Use `Unknown()` to access the unknown groups.
 
 ### Customizing Usage Output
 
 You can customize the usage output by setting the title, description, and epilog:
 
 ```go
-dynFlags.AddTitle("Custom Application")
-dynFlags.AddDescription("Manage dynamic flags with ease!")
-dynFlags.AddEpilog("For more information, visit: https://github.com/yourusername/dynflags")
+dynFlags.Title("Custom Application")
+dynFlags.Description("Manage dynamic flags with ease!")
+dynFlags.Epilog("For more information, visit: https://github.com/yourusername/dynflags")
 ```
 
 Testing with Custom Output
