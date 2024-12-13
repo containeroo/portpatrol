@@ -56,6 +56,8 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 		return parseAndHandleErrors(err, output, flagSet, dynFlags)
 	}
 
+	// TODO: is this necessary?
+
 	// Handle special flags (e.g., --help or --version)
 	if err := handleSpecialFlags(flagSet, output, version); err != nil {
 		return nil, err

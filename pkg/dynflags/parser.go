@@ -82,11 +82,14 @@ func (df *DynFlags) handleUnknownGroup(parsedGroup *ParsedGroup, parentName, fla
 	case ExitOnError:
 		return fmt.Errorf("unknown group: '%s'", parentName)
 	case ContinueOnError:
+		// Log the unknown group for debugging or tracking but continue parsing
 		return nil
 	case IgnoreUnknown:
+		// Store the unknown flag and its value in the parsedGroup
 		parsedGroup.unknownValues[flagName] = value
 		return nil
 	}
+	// Default to ContinueOnError if an unsupported behavior is encountered
 	return nil
 }
 
@@ -124,6 +127,10 @@ func (df *DynFlags) createOrGetParsedGroup(parentName, identifier string) *Parse
 	parentGroup, exists := df.configGroups[parentName]
 	if !exists {
 		// Handle unknown groups
+		if _, ok := df.unknownGroups[parentName]; !ok {
+			df.unknownGroups[parentName] = []*ParsedGroup{}
+		}
+
 		for _, group := range df.unknownGroups[parentName] {
 			if group.Name == identifier {
 				return group
@@ -132,7 +139,7 @@ func (df *DynFlags) createOrGetParsedGroup(parentName, identifier string) *Parse
 
 		// Create a new unknown group
 		parsedGroup := &ParsedGroup{
-			Parent:        nil, // No parent for unknown groups
+			Parent:        nil,
 			Name:          identifier,
 			Values:        make(map[string]interface{}),
 			unknownValues: make(map[string]interface{}),

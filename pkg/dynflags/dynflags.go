@@ -117,12 +117,46 @@ func (df *DynFlags) SetOutput(buf io.Writer) {
 	df.output = buf
 }
 
-// GetUnknownValues returns all unrecognized flags in a group
-func (pg *ParsedGroup) GetUnknownValues() map[string]interface{} {
-	return pg.unknownValues
-}
-
 // GetValue returns the value of a flag with the given name
 func (pg *ParsedGroup) GetValue(name string) interface{} {
 	return pg.Values[name]
+}
+
+// GetUnknownValue retrieves the value for a specific group, identifier, and flag name.
+func (df *DynFlags) GetParsedValue(group, identifier, flagName string) (interface{}, error) {
+	parsedGroups, exists := df.Parsed()[group]
+	if !exists {
+		return nil, fmt.Errorf("unknown group '%s' not found", group)
+	}
+
+	for _, parsedGroup := range parsedGroups {
+		if parsedGroup.Name == identifier {
+			return parsedGroup.GetValue(flagName), nil
+		}
+	}
+
+	return nil, fmt.Errorf("unknown flag '%s' not found in group '%s' with identifier '%s'", flagName, group, identifier)
+}
+
+// GetUnknownValue retrieves the value for a specific group, identifier, and flag name.
+func (pg *ParsedGroup) GetUnknownValue(flagName string) (interface{}, error) {
+	if value, exists := pg.unknownValues[flagName]; exists {
+		return value, nil
+	}
+	return nil, fmt.Errorf("flag '%s' not found in unknown values for group '%s'", flagName, pg.Name)
+}
+
+func (df *DynFlags) GetUnknownValue(group, identifier, flagName string) (interface{}, error) {
+	unknownGroups, exists := df.Unknown()[group]
+	if !exists {
+		return nil, fmt.Errorf("unknown group '%s' not found", group)
+	}
+
+	for _, parsedGroup := range unknownGroups {
+		if parsedGroup.Name == identifier {
+			return parsedGroup.GetUnknownValue(flagName)
+		}
+	}
+
+	return nil, fmt.Errorf("unknown flag '%s' not found in group '%s' with identifier '%s'", flagName, group, identifier)
 }
