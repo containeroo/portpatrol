@@ -13,6 +13,7 @@ func (df *DynFlags) Parse(args []string) error {
 			return fmt.Errorf("invalid flag format: %s", arg)
 		}
 
+		// Extract the key and value from the argument
 		fullKey, value, err := df.extractKeyValue(arg, args, &i)
 		if err != nil {
 			return err

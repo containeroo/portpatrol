@@ -19,6 +19,15 @@ func TestIntSlicesValue(t *testing.T) {
 		assert.Equal(t, 123, parsed)
 	})
 
+	t.Run("Parse invalid int slice value", func(t *testing.T) {
+		t.Parallel()
+
+		intSlicesValue := dynflags.IntSlicesValue{Bound: &[]int{}}
+		parsed, err := intSlicesValue.Parse("invalid")
+		assert.Error(t, err)
+		assert.Nil(t, parsed)
+	})
+
 	t.Run("Set valid int slice value", func(t *testing.T) {
 		t.Parallel()
 
