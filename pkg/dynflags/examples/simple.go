@@ -57,14 +57,9 @@ func main() {
 	fmt.Println("")
 
 	// Handle unknown values
-	unknownGroups := dynFlags.Unknown()
-	for groupName, groups := range unknownGroups {
-		fmt.Printf("Unknown Group: %s\n", groupName)
-		for _, group := range groups {
-			fmt.Printf("  Identifier: %s\n", group.Name)
-			for key, value := range group.Unknown() {
-				fmt.Printf("    Unknown Flag: %s, Value: %v\n", key, value)
-			}
+	for groupName, groups := range dynFlags.Unknown() {
+		for group, val := range groups.Groups() {
+			fmt.Printf("Group: %s, Identifier: %s, Value: %s\n", groupName, group.Name, val)
 		}
 	}
 

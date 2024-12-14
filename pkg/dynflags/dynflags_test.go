@@ -99,9 +99,11 @@ func TestParsedGroupMethods(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Retrieve the unknown value
-		unknownValue, err := df.GetUnknownValue("unknown", "identifier", "value")
+		unknownGroups := df.Unknown()
+		u := unknownGroups.Lookup("unknown")
+		v := u.Lookup("value")
 		assert.NoError(t, err)
-		assert.Equal(t, "value 1", unknownValue)
+		assert.Equal(t, "value 1", v)
 	})
 
 	t.Run("Get flag value", func(t *testing.T) {
