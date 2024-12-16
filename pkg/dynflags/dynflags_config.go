@@ -19,11 +19,8 @@ type ConfigGroups struct {
 }
 
 // Lookup retrieves a configuration group by its name.
-func (cg *ConfigGroups) Lookup(groupName string) *ConfigGroupIdentifiers {
-	if group, exists := cg.groups[groupName]; exists {
-		return &ConfigGroupIdentifiers{group: group}
-	}
-	return nil
+func (cg *ConfigGroups) Lookup(groupName string) *GroupConfig {
+	return cg.groups[groupName]
 }
 
 // Groups returns the underlying map for direct iteration.
@@ -34,19 +31,4 @@ func (cg *ConfigGroups) Groups() map[string]*GroupConfig {
 // Config returns a ConfigGroups instance for the dynflags instance.
 func (df *DynFlags) Config() *ConfigGroups {
 	return &ConfigGroups{groups: df.configGroups}
-}
-
-// ConfigGroupIdentifiers provides lookup for flags within a group.
-type ConfigGroupIdentifiers struct {
-	group *GroupConfig
-}
-
-// Lookup retrieves a specific flag within a group by its name.
-func (cgi *ConfigGroupIdentifiers) Lookup(flagName string) *Flag {
-	return cgi.group.Lookup(flagName)
-}
-
-// Flags returns the map of all flags in the group for iteration.
-func (cgi *ConfigGroupIdentifiers) Flags() map[string]*Flag {
-	return cgi.group.Flags
 }

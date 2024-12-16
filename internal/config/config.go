@@ -197,11 +197,18 @@ func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, dynFlags
 
 		// Extract flag name and value
 		parts := strings.SplitN(arg[2:], "=", 2)
-		flagName := parts[0]
+		fullKey := parts[0]
+
+		// Extract group
+		group, _, flagName, err := splitKey(fullKey)
+		if err != nil {
+			unknown = append(unknown, arg)
+			continue
+		}
 
 		// Determine whether the flag belongs to a group or is known
 		switch {
-		case dynFlags.Config().Lookup(flagName) != nil:
+		case dynFlags.Group(group).Lookup(flagName) != nil:
 			// Handle grouped flags
 			if len(parts) == 2 {
 				unknown = append(unknown, arg) // `--group.identifier.flag=value`
@@ -230,4 +237,13 @@ func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, dynFlags
 	}
 
 	return known, unknown
+}
+
+// splitKey splits a key into group, identifier, and flag name.
+func splitKey(fullKey string) (string, string, string, error) {
+	parts := strings.Split(fullKey, ".")
+	if len(parts) < 3 {
+		return "", "", "", fmt.Errorf("flag must follow the pattern: --<group>.<identifier>.<flag>")
+	}
+	return parts[0], parts[1], parts[2], nil
 }
