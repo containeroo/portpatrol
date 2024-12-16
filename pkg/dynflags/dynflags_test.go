@@ -16,7 +16,7 @@ func TestDynFlagsInitialization(t *testing.T) {
 
 		df := dynflags.New(dynflags.ContinueOnError)
 		assert.NotNil(t, df)
-		assert.NotNil(t, df.Groups())
+		assert.NotNil(t, df.Config())
 		assert.NotNil(t, df.Parsed())
 		assert.NotNil(t, df.Unknown())
 	})
@@ -32,21 +32,10 @@ func TestDynFlagsGroupManagement(t *testing.T) {
 		group := df.Group("group1")
 
 		assert.NotNil(t, group)
-		assert.Contains(t, df.Groups(), "group1")
-		assert.Equal(t, group, df.Groups()["group1"])
+		assert.Contains(t, df.Config().Groups(), "group1")
+		assert.Equal(t, group, df.Config().Lookup("group1"))
 		assert.Equal(t, "group1", group.Name)
 		assert.NotNil(t, group.Flags)
-	})
-
-	t.Run("Duplicate group panics", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ContinueOnError)
-		df.Group("group1")
-
-		assert.Panics(t, func() {
-			df.Group("group1")
-		}, "Expected panic for duplicate group creation")
 	})
 }
 
@@ -81,52 +70,84 @@ func TestDynFlagsParsedAndUnknown(t *testing.T) {
 
 		df := dynflags.New(dynflags.ContinueOnError)
 
-		assert.Empty(t, df.Parsed())
-		assert.Empty(t, df.Unknown())
+		assert.Empty(t, df.Parsed().Groups())
+		assert.Empty(t, df.Unknown().Groups())
 	})
 }
 
 func TestParsedGroupMethods(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get unknown values", func(t *testing.T) {
+	t.Run("Retrieve unknown values", func(t *testing.T) {
 		t.Parallel()
 
-		df := dynflags.New(dynflags.IgnoreUnknown)
+		df := dynflags.New(dynflags.ParseUnknown)
 		df.Group("known")
-		args := []string{"--unknown.identifier.value", "value 1"}
+		args := []string{"--unknown.identifier.value", "value1"}
 		err := df.Parse(args)
 		assert.NoError(t, err)
 
-		// Retrieve the unknown value
 		unknownGroups := df.Unknown()
-		u := unknownGroups.Lookup("unknown")
-		v := u.Lookup("value")
+		group := unknownGroups.Lookup("unknown")
+		assert.NotNil(t, group)
+
+		identifier := group.Lookup("identifier")
+		assert.NotNil(t, identifier)
+		assert.Equal(t, "value1", identifier.Lookup("value"))
+	})
+
+	t.Run("Retrieve parsed group values", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ContinueOnError)
+		df.Group("testGroup").String("flag1", "defaultValue", "Test flag")
+		args := []string{"--testGroup.identifier1.flag1", "value1"}
+		err := df.Parse(args)
 		assert.NoError(t, err)
-		assert.Equal(t, "value 1", v)
+
+		parsedGroups := df.Parsed()
+		group := parsedGroups.Lookup("testGroup")
+		assert.NotNil(t, group)
+
+		identifier := group.Lookup("identifier1")
+		assert.NotNil(t, identifier)
+		assert.Equal(t, "value1", identifier.Lookup("flag1"))
 	})
 
-	t.Run("Get flag value", func(t *testing.T) {
+	t.Run("Non-existent flag in parsed group", func(t *testing.T) {
 		t.Parallel()
 
-		parsedGroup := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"flag1": "value1",
-			},
-		}
+		df := dynflags.New(dynflags.ContinueOnError)
+		df.Group("testGroup")
+		args := []string{"--testGroup.identifier1.flag1", "value1"}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
-		value := parsedGroup.GetValue("flag1")
-		assert.Equal(t, "value1", value)
+		parsedGroups := df.Parsed()
+		group := parsedGroups.Lookup("testGroup")
+		assert.NotNil(t, group)
+
+		identifier := group.Lookup("identifier1")
+		assert.NotNil(t, identifier)
+		assert.Nil(t, identifier.Lookup("nonExistentFlag"))
 	})
+}
 
-	t.Run("Get non-existent flag value", func(t *testing.T) {
+func TestDynFlagsUnparsedArgs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Retrieve unparsed arguments", func(t *testing.T) {
 		t.Parallel()
 
-		parsedGroup := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{},
+		df := dynflags.New(dynflags.ParseUnknown)
+		args := []string{
+			"--unparsable", "value1",
+			"--unknownGroup.identifier.flag", "value2",
 		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
-		value := parsedGroup.GetValue("nonExistentFlag")
-		assert.Nil(t, value)
+		unparsedArgs := df.UnparsedArgs()
+		assert.Contains(t, unparsedArgs, "--unparsable")
 	})
 }

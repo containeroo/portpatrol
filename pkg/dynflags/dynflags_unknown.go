@@ -20,7 +20,7 @@ type UnknownGroups struct {
 // Lookup retrieves unknown groups by name.
 func (ug *UnknownGroups) Lookup(groupName string) *UnknownIdentifiers {
 	if identifiers, exists := ug.groups[groupName]; exists {
-		return &UnknownIdentifiers{identifiers: identifiers}
+		return &UnknownIdentifiers{Name: groupName, identifiers: identifiers}
 	}
 	return nil
 }
@@ -32,6 +32,7 @@ func (ug *UnknownGroups) Groups() map[string]map[string]*UnknownGroup {
 
 // UnknownIdentifiers provides lookup for identifiers within a group.
 type UnknownIdentifiers struct {
+	Name        string
 	identifiers map[string]*UnknownGroup
 }
 

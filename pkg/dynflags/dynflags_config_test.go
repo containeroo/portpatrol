@@ -17,8 +17,8 @@ func TestGroupConfig(t *testing.T) {
 			Name:  "testGroup",
 			Flags: map[string]*dynflags.Flag{"flag1": {Usage: "Test Flag"}},
 		}
-		flag, err := group.Lookup("flag1")
-		assert.NoError(t, err)
+		flag := group.Lookup("flag1")
+		assert.NotNil(t, flag)
 		assert.Equal(t, "Test Flag", flag.Usage)
 	})
 
@@ -29,10 +29,8 @@ func TestGroupConfig(t *testing.T) {
 			Name:  "testGroup",
 			Flags: map[string]*dynflags.Flag{},
 		}
-		flag, err := group.Lookup("flag1")
-		assert.Error(t, err)
+		flag := group.Lookup("flag1")
 		assert.Nil(t, flag)
-		assert.EqualError(t, err, "flag 'flag1' not found in config group 'testGroup'")
 	})
 }
 
@@ -45,9 +43,9 @@ func TestConfigGroups(t *testing.T) {
 		df := dynflags.New(dynflags.ContinueOnError)
 		df.Group("http")
 
-		groups := df.Groups()
-		group, err := groups.Lookup("http")
-		assert.NoError(t, err)
+		groups := df.Config()
+		group := groups.Lookup("http")
+		assert.NotNil(t, group)
 		assert.Equal(t, "http", group.Name)
 	})
 
@@ -56,11 +54,9 @@ func TestConfigGroups(t *testing.T) {
 
 		df := dynflags.New(dynflags.ContinueOnError)
 
-		groups := df.Groups()
-		group, err := groups.Lookup("tcp")
-		assert.Error(t, err)
+		groups := df.Config()
+		group := groups.Lookup("tcp")
 		assert.Nil(t, group)
-		assert.EqualError(t, err, "config group 'tcp' not found")
 	})
 
 	t.Run("Iterate over groups", func(t *testing.T) {
@@ -70,7 +66,7 @@ func TestConfigGroups(t *testing.T) {
 		df.Group("http")
 		df.Group("tcp")
 
-		groups := df.Groups().Iterate()
+		groups := df.Config().Groups()
 
 		assert.Contains(t, groups, "http")
 		assert.Contains(t, groups, "tcp")

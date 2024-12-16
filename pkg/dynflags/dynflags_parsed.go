@@ -20,7 +20,7 @@ type ParsedGroups struct {
 // Lookup retrieves a group by its name.
 func (pg *ParsedGroups) Lookup(groupName string) *ParsedIdentifiers {
 	if identifiers, exists := pg.groups[groupName]; exists {
-		return &ParsedIdentifiers{identifiers: identifiers}
+		return &ParsedIdentifiers{Name: groupName, identifiers: identifiers}
 	}
 	return nil
 }
@@ -32,6 +32,7 @@ func (pg *ParsedGroups) Groups() map[string]map[string]*ParsedGroup {
 
 // ParsedIdentifiers provides lookup for identifiers within a group.
 type ParsedIdentifiers struct {
+	Name        string
 	identifiers map[string]*ParsedGroup
 }
 

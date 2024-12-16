@@ -21,8 +21,7 @@ func TestDynFlagsParse(t *testing.T) {
 		assert.NoError(t, err)
 
 		parsedGroups := df.Parsed()
-		assert.Contains(t, parsedGroups, "test")
-		assert.Equal(t, "test name", parsedGroups["test"][0].Values["name"])
+		assert.Equal(t, "test name", parsedGroups.Lookup("test").Lookup("identifier").Lookup("name"))
 	})
 
 	t.Run("Parse flags with space-separated value", func(t *testing.T) {
@@ -37,7 +36,7 @@ func TestDynFlagsParse(t *testing.T) {
 
 		parsedGroups := df.Parsed()
 		assert.Contains(t, parsedGroups, "test")
-		assert.Equal(t, "test name", parsedGroups["test"][0].Values["name"])
+		assert.Equal(t, "test name", parsedGroups.Lookup("test").Lookup("identifier").Lookup("name"))
 	})
 
 	t.Run("Handle missing value", func(t *testing.T) {
