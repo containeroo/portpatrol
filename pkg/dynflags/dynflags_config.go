@@ -1,9 +1,6 @@
 package dynflags
 
-import "fmt"
-
-// GroupConfig represents the static configuration for a group.
-// It contains the group name, usage information, flags, and their order.
+// GroupConfig represents the static configuration for a group
 type GroupConfig struct {
 	Name      string           // Name of the group
 	usage     string           // Title for usage
@@ -11,37 +8,33 @@ type GroupConfig struct {
 	flagOrder []string         // Order of flags
 }
 
-// Lookup retrieves a flag definition within the group by its name.
-// Returns the flag if it exists, or an error if it doesn't.
-func (gc *GroupConfig) Lookup(flagName string) (*Flag, error) {
+// Lookup retrieves a flag in the group by its name.
+func (gc *GroupConfig) Lookup(flagName string) *Flag {
 	if flag, exists := gc.Flags[flagName]; exists {
-		return flag, nil
+		return flag
 	}
-	return nil, fmt.Errorf("flag '%s' not found in config group '%s'", flagName, gc.Name)
+	return nil
 }
 
-// Groups returns a ConfigGroups wrapper around all registered groups
-// for managing and retrieving group configurations.
-func (df *DynFlags) Groups() *ConfigGroups {
-	return &ConfigGroups{groups: df.configGroups}
-}
-
-// ConfigGroups is a wrapper around a map of `GroupConfig`
-// providing methods to lookup and iterate over groups.
+// ConfigGroups represents all configuration groups with lookup and iteration support.
 type ConfigGroups struct {
 	groups map[string]*GroupConfig
 }
 
-// Lookup retrieves a `GroupConfig` by its name.
-// Returns the group if it exists, or an error if it doesn't.
-func (cg *ConfigGroups) Lookup(groupName string) (*GroupConfig, error) {
+// Lookup retrieves a configuration group by its name.
+func (cg *ConfigGroups) Lookup(groupName string) *GroupConfig {
 	if group, exists := cg.groups[groupName]; exists {
-		return group, nil
+		return group
 	}
-	return nil, fmt.Errorf("config group '%s' not found", groupName)
+	return nil
 }
 
-// Iterate provides access to all groups for iteration.
-func (cg *ConfigGroups) Iterate() map[string]*GroupConfig {
+// Groups returns the underlying map for direct iteration.
+func (cg *ConfigGroups) Groups() map[string]*GroupConfig {
 	return cg.groups
+}
+
+// Config returns a ConfigGroups instance for the dynflags instance.
+func (df *DynFlags) Config() *ConfigGroups {
+	return &ConfigGroups{groups: df.configGroups}
 }

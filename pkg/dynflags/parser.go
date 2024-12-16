@@ -25,25 +25,8 @@ func (df *DynFlags) Parse(args []string) error {
 			return err
 		}
 
-		// Handle the parsed group and flags
-		parsedGroup := df.createOrGetParsedGroup(parentName, identifier)
-		if parsedGroup.Parent == nil {
-			if err := df.handleUnknownGroup(parsedGroup, parentName, flagName, value); err != nil {
-				return err
-			}
-			continue
-		}
-
-		flag, exists := parsedGroup.Parent.Flags[flagName]
-		if !exists {
-			if err := df.handleUnknownFlag(parsedGroup, parentName, flagName, value); err != nil {
-				return err
-			}
-			continue
-		}
-
-		// Set the parsed flag value
-		if err := df.setFlagValue(parsedGroup, flag, flagName, value); err != nil {
+		// Process groups and flags
+		if err := df.processFlag(parentName, identifier, flagName, value); err != nil {
 			return err
 		}
 	}
@@ -52,19 +35,16 @@ func (df *DynFlags) Parse(args []string) error {
 
 // extractKeyValue extracts the key and value from a flag argument
 func (df *DynFlags) extractKeyValue(arg string, args []string, index *int) (string, string, error) {
-	// If the argument contains an equals sign, split it into key and value
 	if strings.Contains(arg, "=") {
 		parts := strings.SplitN(arg[2:], "=", 2)
 		return parts[0], parts[1], nil
 	}
 
 	key := arg[2:] // Remove leading '--'
-	// Check if the next argument is available and is not another flag
 	if *index+1 < len(args) && !strings.HasPrefix(args[*index+1], "--") {
-		*index++ // Move to the next argument
+		*index++
 		return key, args[*index], nil
 	}
-
 	return key, "", fmt.Errorf("missing value for flag: %s", key)
 }
 
@@ -77,37 +57,39 @@ func (df *DynFlags) splitKey(fullKey string) (string, string, string, error) {
 	return parts[0], parts[1], parts[2], nil
 }
 
-// handleUnknownGroup handles unknown groups
-func (df *DynFlags) handleUnknownGroup(parsedGroup *ParsedGroup, parentName, flagName, value string) error {
-	switch df.parseBehavior {
-	case ExitOnError:
-		return fmt.Errorf("unknown group: '%s'", parentName)
-	case ContinueOnError:
-		return nil
-	case IgnoreUnknown:
-		// Store the unknown flag and its value in the parsedGroup
-		parsedGroup.unknownValues[flagName] = value
-		return nil
+// processFlag handles the logic for parsing flags and updating the appropriate groups
+func (df *DynFlags) processFlag(parentName, identifier, flagName, value string) error {
+	parsedGroup := df.createOrGetParsedGroup(parentName, identifier)
+	if parsedGroup.Parent == nil {
+		// Handle unknown groups
+		return df.handleUnknownFlag(parentName, identifier, flagName, value)
 	}
-	// Default to ContinueOnError if an unsupported behavior is encountered
-	return nil
+
+	flag, exists := parsedGroup.Parent.Flags[flagName]
+	if !exists {
+		// Handle unknown flags in a known group
+		return df.handleUnknownFlag(parentName, identifier, flagName, value)
+	}
+
+	return df.setFlagValue(parsedGroup, flag, flagName, value)
 }
 
-// handleUnknownFlag handles unknown flags
-func (df *DynFlags) handleUnknownFlag(parsedGroup *ParsedGroup, parentName, flagName, value string) error {
+// handleUnknownFlag processes unknown flags
+func (df *DynFlags) handleUnknownFlag(parentName, identifier, flagName, value string) error {
 	switch df.parseBehavior {
 	case ExitOnError:
 		return fmt.Errorf("unknown flag '%s' in group '%s'", flagName, parentName)
 	case ContinueOnError:
 		return nil
 	case IgnoreUnknown:
-		parsedGroup.unknownValues[flagName] = value
+		unknownGroup := df.createOrGetUnknownGroup(parentName, identifier)
+		unknownGroup.Values[flagName] = value
 		return nil
 	}
 	return nil
 }
 
-// setFlagValue sets the value of a flag
+// setFlagValue sets the value of a known flag
 func (df *DynFlags) setFlagValue(parsedGroup *ParsedGroup, flag *Flag, flagName, value string) error {
 	parsedValue, err := flag.Value.Parse(value)
 	if err != nil {
@@ -122,46 +104,40 @@ func (df *DynFlags) setFlagValue(parsedGroup *ParsedGroup, flag *Flag, flagName,
 	return nil
 }
 
-// createOrGetParsedGroup creates or retrieves a child group for a parent group
+// createOrGetParsedGroup retrieves or initializes a parsed group
 func (df *DynFlags) createOrGetParsedGroup(parentName, identifier string) *ParsedGroup {
 	parentGroup, exists := df.configGroups[parentName]
 	if !exists {
-		// Handle unknown groups
-		if _, ok := df.unknownGroups[parentName]; !ok {
-			df.unknownGroups[parentName] = []*ParsedGroup{}
-		}
-
-		for _, group := range df.unknownGroups[parentName] {
-			if group.Name == identifier {
-				return group
-			}
-		}
-
-		// Create a new unknown group
-		parsedGroup := &ParsedGroup{
-			Parent:        nil,
-			Name:          identifier,
-			Values:        make(map[string]interface{}),
-			unknownValues: make(map[string]interface{}),
-		}
-		df.unknownGroups[parentName] = append(df.unknownGroups[parentName], parsedGroup)
-		return parsedGroup
+		return nil
 	}
 
-	// Check if the group already exists
 	for _, group := range df.parsedGroups[parentName] {
 		if group.Name == identifier {
 			return group
 		}
 	}
 
-	// Create a new parsed group
 	parsedGroup := &ParsedGroup{
-		Parent:        parentGroup,
-		Name:          identifier,
-		Values:        make(map[string]interface{}),
-		unknownValues: make(map[string]interface{}),
+		Parent: parentGroup,
+		Name:   identifier,
+		Values: make(map[string]interface{}),
 	}
 	df.parsedGroups[parentName] = append(df.parsedGroups[parentName], parsedGroup)
 	return parsedGroup
+}
+
+// createOrGetUnknownGroup retrieves or initializes an unknown group
+func (df *DynFlags) createOrGetUnknownGroup(parentName, identifier string) *UnknownGroup {
+	for _, group := range df.unknownGroups[parentName] {
+		if group.Name == identifier {
+			return group
+		}
+	}
+
+	unknownGroup := &UnknownGroup{
+		Name:   identifier,
+		Values: make(map[string]interface{}),
+	}
+	df.unknownGroups[parentName] = append(df.unknownGroups[parentName], unknownGroup)
+	return unknownGroup
 }

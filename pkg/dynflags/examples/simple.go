@@ -2,22 +2,16 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/containeroo/portpatrol/pkg/dynflags"
 )
 
 func main() {
-	// Initialize DynFlags with ContinueOnError behavior
+	// Initialize DynFlags
 	dynFlags := dynflags.New(dynflags.ContinueOnError)
 
-	// Add a title and description for the usage output
-	dynFlags.Title("DynFlags Example Application")
-	dynFlags.Description("This application demonstrates the usage of DynFlags for managing hierarchical flags dynamically.")
-	dynFlags.Epilog("For more information, see https://github.com/containerish/portpatrol")
-
-	// Register groups and flags
+	// Define configuration groups and flags
 	httpGroup := dynFlags.Group("http")
 	httpGroup.String("method", "GET", "HTTP method to use")
 	httpGroup.String("address", "", "HTTP target URL")
@@ -28,48 +22,80 @@ func main() {
 	tcpGroup.String("address", "", "TCP target address")
 	tcpGroup.Duration("timeout", 10*time.Second, "TCP timeout")
 
-	// Parse command-line arguments
-	// args := os.Args[1:]
-	args := []string{"--http.idenitfier1.method", "POST", "--http.idenitfier1.address", "https://example.com", "--tcp.idenitfier1.address", "127.0.0.1", "--tcp.idenitfier1.timeout", "10s", "--unknown.identifier2.name", "example 2"}
+	// Simulate CLI arguments
+	args := []string{
+		"--http.identifier1.method", "POST",
+		"--http.identifier1.address", "https://example.com",
+		"--tcp.identifier2.address", "127.0.0.1",
+		"--tcp.identifier2.timeout", "15s",
+		"--unknown.identifier3.flag", "unknownValue",
+	}
+
+	// Parse arguments
 	if err := dynFlags.Parse(args); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Error parsing flags: %v\n", err)
+		return
 	}
 
-	// Access parsed values
-	for groupName, groups := range dynFlags.Parsed() {
+	// ITERATION: Iterate over all config groups
+  fmt.Println("=== Iterating over Config Groups ===")
+  for groupName, groups := range dynFlags.ConfigGroups().Groups() {
+
+	// ITERATION: Iterate over all parsed groups
+	fmt.Println("=== Iterating over Parsed Groups ===")
+	for groupName, groups := range dynFlags.Parsed().Groups() {
+		fmt.Printf("Group: %s\n", groupName)
 		for _, group := range groups {
-			fmt.Printf("Group: %s, Identifier: %s\n", groupName, group.Name)
-
-			method, _ := group.GetValue("method") // Generic way to get a value
-			strMethod, _ := method.(string)
-			fmt.Printf("  Method: %s\n", strMethod)
-
-			if address, err := group.GetString("address"); err == nil {
-				fmt.Printf("  Address: %s\n", address)
-			}
-			if timeout, err := group.GetDuration("timeout"); err == nil {
-				fmt.Printf("  Timeout: %s\n", timeout)
+			fmt.Printf("  Identifier: %s\n", group.Name)
+			for flagName, value := range group.Values {
+				fmt.Printf("    Flag: %s, Value: %v\n", flagName, value)
 			}
 		}
 	}
 
-	fmt.Println("")
-
-	// Handle unknown values
-	for groupName, groups := range dynFlags.Unknown() {
-		for group, val := range groups.Groups() {
-			fmt.Printf("Group: %s, Identifier: %s, Value: %s\n", groupName, group.Name, val)
+	fmt.Println("\n=== Iterating over Unknown Groups ===")
+	for groupName, groups := range dynFlags.Unknown().Groups() {
+		fmt.Printf("Unknown Group: %s\n", groupName)
+		for _, group := range groups {
+			fmt.Printf("  Identifier: %s\n", group.Name)
+			for flagName, value := range group.Values {
+				fmt.Printf("    Flag: %s, Value: %v\n", flagName, value)
+			}
 		}
 	}
 
-	fmt.Println("")
+	// LOOKUP: Direct access using Lookup methods
+	fmt.Println("\n=== Lookup Example ===")
 
-	// Retrieve specific unknown values
-	value, err := dynFlags.GetUnknownValue("unknown", "identifier", "value")
+	// Lookup the "http" group
+	httpGroups, err := dynFlags.Parsed().Lookup("http")
 	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	// Lookup "identifier1" within the "http" group
+	httpIdentifier1 := httpGroups[0]
+	method, err := httpIdentifier1.Lookup("method")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Specific Unknown Value: %v\n", value)
+		fmt.Printf("HTTP Method (Lookup): %s\n", method)
+	}
+
+	// Lookup the "unknown" group
+	unknownGroups, err := dynFlags.Unknown().Lookup("unknown")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	// Lookup "identifier3.flag" within the "unknown" group
+	unknownIdentifier3 := unknownGroups[0]
+	unknownValue, err := unknownIdentifier3.Lookup("flag")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	} else {
+		fmt.Printf("Unknown Value (Lookup): %s\n", unknownValue)
 	}
 }

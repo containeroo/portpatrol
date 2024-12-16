@@ -1,48 +1,38 @@
 package dynflags
 
-import "fmt"
-
+// UnknownGroup represents an unknown group with unrecognized values.
 type UnknownGroup struct {
 	Name   string                 // Identifier for the child group
-	Values map[string]interface{} // Parsed values for the group's flags
+	Values map[string]interface{} // Unrecognized flags and their parsed values
 }
 
 // Lookup retrieves the value of a flag in the unknown group.
-func (ug *UnknownGroup) Lookup(flagName string) (interface{}, error) {
+func (ug *UnknownGroup) Lookup(flagName string) interface{} {
 	if value, exists := ug.Values[flagName]; exists {
-		return value, nil
+		return value
 	}
-	return nil, fmt.Errorf("flag '%s' not found in unknown group '%s'", flagName, ug.Name)
+	return nil
 }
 
+// UnknownGroups represents all unknown groups with lookup and iteration support.
 type UnknownGroups struct {
-	groups map[string]*UnknownGroup
+	groups map[string][]*UnknownGroup
 }
 
-// Lookup retrieves an `UnknownGroup` by its name.
-func (ug *UnknownGroups) Lookup(groupName string) (*UnknownGroup, error) {
-	if group, exists := ug.groups[groupName]; exists {
-		return group, nil
+// Lookup retrieves unknown groups by name.
+func (ug *UnknownGroups) Lookup(groupName string) []*UnknownGroup {
+	if groups, exists := ug.groups[groupName]; exists {
+		return groups
 	}
-	return nil, fmt.Errorf("unknown group '%s' not found", groupName)
+	return nil
 }
 
-// Unknown returns all unknown groups as a single `UnknownGroups` instance.
+// Groups returns the underlying map for direct iteration.
+func (ug *UnknownGroups) Groups() map[string][]*UnknownGroup {
+	return ug.groups
+}
+
+// Unknown returns an UnknownGroups instance for the dynflags instance.
 func (df *DynFlags) Unknown() *UnknownGroups {
-	unknown := make(map[string]*UnknownGroup)
-	for groupName, groups := range df.unknownGroups {
-		if len(groups) > 0 {
-			combinedGroup := &UnknownGroup{
-				Name:   groupName,
-				Values: make(map[string]interface{}),
-			}
-			for _, group := range groups {
-				for k, v := range group.Values {
-					combinedGroup.Values[k] = v
-				}
-			}
-			unknown[groupName] = combinedGroup
-		}
-	}
-	return &UnknownGroups{groups: unknown}
+	return &UnknownGroups{groups: df.unknownGroups}
 }

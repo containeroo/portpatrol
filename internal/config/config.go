@@ -54,8 +54,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	setupUsage(output, flagSet, dynFlags)
 
 	// Separate known and unknown flags
-	groups := getGroups(dynFlags)
-	knownArgs, unknownArgs := separateKnownAndUnknownArgs(args, flagSet, groups)
+	knownArgs, unknownArgs := separateKnownAndUnknownArgs(args, flagSet, *dynFlags)
 
 	// Parse known flags
 	if err := flagSet.Parse(knownArgs); err != nil {
@@ -186,16 +185,7 @@ func getDurationFlag(flagSet *pflag.FlagSet, name string, defaultValue time.Dura
 }
 
 // separateKnownAndUnknownArgs separates known and unknown flags from the command-line arguments.
-func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, groups []string) (known []string, unknown []string) {
-	isGroupFlag := func(flagName string) bool {
-		for _, group := range groups {
-			if strings.HasPrefix(flagName, group+".") {
-				return true
-			}
-		}
-		return false
-	}
-
+func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, dynFlags dynflags.DynFlags) (known []string, unknown []string) {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 
@@ -211,7 +201,7 @@ func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, groups [
 
 		// Determine whether the flag belongs to a group or is known
 		switch {
-		case isGroupFlag(flagName):
+		case dynFlags.Config().Lookup(flagName) != nil:
 			// Handle grouped flags
 			if len(parts) == 2 {
 				unknown = append(unknown, arg) // `--group.identifier.flag=value`
@@ -240,12 +230,4 @@ func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, groups [
 	}
 
 	return known, unknown
-}
-
-func getGroups(df *dynflags.DynFlags) []string {
-	groups := make([]string, 0, len(df.Groups()))
-	for groupName := range df.Groups() {
-		groups = append(groups, groupName)
-	}
-	return groups
 }
