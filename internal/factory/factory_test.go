@@ -110,12 +110,38 @@ func TestBuildCheckers(t *testing.T) {
 		icmpGroup.Duration("read-timeout", 2*time.Second, "Read timeout")
 		icmpGroup.Duration("write-timeout", 2*time.Second, "Write timeout")
 
-		df.Parse([]string{"--icmp.mygroup.address=8.8.8.8", "--icmp.mygroup.read-timeout=2s", "--icmp.mygroup.write-timeout=2s"})
+		args := []string{
+			"--icmp.mygroup.address=8.8.8.8",
+			"--icmp.mygroup.read-timeout=2s",
+			"--icmp.mygroup.write-timeout=2s",
+		}
+
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.NoError(t, err)
 		assert.Len(t, checkers, 1)
 		assert.Equal(t, "8.8.8.8", checkers[0].Checker.GetAddress())
+	})
+
+	t.Run("Invalid ICMP Checker", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ContinueOnError)
+		icmpGroup := df.Group("icmp")
+		icmpGroup.String("address", "8.8.8.8", "ICMP target address")
+
+		args := []string{
+			"--icmp.mygroup.address=://invalid-url",
+		}
+
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		checker, err := factory.BuildCheckers(df, 2*time.Second)
+		assert.Nil(t, checker)
+		assert.Error(t, err)
 	})
 
 	t.Run("Checker Creation Failure", func(t *testing.T) {
