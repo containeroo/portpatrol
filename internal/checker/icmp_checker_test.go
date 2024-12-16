@@ -19,15 +19,11 @@ import (
 func TestNewICMPCheckerValidIPv4(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newICMPChecker("ValidIPv4", "127.0.0.1")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+	w := WithICMPReadTimeout(2 * time.Second)
+	checker, err := newICMPChecker("ValidIPv4", "127.0.0.1", w)
 
-	if checker.GetName() != "ValidIPv4" {
-		t.Errorf("expected name 'ValidIPv4', got %s", checker.GetName())
-	}
-
+	assert.NoError(t, err)
+	assert.Equal(t, checker.GetName(), "ValidIPv4")
 	assert.Equal(t, checker.GetAddress(), "127.0.0.1")
 }
 
@@ -36,14 +32,8 @@ func TestNewICMPCheckerInvalidAddress(t *testing.T) {
 	t.Parallel()
 
 	_, err := newICMPChecker("InvalidAddress", "invalid-address")
-	if err == nil {
-		t.Fatal("expected an error, got none")
-	}
-
-	expected := "failed to create ICMP protocol: invalid or unresolvable address: invalid-address"
-	if err.Error() != expected {
-		t.Errorf("expected error %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "failed to create ICMP protocol: invalid or unresolvable address: invalid-address")
 }
 
 // TestICMPCheckerCheckSuccess tests successful ICMP checking.
@@ -85,9 +75,7 @@ func TestICMPCheckerCheckSuccess(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+	assert.NoError(t, err)
 }
 
 // TestICMPCheckerCheckResolveError tests ICMP checking with an address resolution failure.
@@ -111,14 +99,8 @@ func TestICMPCheckerCheckResolveError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	if err == nil {
-		t.Fatal("expected an error, got none")
-	}
-
-	expected := "failed to resolve IP address 'invalid-host': lookup invalid-host: no such host"
-	if err.Error() != expected {
-		t.Errorf("expected error %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to resolve IP address 'invalid-host': lookup invalid-host: no such host")
 }
 
 // TestICMPCheckerCheckWriteError tests ICMP checking with a failure to write to the connection.
@@ -152,14 +134,8 @@ func TestICMPCheckerCheckWriteError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	if err == nil {
-		t.Fatal("expected an error, got none")
-	}
-
-	expected := "failed to send ICMP request: mock write error"
-	if err.Error() != expected {
-		t.Errorf("expected error %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to send ICMP request: mock write error")
 }
 
 // TestICMPCheckerCheckReadError tests ICMP checking with a failure to read from the connection.
@@ -193,14 +169,8 @@ func TestICMPCheckerCheckReadError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	if err == nil {
-		t.Fatal("expected an error, got none")
-	}
-
-	expected := "failed to read ICMP reply: mock read error"
-	if err.Error() != expected {
-		t.Errorf("expected error %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to read ICMP reply: mock read error")
 }
 
 // TestICMPCheckerCheckValidationError tests ICMP checking with a failure to validate the ICMP reply.
@@ -233,12 +203,6 @@ func TestICMPCheckerCheckValidationError(t *testing.T) {
 	defer cancel()
 
 	err := checker.Check(ctx)
-	if err == nil {
-		t.Fatal("expected an error, got none")
-	}
-
-	expected := "failed to validate ICMP reply: mock validation error"
-	if err.Error() != expected {
-		t.Errorf("expected error %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to validate ICMP reply: mock validation error")
 }

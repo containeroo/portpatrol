@@ -2,9 +2,9 @@ package checker
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,18 +24,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
+		assert.NoError(t, err)
 		assert.Equal(t, checker.GetAddress(), server.URL)
 	})
 
@@ -53,17 +48,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPHeaders(map[string]string{"Authorization": "Bearer token"}))
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("HTTP check with unexpected status code", func(t *testing.T) {
@@ -76,22 +67,14 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "unexpected status code: got 404, expected one of [200]"
-		if err.Error() != expected {
-			t.Fatalf("expected error %q, got %q", expected, err.Error())
-		}
+		assert.Error(t, err)
+		assert.EqualError(t, err, "unexpected status code: got 404, expected one of [200]")
 	})
 
 	t.Run("Invalid URL for HTTP check", func(t *testing.T) {
@@ -103,14 +86,8 @@ func TestHTTPChecker(t *testing.T) {
 		}
 
 		err = checker.Check(context.Background()) // Run the check to trigger the error.
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "failed to create request: parse \"://invalid-url\": missing protocol scheme"
-		if err.Error() != expected {
-			t.Fatalf("expected error %q, got %q", expected, err.Error())
-		}
+		assert.Error(t, err)
+		assert.EqualError(t, err, "failed to create request: parse \"://invalid-url\": missing protocol scheme")
 	})
 
 	t.Run("Timeout during HTTP check", func(t *testing.T) {
@@ -124,22 +101,15 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPTimeout(1*time.Second))
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
 
-		expected := "context deadline exceeded"
-		if !strings.Contains(err.Error(), expected) {
-			t.Fatalf("expected error containing %q, got %q", expected, err.Error())
-		}
+		assert.Error(t, err)
+		assert.EqualError(t, err, fmt.Sprintf("HTTP request failed: Get \"http://%s\": context deadline exceeded", server.Listener.Addr().String()))
 	})
 
 	t.Run("Custom expected status codes", func(t *testing.T) {
@@ -152,17 +122,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithExpectedStatusCodes([]int{202}))
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("Custom HTTP method", func(t *testing.T) {
@@ -179,17 +145,13 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPMethod(http.MethodPost))
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("Skip TLS verification", func(t *testing.T) {
@@ -202,16 +164,12 @@ func TestHTTPChecker(t *testing.T) {
 		defer server.Close()
 
 		checker, err := newHTTPChecker("example", server.URL, WithHTTPSkipTLSVerify(true))
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
 	})
 }
