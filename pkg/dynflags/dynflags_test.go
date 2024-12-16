@@ -2,7 +2,6 @@ package dynflags_test
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/containeroo/portpatrol/pkg/dynflags"
@@ -148,7 +147,6 @@ func TestDynFlagsUnparsedArgs(t *testing.T) {
 		assert.NoError(t, err)
 
 		unparsedArgs := df.UnparsedArgs()
-		fmt.Println(df.UnparsedArgs())
 		assert.Contains(t, unparsedArgs, "--unparsable")
 	})
 }

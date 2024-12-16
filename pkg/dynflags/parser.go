@@ -30,7 +30,7 @@ func (df *DynFlags) Parse(args []string) error {
 
 		// Process groups and flags
 		if err := df.processFlag(parentName, identifier, flagName, value); err != nil {
-			continue
+			return err
 		}
 	}
 	return nil

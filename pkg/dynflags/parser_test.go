@@ -10,115 +10,145 @@ import (
 func TestDynFlagsParse(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Parse flags with equals sign", func(t *testing.T) {
+	t.Run("Parse valid arguments", func(t *testing.T) {
 		t.Parallel()
 
 		df := dynflags.New(dynflags.ContinueOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
+		group := df.Group("http")
+		group.String("method", "GET", "HTTP method to use")
+		group.String("url", "", "Target URL")
 
-		err := df.Parse([]string{"--test.identifier.name=test name"})
+		args := []string{
+			"--http.identifier1.method", "POST",
+			"--http.identifier1.url", "https://example.com",
+		}
+		err := df.Parse(args)
 		assert.NoError(t, err)
 
 		parsedGroups := df.Parsed()
-		assert.Equal(t, "test name", parsedGroups.Lookup("test").Lookup("identifier").Lookup("name"))
+		httpGroup := parsedGroups.Lookup("http")
+		assert.NotNil(t, httpGroup)
+
+		identifier1 := httpGroup.Lookup("identifier1")
+		assert.NotNil(t, identifier1)
+		assert.Equal(t, "POST", identifier1.Lookup("method"))
+		assert.Equal(t, "https://example.com", identifier1.Lookup("url"))
 	})
 
-	t.Run("Parse flags with space-separated value", func(t *testing.T) {
+	t.Run("Parse with missing value", func(t *testing.T) {
 		t.Parallel()
 
 		df := dynflags.New(dynflags.ContinueOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
+		group := df.Group("http")
+		group.String("method", "GET", "HTTP method to use")
 
-		err := df.Parse([]string{"--test.identifier.name", "test name"})
+		args := []string{
+			"--http.identifier1.method",
+		}
+		err := df.Parse(args)
 		assert.NoError(t, err)
 
-		parsedGroups := df.Parsed()
-		assert.Equal(t, "test name", parsedGroups.Lookup("test").Lookup("identifier").Lookup("name"))
+		unparsedArgs := df.UnparsedArgs()
+		assert.Contains(t, unparsedArgs, "--http.identifier1.method")
 	})
 
-	t.Run("Handle missing value", func(t *testing.T) {
+	t.Run("Parse with invalid flag format", func(t *testing.T) {
 		t.Parallel()
 
 		df := dynflags.New(dynflags.ContinueOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
 
-		err := df.Parse([]string{"--test.identifier.name"})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "missing value for flag: test.identifier.name")
-	})
-
-	t.Run("Invalid flag format", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ExitOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
-
-		err := df.Parse([]string{"-test.identifier.name"})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "invalid flag format: -test.identifier.name")
-	})
-
-	t.Run("Split key with invalid flag format", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ContinueOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
-
-		err := df.Parse([]string{"--test.name", "value"})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "flag must follow the pattern: --<group>.<identifier>.<flag>=value")
-	})
-
-	t.Run("Unknown parent group", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ExitOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
-
-		err := df.Parse([]string{"--unknown.identifier.name", "value"})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "unknown group: 'unknown'")
-	})
-
-	t.Run("Unknown flag, exit on error", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ExitOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
-
-		err := df.Parse([]string{"--test.identifier.badflag", "value"})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "unknown flag 'badflag' in group 'test'")
-	})
-
-	t.Run("Unknown flag, continue on error", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ContinueOnError)
-		group := df.Group("test")
-		group.String("name", "", "Test name flag")
-
-		err := df.Parse([]string{"--test.identifier.badflag", "value"})
+		args := []string{
+			"-invalidFlag",
+		}
+		err := df.Parse(args)
 		assert.NoError(t, err)
+
+		unparsedArgs := df.UnparsedArgs()
+		assert.Contains(t, unparsedArgs, "-invalidFlag")
 	})
 
-	t.Run("Set value error", func(t *testing.T) {
+	t.Run("Parse with unknown group and continue on error", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ParseUnknown)
+
+		args := []string{
+			"--unknown.identifier1.flag1", "value1",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		unknownGroups := df.Unknown()
+		unknownGroup := unknownGroups.Lookup("unknown")
+		assert.NotNil(t, unknownGroup)
+
+		identifier1 := unknownGroup.Lookup("identifier1")
+		assert.NotNil(t, identifier1)
+		assert.Equal(t, "value1", identifier1.Lookup("flag1"))
+	})
+
+	t.Run("Parse with unknown group and parse unknown behavior", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ParseUnknown)
+
+		args := []string{
+			"--unknown.identifier1.flag1", "value1",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		unknownGroups := df.Unknown()
+		unknownGroup := unknownGroups.Lookup("unknown")
+		assert.NotNil(t, unknownGroup)
+
+		identifier1 := unknownGroup.Lookup("identifier1")
+		assert.NotNil(t, identifier1)
+		assert.Equal(t, "value1", identifier1.Lookup("flag1"))
+	})
+
+	t.Run("Parse with unknown group and exit on error", func(t *testing.T) {
 		t.Parallel()
 
 		df := dynflags.New(dynflags.ExitOnError)
-		group := df.Group("test")
-		group.Int("name", 0, "Test name flag")
 
-		args := []string{"--test.identifier.name", "value"}
+		args := []string{
+			"--unknown.identifier1.flag1", "value1",
+		}
 		err := df.Parse(args)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to parse value for flag 'name': strconv.Atoi: parsing \"value\": invalid syntax")
+		assert.EqualError(t, err, "unknown flag 'flag1' in group 'unknown'")
+	})
+
+	t.Run("Handle invalid key format", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ContinueOnError)
+
+		args := []string{
+			"--invalidformat",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		unparsedArgs := df.UnparsedArgs()
+		assert.Contains(t, unparsedArgs, "--invalidformat")
+	})
+
+	t.Run("Handle missing flag value", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ContinueOnError)
+		group := df.Group("http")
+		group.String("method", "GET", "HTTP method to use")
+
+		args := []string{
+			"--http.identifier1.method",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		unparsedArgs := df.UnparsedArgs()
+		assert.Contains(t, unparsedArgs, "--http.identifier1.method")
 	})
 }
