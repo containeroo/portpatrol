@@ -119,7 +119,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 		t.Fatal("Expected error, got none")
 	}
 
-	expected := "configuration error: error parsing dynamic flags: unknown group: 'target'"
+	expected := "configuration error: no checkers configured"
 	if err.Error() != expected {
 		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
 	}

@@ -65,7 +65,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	}
 
 	// Handle special flags (e.g., --help or --version)
-	if err := handleSpecialFlags(flagSet, output, version); err != nil {
+	if err := handleSpecialFlags(flagSet, version); err != nil {
 		return nil, err
 	}
 
@@ -144,7 +144,7 @@ func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.Dyn
 }
 
 // handleSpecialFlags handles help and version flags.
-func handleSpecialFlags(flagSet *pflag.FlagSet, output io.Writer, version string) error {
+func handleSpecialFlags(flagSet *pflag.FlagSet, version string) error {
 	if flagSet.Lookup("help").Value.String() == "true" {
 		flagSet.Usage()
 		return &HelpRequested{Message: ""}
