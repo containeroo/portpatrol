@@ -57,10 +57,8 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 
 	// Parse known flags
 	if err := flagSet.Parse(unknownArgs); err != nil {
-		return parseAndHandleErrors(err, output, flagSet)
+		return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
 	}
-
-	// TODO: is this necessary?
 
 	// Handle special flags (e.g., --help or --version)
 	if err := handleSpecialFlags(flagSet, output, version); err != nil {
@@ -144,13 +142,6 @@ func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.Dyn
 		fmt.Fprintln(output, "\nDynamic Flags:")
 		dynFlags.PrintDefaults()
 	}
-}
-
-// parseAndHandleErrors processes errors during flag parsing.
-func parseAndHandleErrors(err error, output io.Writer, flagSet *pflag.FlagSet) (*ParsedFlags, error) {
-	fmt.Fprintf(output, "%s\n\n", err.Error())
-	flagSet.Usage()
-	return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
 }
 
 // handleSpecialFlags handles help and version flags.
