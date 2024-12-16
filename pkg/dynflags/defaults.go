@@ -34,8 +34,8 @@ func (df *DynFlags) PrintDefaults() {
 		group := df.configGroups[groupName]
 
 		// Print group usage or fallback to uppercase group name
-		if group.usage != "" {
-			fmt.Fprintln(w, group.usage)
+		if group.Usage != "" {
+			fmt.Fprintln(w, group.Usage)
 		} else {
 			fmt.Fprintln(w, strings.ToUpper(groupName))
 		}
@@ -46,16 +46,18 @@ func (df *DynFlags) PrintDefaults() {
 		}
 
 		// Print flags for the group
-		fmt.Fprintln(w, "  Flag\tUsage")
-		for _, flagName := range group.flagOrder {
-			flag := group.Flags[flagName]
-			usage := flag.Usage
-			if flag.Default != nil && flag.Default != "" {
-				usage = fmt.Sprintf("%s (default: %v)", flag.Usage, flag.Default)
+		if len(group.flagOrder) > 0 {
+			fmt.Fprintln(w, "  Flag\tUsage")
+			for _, flagName := range group.flagOrder {
+				flag := group.Flags[flagName]
+				usage := flag.Usage
+				if flag.Default != nil && flag.Default != "" {
+					usage = fmt.Sprintf("%s (default: %v)", flag.Usage, flag.Default)
+				}
+				fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, usage)
 			}
-			fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, usage)
+			fmt.Fprintln(w, "")
 		}
-		fmt.Fprintln(w, "")
 	}
 
 	// Print epilog if present

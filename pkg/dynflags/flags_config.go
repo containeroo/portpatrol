@@ -3,7 +3,7 @@ package dynflags
 // GroupConfig represents the static configuration for a group.
 type GroupConfig struct {
 	Name      string           // Name of the group.
-	usage     string           // Title for usage.
+	Usage     string           // Title for usage. If not set it takes the name of the group in Uppercase.
 	Flags     map[string]*Flag // Flags within the group.
 	flagOrder []string         // Order of flags.
 }

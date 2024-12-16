@@ -95,7 +95,7 @@ func setupGlobalFlags() *pflag.FlagSet {
 
 // setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
 func setupDynamicFlags() *dynflags.DynFlags {
-	dynFlags := dynflags.New(dynflags.ExitOnError)
+	dynFlags := dynflags.New(dynflags.ContinueOnError)
 	dynFlags.Epilog("For more information, see https://github.com/containeroo/portpatrol")
 	dynFlags.SortGroups = true
 	dynFlags.SortFlags = true
