@@ -5,6 +5,8 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewTCPChecker_Valid(t *testing.T) {
@@ -32,6 +34,8 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 	if checker.GetType() != TCP.String() {
 		t.Errorf("expected type to be %q, got %q", TCP.String(), checker.GetType())
 	}
+
+	assert.Equal(t, checker.GetAddress(), ln.Addr().String())
 }
 
 func TestTCPChecker_ValidConnection(t *testing.T) {

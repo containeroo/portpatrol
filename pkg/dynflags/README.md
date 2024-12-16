@@ -49,7 +49,6 @@ httpGroup.Int("timeout", 5, "Timeout for HTTP requests")
 // httpGroup.Bool, httpGroup.Float64, httpGroup.Duration, etc.
 ```
 
-
 After all flags are defined, call
 
 ```go

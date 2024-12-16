@@ -12,7 +12,6 @@ const defaultTCPTimeout time.Duration = 1 * time.Second
 type TCPChecker struct {
 	name    string
 	address string
-	timeout time.Duration
 	dialer  *net.Dialer
 }
 

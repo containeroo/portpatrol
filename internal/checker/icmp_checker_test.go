@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/containeroo/portpatrol/internal/testutils"
 
 	"golang.org/x/net/icmp"
@@ -25,6 +27,8 @@ func TestNewICMPCheckerValidIPv4(t *testing.T) {
 	if checker.GetName() != "ValidIPv4" {
 		t.Errorf("expected name 'ValidIPv4', got %s", checker.GetName())
 	}
+
+	assert.Equal(t, checker.GetAddress(), "127.0.0.1")
 }
 
 // TestNewICMPCheckerInvalidAddress tests creating an ICMPChecker with an invalid address.

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHTTPChecker(t *testing.T) {
@@ -33,6 +35,8 @@ func TestHTTPChecker(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %q", err)
 		}
+
+		assert.Equal(t, checker.GetAddress(), server.URL)
 	})
 
 	t.Run("HTTP check with custom headers", func(t *testing.T) {
