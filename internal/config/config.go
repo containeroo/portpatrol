@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/containeroo/portpatrol/pkg/dynflags"
@@ -54,7 +53,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	setupUsage(output, flagSet, dynFlags)
 
 	// Separate known and unknown flags
-	knownArgs, unknownArgs := separateKnownAndUnknownArgs(args, flagSet, *dynFlags)
+	knownArgs, unknownArgs := dynFlags.SeparateKnownAndUnknownArgs(args, flagSet)
 
 	// Parse known flags
 	if err := flagSet.Parse(knownArgs); err != nil {
@@ -182,68 +181,4 @@ func getDurationFlag(flagSet *pflag.FlagSet, name string, defaultValue time.Dura
 	}
 
 	return value, nil
-}
-
-// separateKnownAndUnknownArgs separates known and unknown flags from the command-line arguments.
-func separateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet, dynFlags dynflags.DynFlags) (known []string, unknown []string) {
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-
-		if !strings.HasPrefix(arg, "--") {
-			// Positional argument
-			known = append(known, arg)
-			continue
-		}
-
-		// Extract flag name and value
-		parts := strings.SplitN(arg[2:], "=", 2)
-		fullKey := parts[0]
-
-		// Extract group
-		group, _, flagName, err := splitKey(fullKey)
-		if err != nil {
-			unknown = append(unknown, arg)
-			continue
-		}
-
-		// Determine whether the flag belongs to a group or is known
-		switch {
-		case dynFlags.Group(group).Lookup(flagName) != nil:
-			// Handle grouped flags
-			if len(parts) == 2 {
-				unknown = append(unknown, arg) // `--group.identifier.flag=value`
-			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				unknown = append(unknown, arg, args[i+1]) // `--group.identifier.flag value`
-				i++
-			} else {
-				unknown = append(unknown, arg) // `--group.identifier.flag` without a value
-			}
-
-		case flagSet.Lookup(flagName) != nil:
-			// Handle known flags
-			if len(parts) == 2 {
-				known = append(known, arg) // `--flag=value`
-			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				known = append(known, arg, args[i+1]) // `--flag value`
-				i++
-			} else {
-				known = append(known, arg) // `--flag` without a value
-			}
-
-		default:
-			// Unknown flag
-			unknown = append(unknown, arg)
-		}
-	}
-
-	return known, unknown
-}
-
-// splitKey splits a key into group, identifier, and flag name.
-func splitKey(fullKey string) (string, string, string, error) {
-	parts := strings.Split(fullKey, ".")
-	if len(parts) < 3 {
-		return "", "", "", fmt.Errorf("flag must follow the pattern: --<group>.<identifier>.<flag>")
-	}
-	return parts[0], parts[1], parts[2], nil
 }

@@ -19,128 +19,44 @@ Install the package using:
 go get github.com/containeroo/portpatrol/pkg/dynflags
 ```
 
-## Example Usage
+## Usage
 
-Here’s an example of how to use DynFlags in your application:
-
-```go
-package main
-
-import (
-  "fmt"
-  "os"
-  "time"
-
-  "github.com/containeroo/portpatrol/pkg/dynflags"
-)
-
-func main() {
-  // Initialize DynFlags with ContinueOnError behavior
-  dynFlags := dynflags.New(dynflags.ContinueOnError)
-
-  // Add a title and description for the usage output
-  dynFlags.Title("DynFlags Example Application")
-  dynFlags.Description("This application demonstrates the usage of DynFlags for managing hierarchical flags dynamically.")
-  dynFlags.Epilogue("For more information, see https://github.com/containerish/portpatrol")
-
-  // Register groups and flags
-  httpGroup := dynFlags.Group("http")
-  httpGroup.String("method", "GET", "HTTP method to use")
-  httpGroup.String("address", "", "HTTP target URL")
-  httpGroup.Bool("secure", true, "Use secure connection (HTTPS)")
-  httpGroup.Duration("timeout", 5*time.Second, "Request timeout")
-
-  tcpGroup := dynFlags.Group("tcp")
-  tcpGroup.String("address", "", "TCP target address")
-  tcpGroup.Duration("timeout", 10*time.Second, "TCP timeout")
-
-  // Parse command-line arguments
-  args := os.Args[1:]
-  if err := dynFlags.Parse(args); err != nil {
-    fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
-    os.Exit(1)
-  }
-
-  // Access parsed values
-  for groupName, groups := range dynFlags.GetAllParsedGroups() {
-    for _, group := range groups {
-      fmt.Printf("Group: %s, Identifier: %s\n", groupName, group.Name)
-      if method, err := group.GetString("method"); err == nil {
-        fmt.Printf("  Method: %s\n", method)
-      }
-      if address, err := group.GetString("address"); err == nil {
-        fmt.Printf("  Address: %s\n", address)
-      }
-      if timeout, err := group.GetDuration("timeout"); err == nil {
-        fmt.Printf("  Timeout: %s\n", timeout)
-      }
-    }
-  }
-
-  // Handle unknown groups or flags
-  unknownGroups := dynFlags.GetUnknownGroups()
-  for groupName, groups := range unknownGroups {
-    fmt.Printf("Unknown Group: %s\n", groupName)
-    for _, group := range groups {
-      fmt.Printf("  Identifier: %s\n", group.Name)
-      for key, value := range group.GetUnknownValues() {
-        fmt.Printf("    Unknown Flag: %s, Value: %v\n", key, value)
-      }
-    }
-  }
-}
-```
-
-## Output Example
-
-Running the application with:
-
-```bash
-go run main.go --http.api.address=http://example.com --http.api.timeout=10s --tcp.server.address=tcp://127.0.0.1 --unknown.group.flag=value
-```
-
-Produces the following output:
-
-```bash
-Group: http, Identifier: api
-  Address: http://example.com
-  Timeout: 10s
-
-Group: tcp, Identifier: server
-  Address: tcp://127.0.0.1
-  Timeout: 10s
-
-Unknown Group: unknown
-  Identifier: group
-    Unknown Flag: flag, Value: value
-```
-
-## Advanced Usage
-
-### Handling Unknown Groups and Flags
-
-DynFlags supports three behaviors for handling unknown flags:
-
-- `ExitOnError`: Stops execution with an error.
-- `ContinueOnError`: Skips unknown flags and continues parsing.
-- `IgnoreUnknown`: Collects unknown flags and groups them under `unknown`. Use `Unknown()` to access the unknown groups.
-
-### Customizing Usage Output
-
-You can customize the usage output by setting the title, description, and epilog:
+`dynflags` is a Go package that provides a simple way to manage hierarchical command-line flags.
+It supports parsing flags with a structure like `--group.identifier.flag=value` while allowing dynamic group and flag registration at runtime.
+For POSIX/GNU-style `--flags` use the library [pflag](https://github.com/spf13/pflag). `dynflags` can be used together with `pflag`.
 
 ```go
-dynFlags.Title("Custom Application")
-dynFlags.Description("Manage dynamic flags with ease!")
-dynFlags.Epilog("For more information, visit: https://github.com/yourusername/dynflags")
+import "github.com/containeroo/portpatrol/pkg/dynflags"
 ```
 
-Testing with Custom Output
-To test or capture usage output, set a custom io.Writer:
+Create a new `DynFlags` instance:
 
 ```go
-var buf bytes.Buffer
-dynFlags.SetOutput(&buf)
-dynFlags.Usage()
-fmt.Println(buf.String())
+dynFlags := dynflags.New(dynflags.ContinueOnError)
 ```
+
+Add groups to the `DynFlags` instance:
+
+```go
+httpGroup := dynFlags.Group("http")
+```
+
+Add flags to the `DynFlags` instance:
+
+```go
+httpGroup.String("method", "GET", "HTTP method to use")
+httpGroup.Int("timeout", 5, "Timeout for HTTP requests")
+// httpGroup.Bool, httpGroup.Float64, httpGroup.Duration, etc.
+```
+
+
+After all flags are defined, call
+
+```go
+args := os.Args[1:] // Skip the first argument (the executable name)
+dynflags.Parse(args)
+```
+
+to parse the command line into the defined flags. `args` are the command-line arguments to parse.
+When using `pflag`, use `pflag.Parse()`
+
