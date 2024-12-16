@@ -53,10 +53,10 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	setupUsage(output, flagSet, dynFlags)
 
 	// Separate known and unknown flags
-	knownArgs, unknownArgs := dynFlags.SeparateKnownAndUnknownArgs(args, flagSet)
+	knownArgs, unknownArgs := dynFlags.SeparateKnownAndUnknownArgs(args)
 
 	// Parse known flags
-	if err := flagSet.Parse(knownArgs); err != nil {
+	if err := flagSet.Parse(unknownArgs); err != nil {
 		return parseAndHandleErrors(err, output, flagSet)
 	}
 
@@ -68,7 +68,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	}
 
 	// Parse unknown arguments with dynamic flags
-	if err := dynFlags.Parse(unknownArgs); err != nil {
+	if err := dynFlags.Parse(knownArgs); err != nil {
 		return nil, fmt.Errorf("error parsing dynamic flags: %w", err)
 	}
 

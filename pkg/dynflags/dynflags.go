@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 	"strings"
-
-	"github.com/spf13/pflag"
 )
 
 // ParseBehavior defines how the parser handles errors
@@ -90,9 +88,7 @@ func (df *DynFlags) SetOutput(buf io.Writer) {
 }
 
 // SeparateKnownAndUnknownArgs separates known and unknown flags from the command-line arguments.
-// Known flags are those defined in the provided pflag.FlagSet or the DynFlags configuration.
-// Unknown flags are those that do not match any known flag or group configuration.
-func (df *DynFlags) SeparateKnownAndUnknownArgs(args []string, flagSet *pflag.FlagSet) (known []string, unknown []string) {
+func (df *DynFlags) SeparateKnownAndUnknownArgs(args []string) (known []string, unknown []string) {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 
@@ -115,32 +111,19 @@ func (df *DynFlags) SeparateKnownAndUnknownArgs(args []string, flagSet *pflag.Fl
 		group, flagName := keyParts[0], keyParts[2]
 
 		// Determine whether the flag belongs to a group or is known
-		switch {
-		case df.Group(group).Lookup(flagName) != nil:
-			// Handle grouped flags
-			if len(keyValueParts) == 2 {
-				known = append(known, arg) // `--group.identifier.flag=value`
-			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				known = append(known, arg, args[i+1]) // `--group.identifier.flag value`
-				i++
-			} else {
-				known = append(known, arg) // `--group.identifier.flag` without a value
-			}
-
-		case flagSet.Lookup(flagName) != nil:
-			// Handle known flags
-			if len(keyValueParts) == 2 {
-				known = append(known, arg) // `--flag=value`
-			} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				known = append(known, arg, args[i+1]) // `--flag value`
-				i++
-			} else {
-				known = append(known, arg) // `--flag` without a value
-			}
-
-		default:
-			// Unknown flag
+		if df.Group(group).Lookup(flagName) == nil {
 			unknown = append(unknown, arg)
+			continue
+		}
+
+		// Handle grouped flags
+		if len(keyValueParts) == 2 {
+			known = append(known, arg) // `--group.identifier.flag=value`
+		} else if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+			known = append(known, arg, args[i+1]) // `--group.identifier.flag value`
+			i++
+		} else {
+			known = append(known, arg) // `--group.identifier.flag` without a value
 		}
 	}
 
