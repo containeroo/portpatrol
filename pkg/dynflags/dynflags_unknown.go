@@ -1,32 +1,33 @@
 package dynflags
 
-// UnknownGroup represents a runtime group with parsed values.
+// UnknownGroup represents a runtime group with unrecognized values.
 type UnknownGroup struct {
 	Name   string                 // Identifier for the child group (e.g., "IDENTIFIER1").
-	Values map[string]interface{} // Unknown values for the group's flags.
+	Values map[string]interface{} // Unrecognized flags and their parsed values.
 }
 
-// Lookup retrieves the value of a flag in the parsed group.
-func (pg *UnknownGroup) Lookup(flagName string) interface{} {
-	return pg.Values[flagName]
+// Lookup retrieves the value of a flag in the unknown group.
+func (ug *UnknownGroup) Lookup(flagName string) interface{} {
+	return ug.Values[flagName]
 }
 
-// UnknownGroups represents all parsed groups with lookup and iteration support.
+// UnknownGroups represents all unknown groups with lookup and iteration support.
 type UnknownGroups struct {
-	groups map[string]map[string]*UnknownGroup // Nested map of group name -> identifier -> UnknownGroup.
+	groups       map[string]map[string]*UnknownGroup // Nested map of group name -> identifier -> UnknownGroup.
+	unparsedArgs []string                            // List of arguments that couldn't be parsed into groups or flags.
 }
 
-// Lookup retrieves a group by its name.
-func (pg *UnknownGroups) Lookup(groupName string) *UnknownIdentifiers {
-	if identifiers, exists := pg.groups[groupName]; exists {
+// Lookup retrieves unknown groups by name.
+func (ug *UnknownGroups) Lookup(groupName string) *UnknownIdentifiers {
+	if identifiers, exists := ug.groups[groupName]; exists {
 		return &UnknownIdentifiers{identifiers: identifiers}
 	}
 	return nil
 }
 
 // Groups returns the underlying map for direct iteration.
-func (pg *UnknownGroups) Groups() map[string]map[string]*UnknownGroup {
-	return pg.groups
+func (ug *UnknownGroups) Groups() map[string]map[string]*UnknownGroup {
+	return ug.groups
 }
 
 // UnknownIdentifiers provides lookup for identifiers within a group.
@@ -35,11 +36,11 @@ type UnknownIdentifiers struct {
 }
 
 // Lookup retrieves a specific identifier within a group.
-func (gi *UnknownIdentifiers) Lookup(identifier string) *UnknownGroup {
-	return gi.identifiers[identifier]
+func (ui *UnknownIdentifiers) Lookup(identifier string) *UnknownGroup {
+	return ui.identifiers[identifier]
 }
 
-// Unknown returns a UnknownGroups instance for the dynflags instance.
+// Unknown returns an UnknownGroups instance for the DynFlags instance.
 func (df *DynFlags) Unknown() *UnknownGroups {
 	parsed := make(map[string]map[string]*UnknownGroup)
 	for groupName, groups := range df.unknownGroups {
@@ -49,5 +50,13 @@ func (df *DynFlags) Unknown() *UnknownGroups {
 		}
 		parsed[groupName] = identifierMap
 	}
-	return &UnknownGroups{groups: parsed}
+	return &UnknownGroups{
+		groups:       parsed,
+		unparsedArgs: df.unparsedArgs,
+	}
+}
+
+// UnparsedArgs returns the list of unparseable arguments.
+func (df *DynFlags) UnparsedArgs() []string {
+	return df.unparsedArgs
 }

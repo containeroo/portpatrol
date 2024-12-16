@@ -52,8 +52,12 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	// Set up custom usage function
 	setupUsage(output, flagSet, dynFlags)
 
-	// Separate known and unknown flags
-	knownArgs, unknownArgs := dynFlags.SeparateKnownAndUnknownArgs(args)
+	// Parse unknown arguments with dynamic flags
+	if err := dynFlags.Parse(args); err != nil {
+		return nil, fmt.Errorf("error parsing dynamic flags: %w", err)
+	}
+
+	unknownArgs := dynFlags.UnparsedArgs()
 
 	// Parse known flags
 	if err := flagSet.Parse(unknownArgs); err != nil {
@@ -63,11 +67,6 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	// Handle special flags (e.g., --help or --version)
 	if err := handleSpecialFlags(flagSet, output, version); err != nil {
 		return nil, err
-	}
-
-	// Parse unknown arguments with dynamic flags
-	if err := dynFlags.Parse(knownArgs); err != nil {
-		return nil, fmt.Errorf("error parsing dynamic flags: %w", err)
 	}
 
 	// Retrieve the default interval value

@@ -11,11 +11,13 @@ import (
 )
 
 func main() {
+	// args := os.Args[1:]
+	args := []string{"--http.idenitfier1.method", "POST", "--http.idenitfier1.address", "https://example.com", "--tcp.idenitfier1.address", "127.0.0.1", "--tcp.idenitfier1.timeout", "10s", "--unknown.identifier2.name", "example 2"}
+
 	var output strings.Builder // create a io.Writer to capture output
 
 	// Initialize pflag with ContinueOnError behavior
 	flagSet := pflag.NewFlagSet("advanced", pflag.ContinueOnError)
-
 	// Add some flags
 	flagSet.Bool("debug", false, "Set debug mode")
 	flagSet.SetOutput(&output) // Output to the io.Writer
@@ -53,53 +55,18 @@ func main() {
 	tcpGroup.String("address", "", "TCP target address")
 	tcpGroup.Duration("timeout", 10*time.Second, "TCP timeout")
 
-	// Parse command-line arguments
-	// args := os.Args[1:]
-	args := []string{"--http.idenitfier1.method", "POST", "--http.idenitfier1.address", "https://example.com", "--tcp.idenitfier1.address", "127.0.0.1", "--tcp.idenitfier1.timeout", "10s", "--unknown.identifier2.name", "example 2"}
+	// Extra flags for dynflags
+
 	if err := dynFlags.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Access parsed values
-	for groupName, groups := range dynFlags.Parsed() {
-		for _, group := range groups {
-			fmt.Printf("Group: %s, Identifier: %s\n", groupName, group.Name)
+	unparsedArgs := dynFlags.UnparsedArgs()
 
-			method, _ := group.GetValue("method") // Generic way to get a value
-			strMethod, _ := method.(string)
-			fmt.Printf("  Method: %s\n", strMethod)
-
-			if address, err := group.GetString("address"); err == nil {
-				fmt.Printf("  Address: %s\n", address)
-			}
-			if timeout, err := group.GetDuration("timeout"); err == nil {
-				fmt.Printf("  Timeout: %s\n", timeout)
-			}
-		}
-	}
-
-	fmt.Println("")
-
-	// Handle unknown values
-	unknownGroups := dynFlags.Unknown()
-	for groupName, groups := range unknownGroups {
-		fmt.Printf("Unknown Group: %s\n", groupName)
-		for _, group := range groups {
-			fmt.Printf("  Identifier: %s\n", group.Name)
-			for key, value := range group.Unknown() {
-				fmt.Printf("    Unknown Flag: %s, Value: %v\n", key, value)
-			}
-		}
-	}
-
-	fmt.Println("")
-
-	// Retrieve specific unknown values
-	value, err := dynFlags.GetUnknownValue("unknown", "identifier", "value")
-	if err != nil {
-		fmt.Printf("Error: %s\n", err)
-	} else {
-		fmt.Printf("Specific Unknown Value: %v\n", value)
+	// Parse unknown flags with pflag
+	if err := flagSet.Parse(unparsedArgs); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+		os.Exit(1)
 	}
 }

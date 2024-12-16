@@ -10,24 +10,28 @@ func (df *DynFlags) Parse(args []string) error {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if !strings.HasPrefix(arg, "--") {
-			return fmt.Errorf("invalid flag format: %s", arg)
+			df.handleUnknownFlag("", "", "", arg)
+			continue
 		}
 
 		// Extract the key and value from the argument
 		fullKey, value, err := df.extractKeyValue(arg, args, &i)
 		if err != nil {
-			return err
+			df.handleUnknownFlag("", "", "", arg)
+			continue
 		}
 
 		// Split the fullKey into group, identifier, and flag name
 		parentName, identifier, flagName, err := df.splitKey(fullKey)
 		if err != nil {
-			return err
+			df.handleUnknownFlag("", "", "", arg)
+			continue
 		}
 
 		// Process groups and flags
 		if err := df.processFlag(parentName, identifier, flagName, value); err != nil {
-			return err
+			df.handleUnknownFlag("", "", "", arg)
+			continue
 		}
 	}
 	return nil
@@ -80,8 +84,7 @@ func (df *DynFlags) handleUnknownFlag(parentName, identifier, flagName, value st
 	case ExitOnError:
 		return fmt.Errorf("unknown flag '%s' in group '%s'", flagName, parentName)
 	case ContinueOnError:
-		return nil
-	case IgnoreUnknown:
+		df.unparsedArgs = append(df.unparsedArgs, value)
 		unknownGroup := df.createOrGetUnknownGroup(parentName, identifier)
 		unknownGroup.Values[flagName] = value
 		return nil

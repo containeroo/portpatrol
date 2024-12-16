@@ -58,13 +58,18 @@ dynflags.Parse(args)
 ```
 
 to parse the command line into the defined flags. `args` are the command-line arguments to parse.
-When using `pflag`, extract first knwon arguments with `dynflags.SeparateKnownAndUnknownArgs(args)` and use `pflag.Parse()` on the known arguments.
+When using `pflag`, the the ParseBehavior is set to `dynflags.ContinueOnError` and parse first `dynflags` and then `pflag`.
+Unparsed arguments are stored in `dynflags.UnparsedArgs()`.
 
 ```go
 args := os.Args[1:] // Skip the first argument (the executable name)
 
 // Separate known and unknown flags
-knownArgs, unknownArgs := dynFlags.SeparateKnownAndUnknownArgs(args)
+if err := dynFlags.Parse(args); err != nil {
+	return err
+}
+
+unknownArgs := dynFlags.UnparsedArgs()
 
 // Parse known flags
 if err := flagSet.Parse(unknownArgs); err != nil {
