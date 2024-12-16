@@ -63,7 +63,6 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	if err := flagSet.Parse(unknownArgs); err != nil {
 		return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
 	}
-
 	// Handle special flags (e.g., --help or --version)
 	if err := handleSpecialFlags(flagSet, version); err != nil {
 		return nil, err
