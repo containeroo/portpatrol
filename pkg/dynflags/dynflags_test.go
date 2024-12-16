@@ -124,12 +124,10 @@ func TestParsedGroupMethods(t *testing.T) {
 		assert.NoError(t, err)
 
 		parsedGroups := df.Parsed()
-		group := parsedGroups.Lookup("testGroup")
-		assert.NotNil(t, group)
+		assert.Len(t, parsedGroups.Groups(), 0)
 
-		identifier := group.Lookup("identifier1")
-		assert.NotNil(t, identifier)
-		assert.Nil(t, identifier.Lookup("nonExistentFlag"))
+		unknownGroup := df.Unknown()
+		assert.NotNil(t, unknownGroup)
 	})
 }
 
