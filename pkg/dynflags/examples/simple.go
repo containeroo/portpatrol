@@ -74,7 +74,7 @@ func main() {
 	fmt.Println("\n=== Lookup Example ===")
 
 	// Lookup a config group
-	httpConfig := dynFlags.Group("http")
+	httpConfig := dynFlags.Config().Lookup("http")
 	if httpConfig != nil {
 		fmt.Printf("Config Group 'http' exists, Flags: %v\n", httpConfig.Flags)
 	}
