@@ -12,7 +12,13 @@ import (
 
 func main() {
 	// args := os.Args[1:]
-	args := []string{"--http.idenitfier1.method", "POST", "--http.idenitfier1.address", "https://example.com", "--tcp.idenitfier1.address", "127.0.0.1", "--tcp.idenitfier1.timeout", "10s", "--unknown.identifier2.name", "example 2"}
+	args := []string{
+		"--http.idenitfier1.method", "POST",
+		"--http.idenitfier1.address", "https://example.com",
+		"--tcp.idenitfier1.address", "127.0.0.1",
+		"--tcp.idenitfier1.timeout", "10s",
+		"--unknown.identifier2.name", "example 2",
+	}
 
 	var output strings.Builder // create a io.Writer to capture output
 
@@ -23,7 +29,7 @@ func main() {
 	flagSet.SetOutput(&output) // Output to the io.Writer
 
 	// Initialize DynFlags with ContinueOnError behavior
-	dynFlags := dynflags.New(dynflags.ContinueOnError)
+	dynFlags := dynflags.New(dynflags.ParseUnknown)
 
 	// Set the output for the DynFlags instance to the same io.Writer
 	dynFlags.SetOutput(&output)
@@ -48,25 +54,52 @@ func main() {
 	httpGroup := dynFlags.Group("http")
 	httpGroup.String("method", "GET", "HTTP method to use")
 	httpGroup.String("address", "", "HTTP target URL")
-	httpGroup.Bool("secure", true, "Use secure connection (HTTPS)")
-	httpGroup.Duration("timeout", 5*time.Second, "Request timeout")
 
 	tcpGroup := dynFlags.Group("tcp")
 	tcpGroup.String("address", "", "TCP target address")
 	tcpGroup.Duration("timeout", 10*time.Second, "TCP timeout")
 
-	// Extra flags for dynflags
-
+	// Parse first with dynflags
 	if err := dynFlags.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		os.Exit(1)
 	}
 
+	// retrieve all unknown groups
 	unparsedArgs := dynFlags.UnparsedArgs()
 
-	// Parse unknown flags with pflag
+	// Parse flags wich were not parsed by dynflags with pflag
 	if err := flagSet.Parse(unparsedArgs); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Retrieve values from parsed group http
+	method := dynFlags.Parsed().Lookup("http").Lookup("idenitfier1").Lookup("method")
+	httpAddress := dynFlags.Parsed().Lookup("http").Lookup("idenitfier1").Lookup("address")
+
+	fmt.Println("Method:", method)
+	fmt.Println("Address:", httpAddress)
+
+	// Retrieve values from parsed group tcp
+	tcpAddress := dynFlags.Parsed().Lookup("tcp").Lookup("idenitfier1").Lookup("address")
+	tcpTimeout := dynFlags.Parsed().Lookup("tcp").Lookup("idenitfier1").Lookup("timeout")
+
+	fmt.Println("TCP Address:", tcpAddress)
+	fmt.Println("TCP Timeout:", tcpTimeout)
+
+	// Retrieve all unknown groups
+	unknownGroups := dynFlags.Unknown().Groups()
+	if len(unknownGroups) > 0 {
+		fmt.Println("\n=== Unknown Groups ===")
+		for groupName, groups := range unknownGroups {
+			fmt.Println("Group:", groupName)
+			for _, group := range groups {
+				fmt.Println("  Identifier:", group.Name)
+				for key, value := range group.Values {
+					fmt.Printf("    Flag: %s, Value: %v\n", key, value)
+				}
+			}
+		}
 	}
 }

@@ -11,6 +11,7 @@ type ParseBehavior int
 
 const (
 	ContinueOnError ParseBehavior = iota
+	ParseUnknown
 	ExitOnError
 )
 
