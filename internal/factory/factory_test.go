@@ -24,15 +24,15 @@ func TestBuildCheckers(t *testing.T) {
 		httpGroup.Bool("skip-tls-verify", false, "Skip TLS verification")
 		httpGroup.Duration("timeout", 2*time.Second, "Timeout")
 
-		err := df.Parse([]string{
+		args := []string{
 			"--http.mygroup.address=http://example.com",
 			"--http.mygroup.method=GET",
 			"--http.mygroup.interval=5s",
 			"--http.mygroup.headers=\"Content-Type=application/json\"",
 			"--http.mygroup.skip-tls-verify=true",
 			"--http.mygroup.timeout=2s",
-		})
-
+		}
+		err := df.Parse(args)
 		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
@@ -49,7 +49,9 @@ func TestBuildCheckers(t *testing.T) {
 		httpGroup := df.Group("http")
 		httpGroup.String("method", "GET", "HTTP method")
 
-		df.Parse([]string{"--http.mygroup.method=GET"})
+		args := []string{"--http.mygroup.method=GET"}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.Nil(t, checkers)
@@ -63,7 +65,9 @@ func TestBuildCheckers(t *testing.T) {
 		invalidGroup := df.Group("invalid")
 		invalidGroup.String("address", "invalid-address", "Invalid target address")
 
-		df.Parse([]string{"--invalid.mygroup.address=invalid-address"})
+		args := []string{"--invalid.mygroup.address=invalid-address"}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.Nil(t, checkers)
@@ -78,7 +82,12 @@ func TestBuildCheckers(t *testing.T) {
 		httpGroup.String("address", "http://example.com", "HTTP target address")
 		httpGroup.String("headers", "InvalidHeaderFormat", "HTTP headers")
 
-		df.Parse([]string{"--http.mygroup.address=http://example.com", "--http.mygroup.headers=InvalidHeaderFormat"})
+		args := []string{
+			"--http.mygroup.address=http://example.com",
+			"--http.mygroup.headers=InvalidHeaderFormat",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.Nil(t, checkers)
@@ -93,7 +102,12 @@ func TestBuildCheckers(t *testing.T) {
 		tcpGroup.String("address", "127.0.0.1:8080", "TCP target address")
 		tcpGroup.Duration("timeout", 3*time.Second, "Timeout")
 
-		df.Parse([]string{"--tcp.mygroup.address=127.0.0.1:8080", "--tcp.mygroup.timeout=3s"})
+		args := []string{
+			"--tcp.mygroup.address=127.0.0.1:8080",
+			"--tcp.mygroup.timeout=3s",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.NoError(t, err)
@@ -115,7 +129,6 @@ func TestBuildCheckers(t *testing.T) {
 			"--icmp.mygroup.read-timeout=2s",
 			"--icmp.mygroup.write-timeout=2s",
 		}
-
 		err := df.Parse(args)
 		assert.NoError(t, err)
 
@@ -151,7 +164,9 @@ func TestBuildCheckers(t *testing.T) {
 		httpGroup := df.Group("http")
 		httpGroup.String("address", "", "HTTP target address")
 
-		df.Parse([]string{"--http.mygroup.address="})
+		args := []string{"--http.mygroup.address="}
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.NotNil(t, checkers)
