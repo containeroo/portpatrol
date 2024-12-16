@@ -29,13 +29,19 @@ func TestDynFlagsGroupManagement(t *testing.T) {
 		t.Parallel()
 
 		df := dynflags.New(dynflags.ContinueOnError)
-		group := df.Group("group1")
 
+		// Create Group
+		group := df.Group("group1")
 		assert.NotNil(t, group)
 		assert.Contains(t, df.Config().Groups(), "group1")
 		assert.Equal(t, group, df.Config().Lookup("group1"))
 		assert.Equal(t, "group1", group.Name)
 		assert.NotNil(t, group.Flags)
+
+		// Get Group again
+		group = df.Group("group1")
+		assert.NotNil(t, group)
+		assert.Contains(t, df.Config().Groups(), "group1")
 	})
 }
 

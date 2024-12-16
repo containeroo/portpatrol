@@ -10,8 +10,11 @@ import (
 type ParseBehavior int
 
 const (
+	// Continue parsing on error
 	ContinueOnError ParseBehavior = iota
+	// Try to parse unknown flags. Unknown flags can be retrived with the method Unknown() on the DynFlags instance
 	ParseUnknown
+	// Exit on error
 	ExitOnError
 )
 
