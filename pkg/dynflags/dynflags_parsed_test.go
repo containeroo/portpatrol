@@ -43,7 +43,8 @@ func TestParsedGroups(t *testing.T) {
 
 		df := dynflags.New(dynflags.ContinueOnError)
 		args := []string{"--testgroup.identifier1.flag1", "value1"}
-		df.Parse(args)
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		group := df.Group("testGroup")
 		assert.NotNil(t, group)
@@ -72,15 +73,20 @@ func TestDynFlagsParsed(t *testing.T) {
 		}
 
 		df := dynflags.New(dynflags.ContinueOnError)
-		df.Parse(args)
+		g1 := df.Group("group1")
+		g1.String("flag1", "", "Description flag1")
+		g1.String("flag2", "", "Description flag2")
+
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		parsedGroups := df.Parsed()
 
 		group := parsedGroups.Lookup("group1")
 		assert.NotNil(t, group)
 		assert.Equal(t, "group1", group.Name)
-		assert.Equal(t, "value1", group.Lookup("flag1"))
-		assert.Equal(t, "value2", group.Lookup("flag2"))
+		assert.Equal(t, "value1", group.Lookup("identifier1").Lookup("flag1"))
+		assert.Equal(t, "value2", group.Lookup("identifier2").Lookup("flag2"))
 	})
 
 	t.Run("Handle no parsed groups", func(t *testing.T) {

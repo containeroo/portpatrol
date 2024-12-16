@@ -12,14 +12,19 @@ func (df *DynFlags) Parse(args []string) error {
 		// Extract the key and value from the argument
 		fullKey, value, err := df.extractKeyValue(arg, args, &i)
 		if err != nil {
-			df.handleUnknownFlag("", "", "", arg)
+			if err := df.handleUnknownFlag("", "", "", arg); err != nil {
+				return err
+			}
 			continue
 		}
 
 		// Split the fullKey into group, identifier, and flag name
 		parentName, identifier, flagName, err := df.splitKey(fullKey)
 		if err != nil {
-			df.handleUnknownFlag("", "", "", arg)
+			if err := df.handleUnknownFlag("", "", "", arg); err != nil {
+				return err
+			}
+
 			continue
 		}
 
@@ -44,9 +49,9 @@ func (df *DynFlags) extractKeyValue(arg string, args []string, index *int) (stri
 		return key, args[*index], nil
 	}
 
-	// Handle missing value
+	// If the argument cannot be parsed, add it directly to unparsedArgs
 	df.unparsedArgs = append(df.unparsedArgs, arg)
-	return "", "", nil
+	return "", "", fmt.Errorf("missing value for flag: %s", arg)
 }
 
 // splitKey splits a key into its parent group, identifier, and flag name.
@@ -85,7 +90,11 @@ func (df *DynFlags) handleUnknownFlag(parentName, identifier, flagName, value st
 		unknownGroup.Values[flagName] = value
 		return nil
 	case ContinueOnError:
-		df.unparsedArgs = append(df.unparsedArgs, fmt.Sprintf("--%s.%s.%s=%s", parentName, identifier, flagName, value))
+		if parentName == "" && identifier == "" && flagName == "" && value != "" {
+			df.unparsedArgs = append(df.unparsedArgs, value) // Append the original unparseable argument
+		} else {
+			df.unparsedArgs = append(df.unparsedArgs, fmt.Sprintf("--%s.%s.%s=%s", parentName, identifier, flagName, value))
+		}
 		return nil
 	}
 	return nil

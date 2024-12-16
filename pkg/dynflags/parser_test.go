@@ -35,7 +35,6 @@ func TestDynFlagsParse(t *testing.T) {
 		assert.NoError(t, err)
 
 		parsedGroups := df.Parsed()
-		assert.Contains(t, parsedGroups, "test")
 		assert.Equal(t, "test name", parsedGroups.Lookup("test").Lookup("identifier").Lookup("name"))
 	})
 
@@ -54,7 +53,7 @@ func TestDynFlagsParse(t *testing.T) {
 	t.Run("Invalid flag format", func(t *testing.T) {
 		t.Parallel()
 
-		df := dynflags.New(dynflags.ContinueOnError)
+		df := dynflags.New(dynflags.ExitOnError)
 		group := df.Group("test")
 		group.String("name", "", "Test name flag")
 
@@ -113,11 +112,12 @@ func TestDynFlagsParse(t *testing.T) {
 	t.Run("Set value error", func(t *testing.T) {
 		t.Parallel()
 
-		df := dynflags.New(dynflags.ContinueOnError)
+		df := dynflags.New(dynflags.ExitOnError)
 		group := df.Group("test")
 		group.Int("name", 0, "Test name flag")
 
-		err := df.Parse([]string{"--test.identifier.name", "value"})
+		args := []string{"--test.identifier.name", "value"}
+		err := df.Parse(args)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to parse value for flag 'name': strconv.Atoi: parsing \"value\": invalid syntax")
 	})

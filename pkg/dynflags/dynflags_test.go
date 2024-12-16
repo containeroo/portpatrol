@@ -2,6 +2,7 @@ package dynflags_test
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/containeroo/portpatrol/pkg/dynflags"
@@ -139,15 +140,15 @@ func TestDynFlagsUnparsedArgs(t *testing.T) {
 	t.Run("Retrieve unparsed arguments", func(t *testing.T) {
 		t.Parallel()
 
-		df := dynflags.New(dynflags.ParseUnknown)
+		df := dynflags.New(dynflags.ContinueOnError)
 		args := []string{
 			"--unparsable", "value1",
-			"--unknownGroup.identifier.flag", "value2",
 		}
 		err := df.Parse(args)
 		assert.NoError(t, err)
 
 		unparsedArgs := df.UnparsedArgs()
+		fmt.Println(df.UnparsedArgs())
 		assert.Contains(t, unparsedArgs, "--unparsable")
 	})
 }

@@ -53,7 +53,7 @@ func TestUnknownGroups(t *testing.T) {
 
 		group := unknownGroups.Lookup("unknown")
 		assert.NotNil(t, group)
-		assert.Equal(t, "testGroup", group.Name)
+		assert.Equal(t, "unknown", group.Name)
 	})
 
 	t.Run("Lookup non-existing unknown group", func(t *testing.T) {
@@ -81,18 +81,20 @@ func TestDynFlagsUnknown(t *testing.T) {
 
 		args := []string{
 			"--group1.identifier1.flag1", "value1",
+			"--group1.identifier2.flag2", "value2",
 		}
 
 		df := dynflags.New(dynflags.ParseUnknown)
-		df.Parse(args)
+		err := df.Parse(args)
+		assert.NoError(t, err)
 
 		unknownGroups := df.Unknown()
 
 		group := unknownGroups.Lookup("group1")
 		assert.NotNil(t, group)
 		assert.Equal(t, "group1", group.Name)
-		assert.Equal(t, "value1", group.Lookup("flag1"))
-		assert.Equal(t, "value2", group.Lookup("flag2"))
+		assert.Equal(t, "value1", group.Lookup("identifier1").Lookup("flag1"))
+		assert.Equal(t, "value2", group.Lookup("identifier2").Lookup("flag2"))
 	})
 
 	t.Run("Handle no unknown groups", func(t *testing.T) {
