@@ -38,11 +38,16 @@ func main() {
 	}
 
 	// ITERATION: Iterate over all config groups
-  fmt.Println("=== Iterating over Config Groups ===")
-  for groupName, groups := range dynFlags.ConfigGroups().Groups() {
+	fmt.Println("=== Iterating over Config Groups ===")
+	for groupName, group := range dynFlags.Config().Groups() {
+		fmt.Printf("Group: %s\n", groupName)
+		for flagName, flag := range group.Flags {
+			fmt.Printf("  Flag: %s, Default: %v, Usage: %s\n", flagName, flag.Default, flag.Usage)
+		}
+	}
 
 	// ITERATION: Iterate over all parsed groups
-	fmt.Println("=== Iterating over Parsed Groups ===")
+	fmt.Println("\n=== Iterating over Parsed Groups ===")
 	for groupName, groups := range dynFlags.Parsed().Groups() {
 		fmt.Printf("Group: %s\n", groupName)
 		for _, group := range groups {
@@ -53,6 +58,7 @@ func main() {
 		}
 	}
 
+	// ITERATION: Iterate over all unknown groups
 	fmt.Println("\n=== Iterating over Unknown Groups ===")
 	for groupName, groups := range dynFlags.Unknown().Groups() {
 		fmt.Printf("Unknown Group: %s\n", groupName)
@@ -67,35 +73,40 @@ func main() {
 	// LOOKUP: Direct access using Lookup methods
 	fmt.Println("\n=== Lookup Example ===")
 
-	// Lookup the "http" group
-	httpGroups, err := dynFlags.Parsed().Lookup("http")
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
+	// Lookup a config group
+	httpConfig := dynFlags.Config().Lookup("http")
+	if httpConfig != nil {
+		fmt.Printf("Config Group 'http' exists, Flags: %v\n", httpConfig.Flags)
 	}
 
-	// Lookup "identifier1" within the "http" group
-	httpIdentifier1 := httpGroups[0]
-	method, err := httpIdentifier1.Lookup("method")
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	} else {
-		fmt.Printf("HTTP Method (Lookup): %s\n", method)
+	// Lookup the "http" group
+	httpGroups := dynFlags.Parsed().Lookup("http")
+	if httpGroups != nil {
+		// Lookup "identifier1" within the "http" group
+		httpIdentifier1 := httpGroups.Lookup("identifier1")
+		if httpIdentifier1 != nil {
+			method := httpIdentifier1.Lookup("method")
+			fmt.Printf("HTTP Method (Lookup): %s\n", method)
+		}
 	}
 
 	// Lookup the "unknown" group
-	unknownGroups, err := dynFlags.Unknown().Lookup("unknown")
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
+	unknownGroups := dynFlags.Unknown().Lookup("unknown")
+	if unknownGroups != nil {
+		// Lookup "identifier3.flag" within the "unknown" group
+		unknownIdentifier3 := unknownGroups.Lookup("identifier3")
+		if unknownIdentifier3 != nil {
+			unknownValue := unknownIdentifier3.Lookup("flag")
+			fmt.Printf("Unknown Value (Lookup): %s\n", unknownValue)
+		}
 	}
 
-	// Lookup "identifier3.flag" within the "unknown" group
-	unknownIdentifier3 := unknownGroups[0]
-	unknownValue, err := unknownIdentifier3.Lookup("flag")
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	} else {
-		fmt.Printf("Unknown Value (Lookup): %s\n", unknownValue)
+	// LOOKUP: Direct flag retrieval from a config group
+	fmt.Println("\n=== Direct Flag Lookup ===")
+	if httpConfig != nil {
+		methodFlag := httpConfig.Lookup("method")
+		if methodFlag != nil {
+			fmt.Printf("HTTP Method Flag: Default = %v, Usage = %s\n", methodFlag.Default, methodFlag.Usage)
+		}
 	}
 }
