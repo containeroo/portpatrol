@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"testing"
@@ -19,8 +20,9 @@ import (
 func TestNewICMPCheckerValidIPv4(t *testing.T) {
 	t.Parallel()
 
-	w := WithICMPReadTimeout(2 * time.Second)
-	checker, err := newICMPChecker("ValidIPv4", "127.0.0.1", w)
+	r := WithICMPReadTimeout(2 * time.Second)
+	w := WithICMPWriteTimeout(2 * time.Second)
+	checker, err := newICMPChecker("ValidIPv4", "127.0.0.1", r, w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, checker.GetName(), "ValidIPv4")
@@ -138,6 +140,109 @@ func TestICMPCheckerCheckWriteError(t *testing.T) {
 	assert.EqualError(t, err, "failed to send ICMP request: mock write error")
 }
 
+func TestICMPCheckerCheckListenPacketError(t *testing.T) {
+	t.Parallel()
+
+	mockProtocol := &testutils.MockProtocol{
+		MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
+			return []byte{}, nil
+		},
+		NetworkFunc: func() string {
+			return "ip4:icmp"
+		},
+		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
+			return nil, fmt.Errorf("mock listen packet error")
+		},
+	}
+
+	checker := &ICMPChecker{
+		name:         "ListenPacketErrorChecker",
+		address:      "127.0.0.1",
+		protocol:     mockProtocol,
+		readTimeout:  2 * time.Second,
+		writeTimeout: 2 * time.Second,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := checker.Check(ctx)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to listen for ICMP packets: mock listen packet error")
+}
+
+func TestICMPCheckerCheckMakeRequestError(t *testing.T) {
+	t.Parallel()
+
+	mockProtocol := &testutils.MockProtocol{
+		MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
+			return []byte{}, errors.New("mock make request error")
+		},
+		ValidateReplyFunc: func(reply []byte, id, seq uint16) error {
+			return fmt.Errorf("mock validation error")
+		},
+		NetworkFunc: func() string {
+			return "ip4:icmp"
+		},
+		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
+			return &testutils.MockPacketConn{}, nil
+		},
+	}
+
+	checker := &ICMPChecker{
+		name:         "WriteDeadlineErrorChecker",
+		address:      "127.0.0.1",
+		protocol:     mockProtocol,
+		readTimeout:  2 * time.Second,
+		writeTimeout: 2 * time.Second,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := checker.Check(ctx)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to create ICMP request: mock make request error")
+}
+
+func TestICMPCheckerCheckWriteDeadlineError(t *testing.T) {
+	t.Parallel()
+
+	mockProtocol := &testutils.MockProtocol{
+		MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
+			return []byte{}, nil
+		},
+		NetworkFunc: func() string {
+			return "ip4:icmp"
+		},
+		SetDeadlineFunc: func(t time.Time) error {
+			return fmt.Errorf("mock write deadline error")
+		},
+		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
+			return &testutils.MockPacketConn{
+				WriteToFunc: func(b []byte, addr net.Addr) (int, error) {
+					return 0, fmt.Errorf("mock write error")
+				},
+			}, nil
+		},
+	}
+
+	checker := &ICMPChecker{
+		name:         "WriteDeadlineErrorChecker",
+		address:      "127.0.0.1",
+		protocol:     mockProtocol,
+		readTimeout:  2 * time.Second,
+		writeTimeout: 2 * time.Second,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := checker.Check(ctx)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to send ICMP request: mock write error")
+}
+
 // TestICMPCheckerCheckReadError tests ICMP checking with a failure to read from the connection.
 func TestICMPCheckerCheckReadError(t *testing.T) {
 	t.Parallel()
@@ -173,8 +278,81 @@ func TestICMPCheckerCheckReadError(t *testing.T) {
 	assert.EqualError(t, err, "failed to read ICMP reply: mock read error")
 }
 
-// TestICMPCheckerCheckValidationError tests ICMP checking with a failure to validate the ICMP reply.
-func TestICMPCheckerCheckValidationError(t *testing.T) {
+func TestICMPCheckerSetWriteDeadlineError(t *testing.T) {
+	t.Parallel()
+
+	mockProtocol := &testutils.MockProtocol{
+		MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
+			return []byte{}, nil
+		},
+		ValidateReplyFunc: func(reply []byte, id, seq uint16) error {
+			return nil
+		},
+		NetworkFunc: func() string {
+			return "ip4:icmp"
+		},
+		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
+			return &testutils.MockPacketConn{
+				SetWriteDeadlineFunc: func(t time.Time) error {
+					return fmt.Errorf("mock write deadline error")
+				},
+			}, nil
+		},
+	}
+
+	checker := &ICMPChecker{
+		name:        "SetWriteDeadlineErrorChecker",
+		address:     "127.0.0.1",
+		protocol:    mockProtocol,
+		readTimeout: 2 * time.Second,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := checker.Check(ctx)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to set write deadline: mock write deadline error")
+}
+
+func TestICMPCheckerSetReadDeadlineError(t *testing.T) {
+	t.Parallel()
+
+	mockProtocol := &testutils.MockProtocol{
+		MakeRequestFunc: func(id, seq uint16) ([]byte, error) {
+			return []byte{}, nil
+		},
+		ValidateReplyFunc: func(reply []byte, id, seq uint16) error {
+			return nil
+		},
+		NetworkFunc: func() string {
+			return "ip4:icmp"
+		},
+		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
+			return &testutils.MockPacketConn{
+				SetReadDeadlineFunc: func(t time.Time) error {
+					return fmt.Errorf("mock write deadline error")
+				},
+			}, nil
+		},
+	}
+
+	checker := &ICMPChecker{
+		name:        "SetReadDeadlineErrorChecker",
+		address:     "127.0.0.1",
+		protocol:    mockProtocol,
+		readTimeout: 2 * time.Second,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := checker.Check(ctx)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to set read deadline: mock write deadline error")
+}
+
+func TestICMPCheckerValidateReplyError(t *testing.T) {
 	t.Parallel()
 
 	mockProtocol := &testutils.MockProtocol{
@@ -193,7 +371,7 @@ func TestICMPCheckerCheckValidationError(t *testing.T) {
 	}
 
 	checker := &ICMPChecker{
-		name:        "ValidationErrorChecker",
+		name:        "ValidateReplyErrorChecker",
 		address:     "127.0.0.1",
 		protocol:    mockProtocol,
 		readTimeout: 2 * time.Second,

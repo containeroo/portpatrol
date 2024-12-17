@@ -95,6 +95,15 @@ func TestICMPv4_SetDeadline(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
+
+	t.Run("SetDeadline Error", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv4{conn: nil}
+		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
+
+		assert.Error(t, err)
+	})
 }
 
 func TestICMPv4_ValidateReply(t *testing.T) {
@@ -286,6 +295,15 @@ func TestICMPv6_SetDeadline(t *testing.T) {
 		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
 
 		assert.NoError(t, err)
+	})
+
+	t.Run("SetDeadline Error", func(t *testing.T) {
+		t.Parallel()
+
+		protocol := &ICMPv6{conn: nil}
+		err := protocol.SetDeadline(time.Now().Add(1 * time.Second))
+
+		assert.Error(t, err)
 	})
 }
 

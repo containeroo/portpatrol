@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRunHTTPReady(t *testing.T) {
@@ -33,17 +35,12 @@ func TestRunHTTPReady(t *testing.T) {
 	defer cancel()
 
 	err := run(ctx, args, &output)
-	if err != nil {
-		t.Fatalf("Expected no error, got %q", err)
-	}
+	assert.NoError(t, err)
 
 	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
 	last := len(outputEntries) - 1
 
-	expected := "HTTPServer is ready ✓"
-	if !strings.Contains(outputEntries[last], expected) {
-		t.Errorf("Expected output to contain %q but got %q", expected, output.String())
-	}
+	assert.Contains(t, outputEntries[last], "HTTPServer is ready ✓")
 }
 
 func TestRunTCPReady(t *testing.T) {
@@ -57,9 +54,7 @@ func TestRunTCPReady(t *testing.T) {
 	}
 
 	listener, err := net.Listen("tcp", "localhost:8082")
-	if err != nil {
-		t.Fatalf("Failed to start TCP server: %q", err)
-	}
+	assert.NoError(t, err)
 	defer listener.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -67,17 +62,12 @@ func TestRunTCPReady(t *testing.T) {
 
 	var output strings.Builder
 	err = run(ctx, args, &output)
-	if err != nil {
-		t.Fatalf("Expected no error, got %q", err)
-	}
+	assert.NoError(t, err)
 
 	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
 	last := len(outputEntries) - 1
 
-	expected := "TCPServer is ready ✓"
-	if !strings.Contains(outputEntries[last], expected) {
-		t.Errorf("Expected output to contain %q but got %q", expected, output.String())
-	}
+	assert.Contains(t, outputEntries[last], "TCPServer is ready ✓")
 }
 
 func TestRunConfigErrorMissingTarget(t *testing.T) {
@@ -90,14 +80,9 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 
 	var output bytes.Buffer
 	err := run(ctx, args, &output)
-	if err == nil {
-		t.Fatalf("Expected configuration error, got none")
-	}
 
-	expected := "configuration error: no checkers configured"
-	if err.Error() != expected {
-		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.EqualError(t, err, "configuration error: no checkers configured")
 }
 
 func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
@@ -115,14 +100,9 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 
 	var output bytes.Buffer
 	err := run(ctx, args, &output)
-	if err == nil {
-		t.Fatal("Expected error, got none")
-	}
 
-	expected := "configuration error: no checkers configured"
-	if err.Error() != expected {
-		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
-	}
+	assert.Error(t, err)
+	assert.EqualError(t, err, "configuration error: no checkers configured")
 }
 
 func TestRunConfigErrorInvalidHeaders(t *testing.T) {
@@ -141,12 +121,43 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 
 	var output bytes.Buffer
 	err := run(ctx, args, &output)
-	if err == nil {
-		t.Fatal("Expected error, got none")
+
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to initialize target checkers: invalid \"--http.invalidheaders.headers\": invalid header format: InvalidHeader")
+}
+
+func TestRunParseError(t *testing.T) {
+	t.Parallel()
+
+	args := []string{
+		"--http.invalidheaders.name=TestService",
+		"--invalid",
 	}
 
-	expected := "failed to initialize target checkers: invalid \"--http.invalidheaders.headers\": invalid header format: InvalidHeader"
-	if !strings.Contains(err.Error(), expected) {
-		t.Errorf("Expected error to contain %q, got %q", expected, err.Error())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var output bytes.Buffer
+	err := run(ctx, args, &output)
+
+	assert.Error(t, err)
+	assert.EqualError(t, err, "configuration error: Flag parsing error: unknown flag: --invalid")
+}
+
+func TestRunShowVersion(t *testing.T) {
+	t.Parallel()
+
+	args := []string{
+		"--http.invalidheaders.name=TestService",
+		"--http.invalidheaders.address=http://localhost:8080",
+		"--version",
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var output bytes.Buffer
+	err := run(ctx, args, &output)
+
+	assert.NoError(t, err)
 }
