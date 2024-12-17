@@ -3,46 +3,52 @@ package checker
 import (
 	"context"
 	"net"
-	"strings"
 	"time"
 )
 
+const defaultTCPTimeout time.Duration = 1 * time.Second
+
 // TCPChecker implements the Checker interface for TCP checks.
 type TCPChecker struct {
-	Name    string      // The name of the checker.
-	Address string      // The address of the target.
-	dialer  *net.Dialer // The dialer to use for the connection.
+	name    string
+	address string
+	dialer  *net.Dialer
 }
 
-// String returns the name of the checker.
-func (c *TCPChecker) String() string {
-	return c.Name
-}
-
-// NewTCPChecker creates a new TCPChecker.
-func NewTCPChecker(name, address string, timeout time.Duration) (Checker, error) {
-	// The "tcp://" prefix is used to identify the check type and is not needed for further processing,
-	// so it must be removed before passing the address to other functions.
-	address = strings.TrimPrefix(address, "tcp://")
-
-	checker := TCPChecker{
-		Address: address,
-		Name:    name,
-		dialer: &net.Dialer{
-			Timeout: timeout,
-		},
-	}
-
-	return &checker, nil
-}
-
-// Check performs a TCP connection check.
+func (c *TCPChecker) GetAddress() string { return c.address }
+func (c *TCPChecker) GetName() string    { return c.name }
+func (c *TCPChecker) GetType() string    { return TCP.String() }
 func (c *TCPChecker) Check(ctx context.Context) error {
-	conn, err := c.dialer.DialContext(ctx, "tcp", c.Address)
+	conn, err := c.dialer.DialContext(ctx, "tcp", c.address)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-
 	return nil
+}
+
+// newTCPChecker creates a new TCPChecker with functional options.
+func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) {
+	checker := &TCPChecker{
+		name:    name,
+		address: address,
+		dialer: &net.Dialer{
+			Timeout: defaultTCPTimeout,
+		},
+	}
+
+	for _, opt := range opts {
+		opt.apply(checker)
+	}
+
+	return checker, nil
+}
+
+// WithTCPTimeout sets the timeout for the TCPChecker.
+func WithTCPTimeout(timeout time.Duration) Option {
+	return OptionFunc(func(c Checker) {
+		if tcpChecker, ok := c.(*TCPChecker); ok {
+			tcpChecker.dialer.Timeout = timeout
+		}
+	})
 }

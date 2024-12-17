@@ -2,132 +2,172 @@ package config
 
 import (
 	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
+	"io"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/containeroo/portpatrol/pkg/dynflags"
+	"github.com/spf13/pflag"
 )
 
 const (
-	envTargetName      string = "TARGET_NAME"
-	envTargetAddress   string = "TARGET_ADDRESS"
-	envTargetCheckType string = "TARGET_CHECK_TYPE"
-	envCheckInterval   string = "CHECK_INTERVAL"
-	envDialTimeout     string = "DIAL_TIMEOUT"
-	envLogExtraFields  string = "LOG_EXTRA_FIELDS"
-
-	defaultTargetCheckType checker.CheckType = checker.TCP
-	defaultCheckInterval   time.Duration     = 2 * time.Second
-	defaultDialTimeout     time.Duration     = 1 * time.Second
-	defaultLogExtraFields  bool              = false
+	paramDefaultInterval             string        = "default-interval"
+	defaultCheckInterval             time.Duration = 2 * time.Second
+	defaultHTTPAllowDuplicateHeaders bool          = false
+	defaultHTTPSkipTLSVerify         bool          = false
 )
 
-// Config holds the required environment variables.
-type Config struct {
-	Version         string            // The version of the application.
-	TargetName      string            // The name of the target.
-	TargetAddress   string            // The address of the target.
-	TargetCheckType checker.CheckType // Type of check: "tcp", "http" or "icmp".
-	CheckInterval   time.Duration     // The interval between connection attempts.
-	DialTimeout     time.Duration     // The timeout for dialing the target.
-	LogExtraFields  bool              // Whether to log the fields in the log message.
+type HelpRequested struct {
+	Message string
 }
 
-// ParseConfig retrieves and parses the required environment variables.
-// Provides default values if the environment variables are not set.
-func ParseConfig(getEnv func(string) string) (Config, error) {
-	cfg := Config{
-		TargetName:      getEnv(envTargetName),
-		TargetAddress:   getEnv(envTargetAddress),
-		TargetCheckType: defaultTargetCheckType,
-		CheckInterval:   defaultCheckInterval,
-		DialTimeout:     defaultDialTimeout,
-		LogExtraFields:  defaultLogExtraFields,
-	}
-
-	if cfg.TargetAddress == "" {
-		return Config{}, fmt.Errorf("%s environment variable is required", envTargetAddress)
-	}
-
-	if cfg.TargetName == "" {
-		address := cfg.TargetAddress
-		if !strings.Contains(address, "://") {
-			address = fmt.Sprintf("http://%s", address) // Prepend scheme if missing to avoid url.Parse error
-		}
-
-		// Use url.Parse to handle both cases: with and without a port
-		parsedURL, err := url.Parse(address)
-		if err != nil {
-			return Config{}, fmt.Errorf("could not parse target address: %w", err)
-		}
-
-		hostname := parsedURL.Hostname() // Extract the hostname
-		if hostname == "" {
-			return Config{}, fmt.Errorf("could not extract hostname from target address: %s", cfg.TargetAddress)
-		}
-
-		cfg.TargetName = hostname
-	}
-
-	// Parse the interval
-	if intervalStr := getEnv(envCheckInterval); intervalStr != "" {
-		interval, err := time.ParseDuration(intervalStr)
-		if err != nil || interval <= 0 {
-			return Config{}, fmt.Errorf("invalid %s value: %s", envCheckInterval, intervalStr)
-		}
-		cfg.CheckInterval = interval
-	}
-
-	// Parse the dial timeout
-	if dialTimeoutStr := getEnv(envDialTimeout); dialTimeoutStr != "" {
-		dialTimeout, err := time.ParseDuration(dialTimeoutStr)
-		if err != nil || dialTimeout <= 0 {
-			return Config{}, fmt.Errorf("invalid %s value: %s", envDialTimeout, dialTimeoutStr)
-		}
-		cfg.DialTimeout = dialTimeout
-	}
-
-	// Parse the log additional fields
-	if logFieldsStr := getEnv(envLogExtraFields); logFieldsStr != "" {
-		logExtraFields, err := strconv.ParseBool(logFieldsStr)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid %s value: %s", envLogExtraFields, logFieldsStr)
-		}
-		cfg.LogExtraFields = logExtraFields
-	}
-
-	// Resolve TargetCheckType
-	if err := resolveTargetCheckType(&cfg, getEnv); err != nil {
-		return Config{}, err
-	}
-
-	return cfg, nil
+func (e *HelpRequested) Error() string {
+	return e.Message
 }
 
-// resolveTargetCheckType handles the logic for determining the check type
-func resolveTargetCheckType(cfg *Config, getEnv func(string) string) error {
-	// First, check if envTargetCheckType is explicitly set
-	if checkTypeStr := getEnv(envTargetCheckType); checkTypeStr != "" {
-		checkType, err := checker.GetCheckTypeFromString(checkTypeStr)
-		if err != nil {
-			return fmt.Errorf("invalid check type from environment: %w", err)
-		}
-		cfg.TargetCheckType = checkType
-		return nil
+// Is returns true if the error is a HelpRequested error.
+func (e *HelpRequested) Is(target error) bool {
+	_, ok := target.(*HelpRequested)
+	return ok
+}
+
+// ParsedFlags holds the parsed command-line flags.
+type ParsedFlags struct {
+	ShowHelp             bool
+	ShowVersion          bool
+	Version              string
+	DefaultCheckInterval time.Duration
+	DynFlags             *dynflags.DynFlags
+}
+
+// ParseFlags parses command-line arguments and returns the parsed flags.
+func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, error) {
+	// Create global flagSet and dynamic flags
+	flagSet := setupGlobalFlags()
+	dynFlags := setupDynamicFlags()
+
+	// Set output for flagSet and dynFlags
+	flagSet.SetOutput(output)
+	dynFlags.SetOutput(output)
+
+	// Set up custom usage function
+	setupUsage(output, flagSet, dynFlags)
+
+	// Parse unknown arguments with dynamic flags
+	if err := dynFlags.Parse(args); err != nil {
+		return nil, fmt.Errorf("error parsing dynamic flags: %w", err)
 	}
 
-	// If envTargetCheckType is not set, try to infer it from the target address
-	parts := strings.SplitN(cfg.TargetAddress, "://", 2) // parts[0] is the scheme, parts[1] is the address
-	if len(parts) == 2 {
-		checkType, err := checker.GetCheckTypeFromString(parts[0])
-		if err != nil {
-			return fmt.Errorf("could not infer check type from address %s: %w", cfg.TargetAddress, err)
-		}
-		cfg.TargetCheckType = checkType
-		return nil
+	unknownArgs := dynFlags.UnparsedArgs()
+
+	// Parse known flags
+	if err := flagSet.Parse(unknownArgs); err != nil {
+		return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
+	}
+	// Handle special flags (e.g., --help or --version)
+	if err := handleSpecialFlags(flagSet, version); err != nil {
+		return nil, err
+	}
+
+	// Retrieve the default interval value
+	defaultInterval, err := getDurationFlag(flagSet, paramDefaultInterval, defaultCheckInterval)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ParsedFlags{
+		DefaultCheckInterval: defaultInterval,
+		DynFlags:             dynFlags,
+	}, nil
+}
+
+// setupGlobalFlags sets up global application flags.
+func setupGlobalFlags() *pflag.FlagSet {
+	flagSet := pflag.NewFlagSet("portpatrol", pflag.ContinueOnError)
+	flagSet.SortFlags = false
+
+	flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
+	flagSet.Bool("version", false, "Show version and exit.")
+	flagSet.BoolP("help", "h", false, "Show help.")
+
+	return flagSet
+}
+
+// setupDynamicFlags sets up dynamic flags for HTTP, TCP, ICMP.
+func setupDynamicFlags() *dynflags.DynFlags {
+	dynFlags := dynflags.New(dynflags.ContinueOnError)
+	dynFlags.Epilog("For more information, see https://github.com/containeroo/portpatrol")
+	dynFlags.SortGroups = true
+	dynFlags.SortFlags = true
+
+	// HTTP flags
+	httpFlags := dynFlags.Group("http")
+	httpFlags.String("name", "", "Name of the HTTP checker")
+	httpFlags.String("method", "GET", "HTTP method to use")
+	httpFlags.String("address", "", "HTTP target URL")
+	httpFlags.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.")
+	httpFlags.StringSlices("header", nil, "HTTP headers to send")
+	httpFlags.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
+	httpFlags.String("expected-status-codes", "200", "Expected HTTP status codes")
+	httpFlags.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
+	httpFlags.Duration("timeout", 2*time.Second, "Timeout in seconds")
+
+	// ICMP flags
+	icmpFlags := dynFlags.Group("icmp")
+	icmpFlags.String("name", "", "Name of the ICMP checker")
+	icmpFlags.String("address", "", "ICMP target address")
+	icmpFlags.Duration("interval", 1*time.Second, "Time between ICMP requests. Can be overwritten with --default-interval.")
+	icmpFlags.Duration("read-timeout", 2*time.Second, "Timeout for ICMP read")
+	icmpFlags.Duration("write-timeout", 2*time.Second, "Timeout for ICMP write")
+
+	// TCP flags
+	tcpFlags := dynFlags.Group("tcp")
+	tcpFlags.String("name", "", "Name of the TCP checker")
+	tcpFlags.String("address", "", "TCP target address")
+	tcpFlags.Duration("timeout", 2*time.Second, "Timeout for TCP connection")
+	tcpFlags.Duration("interval", 1*time.Second, "Time between TCP requests. Can be overwritten with --default-interval.")
+
+	return dynFlags
+}
+
+// setupUsage sets the custom usage function.
+func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
+	flagSet.Usage = func() {
+		fmt.Fprintln(output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+
+		fmt.Fprintln(output, "\nGlobal Flags:")
+		flagSet.PrintDefaults()
+
+		fmt.Fprintln(output, "\nDynamic Flags:")
+		dynFlags.PrintDefaults()
+	}
+}
+
+// handleSpecialFlags handles help and version flags.
+func handleSpecialFlags(flagSet *pflag.FlagSet, version string) error {
+	if flagSet.Lookup("help").Value.String() == "true" {
+		flagSet.Usage()
+		return &HelpRequested{Message: ""}
+	}
+
+	if flagSet.Lookup("version").Value.String() == "true" {
+		return &HelpRequested{Message: fmt.Sprintf("PortPatrol version %s\n", version)}
 	}
 
 	return nil
+}
+
+// Example of getting a flag value as a time.Duration
+func getDurationFlag(flagSet *pflag.FlagSet, name string, defaultValue time.Duration) (time.Duration, error) {
+	flag := flagSet.Lookup(name)
+	if flag == nil {
+		return defaultValue, nil
+	}
+
+	// Parse the flag value from string to time.Duration
+	value, err := time.ParseDuration(flag.Value.String())
+	if err != nil {
+		return defaultValue, fmt.Errorf("invalid duration for flag '%s'", flag.Value.String())
+	}
+
+	return value, nil
 }

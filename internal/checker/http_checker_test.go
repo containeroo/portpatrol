@@ -5,77 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"os"
-	"reflect"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHTTPChecker(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid HTTP check config", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:                "POST",
-				envHTTPHeaders:               "Authorization=Bearer token",
-				envHTTPExpectedStatusCodes:   "201",
-				envHTTPSkipTLSVerify:         "false",
-				envHTTPAllowDuplicateHeaders: "false",
-			}
-			return env[key]
-		}
-
-		checker, err := NewHTTPChecker("example", "http://localhost:8080", 10*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		checkerConfig := checker.(*HTTPChecker) // Type assertion to *HTTPChecker
-
-		expected := "example"
-		if checkerConfig.Name != expected {
-			t.Errorf("expected Name to be '%s', got %v", expected, checkerConfig.Name)
-		}
-
-		expected = "http://localhost:8080"
-		if checkerConfig.Address != expected {
-			t.Errorf("expected Address to be '%s', got %v", expected, checkerConfig.Address)
-		}
-
-		expected = "POST"
-		if checkerConfig.Method != expected {
-			t.Errorf("expected Method to be '%s', got %v", expected, checkerConfig.Method)
-		}
-
-		expectedInsecureSkipVerify := false
-		if checkerConfig.client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify != expectedInsecureSkipVerify {
-			t.Errorf("expected client.Transport.TLSClientConfig.InsecureSkipVerify to be %v, got %v", expectedInsecureSkipVerify, checkerConfig.client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify)
-		}
-
-		expectedStatusCodes := []int{201}
-		if len(checkerConfig.ExpectedStatusCodes) != len(expectedStatusCodes) || checkerConfig.ExpectedStatusCodes[0] != expectedStatusCodes[0] {
-			t.Errorf("expected ExpectedStatusCodes to be %v, got %v", expectedStatusCodes, checkerConfig.ExpectedStatusCodes)
-		}
-
-		expectedHeaders := map[string]string{"Authorization": "Bearer token"}
-		for key, value := range expectedHeaders {
-			if checkerConfig.Headers[key] != value {
-				t.Errorf("expected Headers[%s] to be '%s', got '%s'", key, value, checkerConfig.Headers[key])
-			}
-		}
-
-		expectedTimeout := 10 * time.Second
-		if checkerConfig.client.Timeout != expectedTimeout {
-			t.Errorf("expected client Timeout to be '%v', got %v", expectedTimeout, checkerConfig.client.Timeout)
-		}
-	})
-
-	t.Run("Valid HTTP check", func(t *testing.T) {
+	t.Run("Valid HTTP check with default configuration", func(t *testing.T) {
 		t.Parallel()
 
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -84,357 +23,153 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Auportpatrolization=Bearer token",
-				envHTTPExpectedStatusCodes: "200",
-			}
-			return env[key]
-		}
+		checker, err := newHTTPChecker("example", server.URL)
+		assert.NoError(t, err)
 
-		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, checker.GetAddress(), server.URL)
 	})
-	t.Run("no scheme", func(t *testing.T) {
+
+	t.Run("HTTP check with custom headers", func(t *testing.T) {
 		t.Parallel()
 
-		// Set up a test HTTP server with a unexpected status code
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		})
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Auportpatrolization=Bearer token",
-				envHTTPExpectedStatusCodes: "200",
+			if r.Header.Get("Authorization") != "Bearer token" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
 			}
-			return env[key]
-		}
-
-		url, err := url.Parse(server.URL)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		checker, err := NewHTTPChecker("example", fmt.Sprintf("%s:%s", url.Hostname(), url.Port()), 1*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-		defer cancel()
-
-		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("failed to create request: parse \"%s:%s\": first path segment in URL cannot contain colon", url.Hostname(), url.Port())
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Unexpected status code", func(t *testing.T) {
-		t.Parallel()
-
-		// Set up a test HTTP server with a unexpected status code
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		})
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Auportpatrolization=Bearer token",
-				envHTTPExpectedStatusCodes: "200",
-			}
-			return env[key]
-		}
-
-		checker, err := NewHTTPChecker("example", server.URL, 1*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-		defer cancel()
-
-		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "unexpected status code: got 404, expected one of [200]"
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Cancel HTTP check", func(t *testing.T) {
-		t.Parallel()
-
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			time.Sleep(1 * time.Second) // Delay to ensure the context has time to be canceled
 			w.WriteHeader(http.StatusOK)
 		})
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Auportpatrolization=Bearer token",
-				envHTTPExpectedStatusCodes: "200",
-			}
-			return env[key]
-		}
+		checker, err := newHTTPChecker("example", server.URL, WithHTTPHeaders(map[string]string{"Authorization": "Bearer token"}))
+		assert.NoError(t, err)
 
-		checker, err := NewHTTPChecker("example", server.URL, 5*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		// Cancel the context after a very short time
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-		defer cancel()
-
-		// Perform the check, expecting a context canceled error
-		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := "context deadline exceeded"
-		if !strings.Contains(err.Error(), expected) {
-			t.Errorf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid HTTP check (malformed URL)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				"METHOD":            "GET",
-				"HEADERS":           "Auportpatrolization=Bearer token",
-				"EXPECTED_STATUSES": "200",
-			}
-			return env[key]
-		}
-
-		// Use a malformed URL to trigger an error in creating the request
-		checker, err := NewHTTPChecker("example", "://invalid-url", 5*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("failed to create HTTPChecker: %q", err)
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := "failed to create request: parse \"://invalid-url\": missing protocol scheme"
-		if err.Error() != expected {
-			t.Errorf("expected error containing %q, got %q", expected, err)
-		}
+		assert.NoError(t, err)
 	})
 
-	t.Run("Valid HTTP check (duplicate headers)", func(t *testing.T) {
+	t.Run("HTTP check with unexpected status code", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPAllowDuplicateHeaders: "true",
-				envHTTPMethod:                "GET",
-				envHTTPHeaders:               "Content-Type=application/json,Content-Type=application/json",
-				envHTTPExpectedStatusCodes:   "200",
-			}
-			return env[key]
-		}
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		})
+		server := httptest.NewServer(handler)
+		defer server.Close()
 
-		checker, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		checker, err := newHTTPChecker("example", server.URL)
+		assert.NoError(t, err)
 
-		c := checker.(*HTTPChecker) // Cast the checker to HTTPChecker
-
-		expectedHeaders := map[string]string{
-			"Content-Type": "application/json",
-		}
-
-		if !reflect.DeepEqual(c.Headers, expectedHeaders) {
-			t.Fatalf("expected headers %v, got %v", expectedHeaders, c.Headers)
-		}
-	})
-
-	t.Run("Invalid HTTP check (duplicate headers)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Content-Type=application/json,Content-Type=application/json",
-				envHTTPExpectedStatusCodes: "200",
-			}
-			return env[key]
-		}
-
-		_, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := "invalid HTTP_HEADERS value: duplicate header key found: Content-Type"
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid HTTP check (malformed status range)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Auportpatrolization=Bearer token",
-				envHTTPExpectedStatusCodes: "202-200",
-			}
-			return env[key]
-		}
-
-		_, err := NewHTTPChecker("example", "localhost:7654", 1*time.Second, mockEnv)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: invalid status range: 202-200", envHTTPExpectedStatusCodes)
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid HTTP check (malformed header)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPHeaders:             "Auportpatrolization Bearer token", // Missing '=' in the header
-				envHTTPExpectedStatusCodes: "200",
-			}
-			return env[key]
-		}
-
-		_, err := NewHTTPChecker("example", "http://example.com", 1*time.Second, mockEnv)
-		if err == nil {
-			t.Errorf("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: invalid header format: Auportpatrolization Bearer token", envHTTPHeaders)
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid HTTP check (malformed HTTP_ALLOW_DUPLICATE_HEADERS)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:                "GET",
-				envHTTPHeaders:               "Content-Type=application/json,Content-Type=application/json",
-				envHTTPAllowDuplicateHeaders: "invalid",
-				envHTTPExpectedStatusCodes:   "200",
-			}
-			return env[key]
-		}
-
-		_, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: strconv.ParseBool: parsing \"invalid\": invalid syntax", envHTTPAllowDuplicateHeaders)
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid HTTP check (malformed HTTP_SKIP_TLS_VERIFY)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envHTTPMethod:              "GET",
-				envHTTPSkipTLSVerify:       "invalid",
-				envHTTPExpectedStatusCodes: "200",
-			}
-			return env[key]
-		}
-
-		_, err := NewHTTPChecker("example", "localhost:8080", 1*time.Second, mockEnv)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: strconv.ParseBool: parsing \"invalid\": invalid syntax", envHTTPSkipTLSVerify)
-		if err.Error() != expected {
-			t.Fatalf("expected error containing %q, got %q", expected, err)
-		}
-	})
-}
-
-func TestIsValidCheckTypeWithProxy(t *testing.T) {
-	t.Run("Invalid HTTP check (invalid proxy)", func(t *testing.T) {
-		// Do not use t.Parallel here since we're modifying global state (environment variables)
-		// t.Parallel()
-
-		// Set the HTTP_PROXY environment variable to an invalid proxy
-		err := os.Setenv("HTTP_PROXY", "http://invalid-proxy:8080")
-		if err != nil {
-			t.Fatalf("Failed to set HTTP_PROXY environment variable: %v", err)
-		}
-		defer os.Unsetenv("HTTP_PROXY") // Clean up after the test
-
-		// Create the HTTPChecker instance
-		checker, err := NewHTTPChecker("example", "http://example.com", 1*time.Second, os.Getenv)
-		if err != nil {
-			t.Errorf("expected no error, got %q", err)
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		err = checker.Check(ctx)
-		if err == nil {
-			t.Fatalf("expected an error, got none")
+		assert.Error(t, err)
+		assert.EqualError(t, err, "unexpected status code: got 404, expected one of [200]")
+	})
+
+	t.Run("Invalid URL for HTTP check", func(t *testing.T) {
+		t.Parallel()
+
+		checker, err := newHTTPChecker("example", "://invalid-url")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 
-		// Github throws a different error message than on my local machine, so check with contains
-		expected := "Get \"http://example.com\": proxyconnect tcp: dial tcp: lookup invalid-proxy"
-		if !strings.Contains(err.Error(), expected) {
-			t.Errorf("expected error containing %q, got %q", expected, err.Error())
-		}
+		err = checker.Check(context.Background()) // Run the check to trigger the error.
+		assert.Error(t, err)
+		assert.EqualError(t, err, "failed to create request: parse \"://invalid-url\": missing protocol scheme")
+	})
+
+	t.Run("Timeout during HTTP check", func(t *testing.T) {
+		t.Parallel()
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			time.Sleep(2 * time.Second) // Simulate delay
+			w.WriteHeader(http.StatusOK)
+		})
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		checker, err := newHTTPChecker("example", server.URL, WithHTTPTimeout(1*time.Second))
+		assert.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		err = checker.Check(ctx)
+
+		assert.Error(t, err)
+		assert.EqualError(t, err, fmt.Sprintf("HTTP request failed: Get \"http://%s\": context deadline exceeded", server.Listener.Addr().String()))
+	})
+
+	t.Run("Custom expected status codes", func(t *testing.T) {
+		t.Parallel()
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusAccepted)
+		})
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		checker, err := newHTTPChecker("example", server.URL, WithExpectedStatusCodes([]int{202}))
+		assert.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		err = checker.Check(ctx)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Custom HTTP method", func(t *testing.T) {
+		t.Parallel()
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		})
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		checker, err := newHTTPChecker("example", server.URL, WithHTTPMethod(http.MethodPost))
+		assert.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		err = checker.Check(ctx)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Skip TLS verification", func(t *testing.T) {
+		t.Parallel()
+
+		// Create a test server with a self-signed certificate
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		checker, err := newHTTPChecker("example", server.URL, WithHTTPSkipTLSVerify(true))
+		assert.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		err = checker.Check(ctx)
+		assert.NoError(t, err)
 	})
 }

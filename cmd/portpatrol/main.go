@@ -2,50 +2,77 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/containeroo/portpatrol/internal/checker"
 	"github.com/containeroo/portpatrol/internal/config"
-	"github.com/containeroo/portpatrol/internal/logger"
-	"github.com/containeroo/portpatrol/internal/runner"
+	"github.com/containeroo/portpatrol/internal/factory"
+	"github.com/containeroo/portpatrol/internal/logging"
+	"github.com/containeroo/portpatrol/internal/wait"
+	"golang.org/x/sync/errgroup"
 )
 
-const version = "0.4.7"
+const version = "0.5.0"
 
 // run is the main function of the application.
-func run(ctx context.Context, getEnv func(string) string, output io.Writer) error {
+func run(ctx context.Context, args []string, output io.Writer) error {
 	// Create a new context that listens for interrupt signals
-	// and cancels the context when received. Ensures proper resource cleanup.
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	cfg, err := config.ParseConfig(getEnv)
+	// Parse command-line flags
+	f, err := config.ParseFlags(args, version, output)
 	if err != nil {
+		if errors.Is(err, &config.HelpRequested{}) {
+			fmt.Fprint(output, err.Error())
+			return nil
+		}
 		return fmt.Errorf("configuration error: %w", err)
 	}
-	cfg.Version = version
 
-	logger := logger.SetupLogger(cfg, output)
-
-	targetChecker, err := checker.NewChecker(cfg.TargetCheckType, cfg.TargetName, cfg.TargetAddress, cfg.DialTimeout, getEnv)
+	// Initialize target checkers
+	checkers, err := factory.BuildCheckers(f.DynFlags, f.DefaultCheckInterval)
 	if err != nil {
-		return fmt.Errorf("failed to initialize checker: %w", err)
+		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}
 
-	return runner.LoopUntilReady(ctx, cfg.CheckInterval, targetChecker, logger)
+	if len(checkers) == 0 {
+		return errors.New("configuration error: no checkers configured")
+	}
+
+	logger := logging.SetupLogger(version, output)
+
+	// Run checkers concurrently
+	eg, ctx := errgroup.WithContext(ctx)
+	for _, chk := range checkers {
+		checker := chk // Capture loop variable
+		eg.Go(func() error {
+			err := wait.WaitUntilReady(ctx, checker.Interval, checker.Checker, logger)
+			if err != nil {
+				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.GetName(), err)
+			}
+			return nil
+		})
+	}
+
+	// Wait for all checkers to finish or return error
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {
-	// Create a root context with no cancellation or deadline. This is the top-level context
-	// that all other contexts will derive from in the application.
+	// Create a root context
 	ctx := context.Background()
 
-	if err := run(ctx, os.Getenv, os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

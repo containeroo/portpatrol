@@ -1,396 +1,222 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
-	"reflect"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/containeroo/portpatrol/internal/checker"
+	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestParseConfig(t *testing.T) {
+func TestParseFlags(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Valid config with defaults", func(t *testing.T) {
+	t.Run("Successful Parsing", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "example.com:80",
-			}
-			return env[key]
-		}
+		args := []string{"--default-interval=5s"}
+		var output strings.Builder
 
-		cfg, err := ParseConfig(mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		expected := Config{
-			TargetName:      "example.com", // Extracted from TargetAddress
-			TargetAddress:   "example.com:80",
-			TargetCheckType: checker.TCP,
-			CheckInterval:   2 * time.Second,
-			DialTimeout:     1 * time.Second,
-		}
-		if !reflect.DeepEqual(cfg, expected) {
-			t.Fatalf("expected config %+v, got %+v", expected, cfg)
-		}
+		parsedFlags, err := ParseFlags(args, "1.0.0", &output)
+		assert.NoError(t, err)
+		assert.Equal(t, 5*time.Second, parsedFlags.DefaultCheckInterval)
 	})
 
-	t.Run("Valid config with www as scheme", func(t *testing.T) {
+	t.Run("Unknown Dynamic Flag", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:   "www.example.com:80",
-				envTargetCheckType: "http",
-				envCheckInterval:   "5s",
-				envDialTimeout:     "10s",
-			}
-			return env[key]
-		}
+		args := []string{"--unknown.identifier.flag=value"}
+		var output bytes.Buffer
 
-		cfg, err := ParseConfig(mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		parsedFlags, err := ParseFlags(args, "1.0.0", &output)
+		assert.NoError(t, err)
 
-		expected := Config{
-			TargetName:      "www.example.com", // Extracted from TargetAddress
-			TargetAddress:   "www.example.com:80",
-			TargetCheckType: checker.HTTP,
-			CheckInterval:   5 * time.Second,
-			DialTimeout:     10 * time.Second,
-		}
-		if !reflect.DeepEqual(cfg, expected) {
-			t.Fatalf("expected config %+v, got %+v", expected, cfg)
-		}
+		df := parsedFlags.DynFlags
+		g := df.Unknown()
+
+		assert.NotNil(t, g)
 	})
 
-	t.Run("Valid config with kubernetes service", func(t *testing.T) {
+	t.Run("Handle Help Flag", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:   "http://postgres.postgres.svc.cluster.local:80",
-				envTargetCheckType: "http",
-				envCheckInterval:   "5s",
-				envDialTimeout:     "10s",
-			}
-			return env[key]
+		var output strings.Builder
+		flagSet := setupGlobalFlags()
+		flagSet.SetOutput(&output) // Ensure output is properly set
+		_ = flagSet.Parse([]string{"--help"})
+
+		flagSet.Usage = func() {
+			fmt.Fprintln(&output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
 		}
 
-		cfg, err := ParseConfig(mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		expected := Config{
-			TargetName:      "postgres.postgres.svc.cluster.local", // Extracted from TargetAddress
-			TargetAddress:   "http://postgres.postgres.svc.cluster.local:80",
-			TargetCheckType: checker.HTTP,
-			CheckInterval:   5 * time.Second,
-			DialTimeout:     10 * time.Second,
-		}
-		if !reflect.DeepEqual(cfg, expected) {
-			t.Fatalf("expected config %+v, got %+v", expected, cfg)
-		}
+		err := handleSpecialFlags(flagSet, "1.0.0")
+		assert.Error(t, err)
+		assert.IsType(t, &HelpRequested{}, err)
+		assert.Contains(t, output.String(), "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
 	})
 
-	t.Run("Valid config with custom values", func(t *testing.T) {
+	t.Run("Show Version Flag", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:   "tcp://example.com:80",
-				envTargetCheckType: "tcp",
-				envCheckInterval:   "5s",
-				envDialTimeout:     "10s",
-			}
-			return env[key]
-		}
+		args := []string{"--version"}
+		var output bytes.Buffer
 
-		cfg, err := ParseConfig(mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		expected := Config{
-			TargetName:      "example.com", // Extracted from TargetAddress
-			TargetAddress:   "tcp://example.com:80",
-			TargetCheckType: checker.TCP,
-			CheckInterval:   5 * time.Second,
-			DialTimeout:     10 * time.Second,
-		}
-		if !reflect.DeepEqual(cfg, expected) {
-			t.Fatalf("expected config %+v, got %+v", expected, cfg)
-		}
+		_, err := ParseFlags(args, "1.0.0", &output)
+		assert.Error(t, err)
+		assert.IsType(t, &HelpRequested{}, err)
+		assert.Contains(t, err.Error(), "PortPatrol version 1.0.0")
 	})
 
-	t.Run("Invalid interval (invalid)", func(t *testing.T) {
+	t.Run("Invalid Duration Flag", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "http://example.com",
-				envCheckInterval: "invalid",
-			}
-			return env[key]
+		args := []string{"--default-interval=invalid"}
+		var output bytes.Buffer
+
+		_, err := ParseFlags(args, "1.0.0", &output)
+		assert.Error(t, err)
+
+		assert.EqualError(t, err, "Flag parsing error: invalid argument \"invalid\" for \"--default-interval\" flag: time: invalid duration \"invalid\"")
+	})
+}
+
+func TestIsHelpRequested(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Help requested", func(t *testing.T) {
+		t.Parallel()
+
+		err := &HelpRequested{Message: "Help requested"}
+		assert.ErrorIs(t, err, &HelpRequested{})
+	})
+}
+
+func TestSetupGlobalFlags(t *testing.T) {
+	t.Parallel()
+
+	flagSet := setupGlobalFlags()
+	assert.NotNil(t, flagSet.Lookup("default-interval"))
+	assert.NotNil(t, flagSet.Lookup("version"))
+	assert.NotNil(t, flagSet.Lookup("help"))
+}
+
+func TestSetupDynamicFlags(t *testing.T) {
+	t.Parallel()
+
+	dynFlags := setupDynamicFlags()
+	assert.NotNil(t, dynFlags.Group("http"))
+	assert.NotNil(t, dynFlags.Group("tcp"))
+	assert.NotNil(t, dynFlags.Group("icmp"))
+
+	httpGroup := dynFlags.Group("http")
+	assert.NotNil(t, httpGroup.Lookup("name"))
+	assert.NotNil(t, httpGroup.Lookup("method"))
+	assert.NotNil(t, httpGroup.Lookup("address"))
+}
+
+func TestSetupUsage(t *testing.T) {
+	t.Parallel()
+
+	var output strings.Builder
+	flagSet := setupGlobalFlags()
+	flagSet.SetOutput(&output)
+
+	dynFlags := setupDynamicFlags()
+	dynFlags.SetOutput(&output)
+
+	setupUsage(&output, flagSet, dynFlags)
+	flagSet.Usage()
+
+	usageOutput := output.String()
+	assert.Contains(t, usageOutput, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+	assert.Contains(t, usageOutput, "Global Flags:")
+	assert.Contains(t, usageOutput, "--default-interval")
+	assert.Contains(t, usageOutput, "Dynamic Flags:")
+	assert.Contains(t, usageOutput, "http")
+}
+
+func TestHandleSpecialFlags(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Handle Help Flag", func(t *testing.T) {
+		t.Parallel()
+
+		var output strings.Builder
+		flagSet := setupGlobalFlags()
+		flagSet.SetOutput(&output)
+
+		flagSet.Usage = func() {
+			fmt.Fprintln(&output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
 		}
 
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
+		args := []string{"--help"}
+		err := flagSet.Parse(args)
+		assert.NoError(t, err)
 
-		expected := fmt.Sprintf("invalid %s value: invalid", envCheckInterval)
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
+		err = handleSpecialFlags(flagSet, "1.0.0")
+		assert.Error(t, err)
 	})
 
-	t.Run("Invalid interval (zero)", func(t *testing.T) {
+	t.Run("Handle Version Flag", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "http://example.com",
-				envCheckInterval: "0s",
-			}
-			return env[key]
-		}
+		flagSet := setupGlobalFlags()
+		_ = flagSet.Parse([]string{"--version"})
 
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: 0s", envCheckInterval)
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
+		err := handleSpecialFlags(flagSet, "1.0.0")
+		assert.Error(t, err)
+		assert.IsType(t, &HelpRequested{}, err)
+		assert.Contains(t, err.Error(), "PortPatrol version 1.0.0")
 	})
 
-	t.Run("Invalid dial timeout (invalid)", func(t *testing.T) {
+	t.Run("No Special Flags", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "http://example.com",
-				envDialTimeout:   "invalid",
-			}
-			return env[key]
-		}
+		flagSet := setupGlobalFlags()
+		_ = flagSet.Parse([]string{})
 
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
+		err := handleSpecialFlags(flagSet, "1.0.0")
+		assert.NoError(t, err)
+	})
+}
 
-		expected := fmt.Sprintf("invalid %s value: invalid", envDialTimeout)
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
+func TestGetDurationFlag(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Valid Duration Flag", func(t *testing.T) {
+		t.Parallel()
+
+		flagSet := setupGlobalFlags()
+		_ = flagSet.Set("default-interval", "10s")
+
+		duration, err := getDurationFlag(flagSet, "default-interval", time.Second)
+		assert.NoError(t, err)
+		assert.Equal(t, 10*time.Second, duration)
 	})
 
-	t.Run("Invalid dial timeout (zero)", func(t *testing.T) {
+	t.Run("Invalid Duration", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "http://example.com",
-				envDialTimeout:   "0s",
-			}
-			return env[key]
-		}
+		flagSet := pflag.NewFlagSet("portpatrol", pflag.ContinueOnError)
+		flagSet.String("invalid-flag", "invalid", "Invalid flag")
+		err := flagSet.Set("invalid-flag", "invalid")
+		assert.NoError(t, err)
 
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
+		_, err = getDurationFlag(flagSet, "invalid-flag", time.Second)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "invalid duration for flag 'invalid'")
 	})
 
-	t.Run("Invalid address (invalid address)", func(t *testing.T) {
+	t.Run("Missing Duration Flag", func(t *testing.T) {
 		t.Parallel()
 
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "http://exam ple.com",
-			}
-			return env[key]
-		}
+		flagSet := setupGlobalFlags()
 
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "could not parse target address: parse \"http://exam ple.com\": invalid character \" \" in host name"
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid hostname (missing address)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "http://:8080",
-			}
-			return env[key]
-		}
-
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "could not extract hostname from target address: http://:8080"
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Valid LOG_EXTRA_FIELDS", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:  "http://example.com",
-				envLogExtraFields: "true",
-			}
-			return env[key]
-		}
-
-		result, err := ParseConfig(mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		expected := Config{
-			TargetName:      "example.com",
-			TargetAddress:   "http://example.com",
-			TargetCheckType: checker.HTTP,
-			CheckInterval:   2 * time.Second,
-			DialTimeout:     1 * time.Second,
-			LogExtraFields:  true,
-		}
-		if !reflect.DeepEqual(result, expected) {
-			t.Fatalf("expected %v, got %v", expected, result)
-		}
-	})
-
-	t.Run("Invalid LOG_EXTRA_FIELDS (not boolean)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:  "http://example.com",
-				envLogExtraFields: "invalid",
-			}
-			return env[key]
-		}
-
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("invalid %s value: invalid", envLogExtraFields)
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Valid check type (defaults to tcp)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "example.com:80",
-			}
-			return env[key]
-		}
-
-		result, err := ParseConfig(mockEnv)
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-
-		expected := Config{
-			TargetName:      "example.com",
-			TargetAddress:   "example.com:80",
-			TargetCheckType: checker.TCP,
-			CheckInterval:   2 * time.Second,
-			DialTimeout:     1 * time.Second,
-			LogExtraFields:  false,
-		}
-		if !reflect.DeepEqual(result, expected) {
-			t.Fatalf("expected %v, got %v", expected, result)
-		}
-	})
-
-	t.Run("Invalid check type (invalid)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress:   "http://example.com",
-				envTargetCheckType: "invalid",
-			}
-			return env[key]
-		}
-
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "invalid check type from environment: unsupported check type: invalid"
-		if err.Error() != expected {
-			t.Errorf("expected error to contain %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Invalid check type (infer invalid)", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			env := map[string]string{
-				envTargetAddress: "htp://example.com",
-			}
-			return env[key]
-		}
-
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := "could not infer check type from address htp://example.com: unsupported check type: htp"
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
-	})
-
-	t.Run("Missing target address", func(t *testing.T) {
-		t.Parallel()
-
-		mockEnv := func(key string) string {
-			return ""
-		}
-
-		_, err := ParseConfig(mockEnv)
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
-
-		expected := fmt.Sprintf("%s environment variable is required", envTargetAddress)
-		if err.Error() != expected {
-			t.Fatalf("expected error to contain %q, got %q", expected, err)
-		}
+		duration, err := getDurationFlag(flagSet, "non-existent-flag", time.Second)
+		assert.NoError(t, err)
+		assert.Equal(t, time.Second, duration)
 	})
 }

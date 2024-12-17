@@ -4,47 +4,131 @@
 
 # PortPatrol
 
-`PortPatrol` is a simple Go application that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated. Intended to run as a Kubernetes initContainer, `PortPatrol` helps verify whether a dependency is ready. Configuration is managed through environment variables; for more details, refer to the [Environment Variables](#EnvironmentVariables) section."
+`PortPatrol` is a simple Go application that checks if a specified `TCP`, `HTTP` or `ICMP` target is available. It continuously attempts to connect to the specified target at regular intervals until the target becomes available or the program is terminated. Intended to run as a Kubernetes initContainer, `PortPatrol` helps verify whether a dependency is ready. The configuration is done through startup arguments.
+You can check multiple targets at once.
 
-## Environment Variables
 
-`PortPatrol` accepts the following environment variables:
+## Command-Line Flags
 
-### Common Variables
+`PortPatrol` accepts the following command-line flags:
 
-- `TARGET_NAME`: Name assigned to the target (optional, default: inferred from `TARGET_ADDRESS`). If not specified, it's derived from the target address. For example, `http://postgres.default.svc.cluster.local:5432` is inferred as `postgres.default.svc.cluster.local`.
-- `TARGET_ADDRESS`: The target's address in the following formats:
+### Common Flags
 
-  - **TCP**: `host:port` (port is required).
-  - **HTTP**: `scheme://host[:port]` (scheme is required).
-  - **ICMP**: `host` (no scheme and port allowed).
+| Flag                  | Type     | Default | Description                                                                                   |
+|-----------------------|----------|---------|-----------------------------------------------------------------------------------------------|
+| `--default-interval`  | duration | `2s`    | Default interval between checks. Can be overridden for each target.                           |
+| `--debug`             | bool     | `false` | Enable logging of additional fields.                                                         |
+| `--version`           | bool     | `false` | Show version and exit.                                                                        |
+| `--help`, `-h`        | bool     | `false` | Show help.                                                                                    |
 
-  You can always specify a scheme (e.g., `http://`, `tcp://`, `icmp://`) in `TARGET_ADDRESS`, which automatically infers the `TARGET_CHECK_TYPE`, making the `TARGET_CHECK_TYPE` variable optional.
+### Target Flags
 
-- `TARGET_CHECK_TYPE`: Specifies the type of check (`tcp`, `http`, `https`, or `icmp`). If no scheme is provided in `TARGET_ADDRESS`, this variable determines the check type. If a scheme is provided, `TARGET_CHECK_TYPE` becomes obsolete.
-- `CHECK_INTERVAL`: Time between connection attempts (optional, default: `2s`).
-- `DIAL_TIMEOUT`: Maximum allowed time for each connection attempt (optional, default: `1s`).
-- `LOG_EXTRA_FIELDS`: Enable logging of additional fields (optional, default: `false`).
+`PortPatrol` accepts "dynamic" flags that can be defined in the startup arguments.
+Use the `--<TYPE>.<IDENTIFIER>.<PROPERTY>=<VALUE>` format to define targets.
+Types are: `http`, `icmp` or `tcp`.
 
-### HTTP-Specific Variables
+#### HTTP-Flags
 
-- `HTTP_METHOD`: HTTP method to use (optional, default: `GET`).
-- `HTTP_HEADERS`: Comma-separated list of HTTP headers in `key=value` format (optional). Examples:
-  - `Authorization=Bearer token`
-  - `Content-Type=application/json,Accept=application/json`
-- `HTTP_ALLOW_DUPLICATE_HEADERS`: Allow duplicate headers (optional, default: `false`).
-- `HTTP_EXPECTED_STATUS_CODES`: Comma-separated list of expected HTTP status codes or ranges (optional, default: `200`). You can specify individual status codes or ranges:
-  - `200,301,404`
-  - `200,300-302`
-  - `200,301-302,404,500-502`
-- `HTTP_SKIP_TLS_VERIFY`: Skip TLS verification (optional, default: `false`).
-- `HTTP_PROXY`: HTTP proxy to use (optional).
-- `HTTPS_PROXY`: HTTPS proxy to use (optional).
-- `NO_PROXY`: Comma-separated list of domains to exclude from proxying (optional).
+- **`--http.<IDENTIFIER>.name`** = `string`
+  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
 
-### ICMP-Specific Variables
+- **`--http.<IDENTIFIER>.address`** = `string`
+  The target's address.
+  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
 
-- `ICMP_READ_TIMEOUT`: Maximum allowed time for each ICMP echo reply (optional, default: `1s`).
+  - **`--http.<IDENTIFIER>.interval`** = `duration`
+  The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+- **`--http.<IDENTIFIER>.method`** = `string`
+  The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
+
+- **`--http.<IDENTIFIER>.header`** = `string`
+  A HTTP header in `key=value` format. Can be specified multiple times.
+  **Example:** `Authorization=Bearer token`
+  **Resolvable:** The value of the Header is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+
+- **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
+  Allow duplicate headers. Defaults to `false`.
+
+- **`--http.<IDENTIFIER>.expected-status-codes`** = `string`
+  A comma-separated list of expected HTTP status codes or ranges (e.g., `200,301-302`). Defaults to `200`.
+
+- **`--http.<IDENTIFIER>.skip-tls-verify`** = `bool`
+  Whether to skip TLS verification. Defaults to `false`.
+
+- **`--http.<IDENTIFIER>.timeout`** = `duration`
+  The timeout for the HTTP request (e.g., `5s`). Defaults to `1s`.
+
+#### ICMP Flags
+
+- **`--icmp.<IDENTIFIER>.name`** = `string`
+  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+
+- **`--icmp.<IDENTIFIER>.address`** = `string`
+  The target's address.
+  **Resolvable:** The value of the Address is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`.
+
+- **`--icmp.<IDENTIFIER>.interval`** = `duration`
+  The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+- **`--icmp.<IDENTIFIER>.read-timeout`** = `duration`
+  The read timeout for the ICMP connection (e.g., `1s`). Defaults to `1s`.
+
+- **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
+  The write timeout for the ICMP connection (e.g., `1s`).Defaults to `1s`.
+
+### TCP Flags
+
+- **`--tcp.<IDENTIFIER>.name`** = `string`
+  The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
+
+- **`--tcp.<IDENTIFIER>.address`** = `string`
+  The target's address.
+  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+
+- **`--tcp.<IDENTIFIER>.interval`** = `duration`
+  The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+### Resolving variables
+
+Each `address` field can be resolved using environment variables, files, or plain text:
+
+- **Plain Text**: Simply input the credentials directly in plain text.
+- **Environment Variable**: Use the `env:` prefix, followed by the name of the environment variable that stores the credentials.
+- **File**: Use the `file:` prefix, followed by the path of the file that contains the credentials. The file should contain only the credentials.
+
+In case the file contains multiple key-value pairs, the specific key for the credentials can be selected by appending `//KEY` to the end of the path. Each key-value pair in the file must follow the `key = value` format. The system will use the value corresponding to the specified `//KEY`.
+
+HTTP headers values can also be resolved using the same mechanism, (`--
+
+### Examples
+
+#### Define an HTTP Target
+
+```sh
+portpatrol \
+  --http.web.address=http://example.com:80 \
+  --http.web.method=GET \
+  --http.web.expected-status-codes=200,204 \
+  --http.web.header="Authorization=Bearer token" \
+  --http.web.header="Content-Type=application/json" \
+  --http.web.skip-tls-verify=false \
+  --default-interval=5s \
+  --debug
+```
+
+#### Define Multiple Targets (HTTP and TCP) Running in Parallel
+
+```sh
+portpatrol \
+  --http.web.address=http://example.com:80 \
+  --tcp.db.address=tcp://localhost:5432 \
+  --default-interval=10s
+```
+
+#### Notes
+
+**Proxy Settings**: Proxy configurations (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) are managed via environment variables.
 
 ## Behavior Flowchart
 
@@ -213,29 +297,6 @@ class MainFlow,RetryLoop transparent;
 
 </details>
 
-## Logging
-
-With the `LOG_EXTRA_FIELDS` environment variable set to true, additional fields will be logged.
-
-### With additional fields
-
-```text
-ts=2024-07-05T13:08:20+02:00 level=INFO msg="Waiting for PostgreSQL to become ready..." dial_timeout="1s" interval="2s" target_address="postgres.default.svc.cluster.local:5432" target_name="PostgreSQL" version="0.0.22"
-ts=2024-07-05T13:08:21+02:00 level=WARN msg="PostgreSQL is not ready ✗" dial_timeout="1s" error="dial tcp: lookup postgres.default.svc.cluster.local: i/o timeout" interval="2s" target_address="postgres.default.svc.cluster.local:5432" target_name="PostgreSQL" version="0.0.22"
-ts=2024-07-05T13:08:24+02:00 level=WARN msg="PostgreSQL is not ready ✗" dial_timeout="1s" error="dial tcp: lookup postgres.default.svc.cluster.local: i/o timeout" interval="2s" target_address="postgres.default.svc.cluster.local:5432" target_name="PostgreSQL" version="0.0.22"
-ts=2024-07-05T13:08:27+02:00 level=WARN msg="PostgreSQL is not ready ✗" dial_timeout="1s" error="dial tcp: lookup postgres.default.svc.cluster.local: i/o timeout" interval="2s" target_address="postgres.default.svc.cluster.local:5432" target_name="PostgreSQL" version="0.0.22"
-ts=2024-07-05T13:08:27+02:00 level=INFO msg="PostgreSQL is ready ✓" dial_timeout="1s" error="dial tcp: lookup postgres.default.svc.cluster.local: i/o timeout" interval="2s" target_address="postgres.default.svc.cluster.local:5432" target_name="PostgreSQL" version="0.0.22"
-```
-
-### Without additional fields
-
-```text
-time=2024-07-12T12:44:41.494Z level=INFO msg="Waiting for PostgreSQL to become ready..."
-time=2024-07-12T12:44:41.512Z level=WARN msg="PostgreSQL is not ready ✗"
-time=2024-07-12T12:44:43.532Z level=WARN msg="PostgreSQL is not ready ✗"
-time=2024-07-12T12:44:45.552Z level=INFO msg="PostgreSQL is ready ✓"
-```
-
 ## Kubernetes initContainer Configuration
 
 Configure your Kubernetes deployment to use this init container:
@@ -244,63 +305,27 @@ Configure your Kubernetes deployment to use this init container:
 initContainers:
   - name: wait-for-vm
     image: ghcr.io/containeroo/portpatrol:latest
-    env:
-      - name: TARGET_ADDRESS
-        value: icmp://hostname.domain.tld
+    args:
+      - --icmp.vm.address=hostname.domain.tld
     securityContext: # icmp requires CAP_NET_RAW
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
       capabilities:
         add: ["CAP_NET_RAW"]
-  - name: wait-for-valkey
+  - name: wait-for-it
     image: ghcr.io/containeroo/portpatrol:latest
-    env:
-      - name: TARGET_ADDRESS
-        value: valkey.default.svc.cluster.local:6379
-  - name: wait-for-valkey
-    image: ghcr.io/containeroo/portpatrol:latest
-    env:
-      - name: TARGET_NAME
-        value: Valkey
-      - name: TARGET_ADDRESS
-        value: valkey.default.svc.cluster.local:6379
-      - name: TARGET_CHECK_TYPE
-        value: tcp # Specify the type of check
-      - name: CHECK_INTERVAL
-        value: "5s" # Specify the interval duration, e.g., 5 seconds
-      - name: DIAL_TIMEOUT
-        value: "5s" # Specify the dial timeout duration, e.g., 5 seconds
-      - name: LOG_EXTRA_FIELDS
-        value: "true"
-  - name: wait-for-postgres
-    image: ghcr.io/containeroo/portpatrol:latest
-    env:
-      - name: TARGET_ADDRESS
-        value: http://postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
-      # TARGET_NAME will be inferred from TARGET_ADDRESS to postgres.default.svc.cluster.local
-      # TARGET_CHECK_TYPE is not not necessary, because TARGET_ADDRESS has a scheme (http://)
-      # HTTP_METHOD is not necessary, because the default is GET
-      # HTTP_EXPECTED_STATUS_CODES is not necessary, because the default is 200 and /healthz returns 200 if the service is ready
-      # CHECK_INTERVAL defaults to 2 seconds which is okay for a health check
-      # DIAL_TIMEOUT defaults to 1 second which is okay for a health check
-  - name: wait-for-webapp
-    image: ghcr.io/containeroo/portpatrol:latest
-    env:
-      - name: TARGET_NAME
-        value: webapp
-      - name: TARGET_ADDRESS
-        value: webapp.default.svc.cluster.local:8080
-      - name: TARGET_CHECK_TYPE
-        value: http
-      - name: HTTP_METHOD
-        value: "POST"
-      - name: HTTP_HEADERS
-        value: "Authorization=Bearer token"
-      - name: HTTP_EXPECTED_STATUS_CODES
-        value: "200,202"
-      - name: CHECK_INTERVAL
-        value: "5s" # Specify the interval duration, e.g., 5 seconds
-      - name: DIAL_TIMEOUT
-        value: "2s" # Specify the dial timeout duration, e.g., 2 seconds
-```
+    args:
+      - --target.postgres.address=postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
+      - --target.postgres.method=POST
+      - --target.postgres.header=Authorization=env:BEARER_TOKEN
+      - --target.postgres.expected-status-codes=200,202
+      - --target.redis.name=redis
+      - --target.redis.address=redis.default.svc.cluster.local:6437
+      - --tcp.vaultkey.address=valkey.default.svc.cluster.local:6379
+      - --tcp.vaultkey.interval=5s
+      - --tcp.vaultkey.timeout=5s
+    envFrom:
+      - secretRef:
+          name: bearer-token
 
+```

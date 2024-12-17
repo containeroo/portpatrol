@@ -2,7 +2,8 @@ package checker
 
 import (
 	"testing"
-	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewChecker(t *testing.T) {
@@ -11,117 +12,106 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid HTTP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(HTTP, "example", "http://example.com", 5*time.Second, func(s string) string {
-			return ""
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		check, err := NewChecker(HTTP, "example", "http://example.com")
 
-		expected := "example"
-		if check.String() != expected {
-			t.Fatalf("expected name to be %q got %q", expected, check.String())
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, check.GetName(), "example")
+		assert.Equal(t, check.GetType(), "HTTP")
 	})
 
 	t.Run("Valid TCP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(TCP, "example", "example.com:80", 5*time.Second, func(s string) string {
-			return ""
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		check, err := NewChecker(TCP, "example", "example.com:80")
 
-		expected := "example"
-		if check.String() != expected {
-			t.Fatalf("expected name to be %q got %q", expected, check.String())
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, check.GetName(), "example")
+		assert.Equal(t, check.GetType(), "TCP")
 	})
 
 	t.Run("Valid ICMP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(ICMP, "example", "example.com", 5*time.Second, func(s string) string {
-			return ""
-		})
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
+		check, err := NewChecker(ICMP, "example", "example.com")
 
-		expected := "example"
-		if check.String() != expected {
-			t.Fatalf("expected name to be %q got %q", expected, check.String())
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, check.GetName(), "example")
+		assert.Equal(t, check.GetType(), "ICMP")
 	})
 
 	t.Run("Invalid checker type", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := NewChecker(8, "example", "example.com", 5*time.Second, func(s string) string {
-			return ""
-		})
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
+		_, err := NewChecker(99, "example", "example.com")
 
-		expected := "unsupported check type: 8"
-		if err.Error() != expected {
-			t.Errorf("expected error to be %q, got %q", expected, err.Error())
-		}
+		assert.Error(t, err)
+		assert.EqualError(t, err, "unsupported check type: 99")
 	})
 }
 
-func TestGetCheckTypeString(t *testing.T) {
+func TestGetCheckTypeFromString(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Check type string (enum)", func(t *testing.T) {
+	t.Run("Check type HTTP", func(t *testing.T) {
 		t.Parallel()
 
-		if HTTP.String() != "HTTP" {
-			t.Fatalf("expected 'HTTP', got %q", HTTP.String())
-		}
-		if TCP.String() != "TCP" {
-			t.Fatalf("expected 'TCP', got %q", TCP.String())
-		}
-		if ICMP.String() != "ICMP" {
-			t.Fatalf("expected 'ICMP', got %q", ICMP.String())
-		}
+		result, err := GetCheckTypeFromString("HTTP")
+
+		assert.NoError(t, err)
+		assert.Equal(t, result, HTTP)
 	})
 
-	t.Run("Check type string (func)", func(t *testing.T) {
-		want := HTTP
-		got, err := GetCheckTypeFromString("http")
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-		if want != got {
-			t.Fatalf("expected %q, got %q", want, got)
-		}
+	t.Run("Check type http", func(t *testing.T) {
+		t.Parallel()
 
-		want = TCP
-		got, err = GetCheckTypeFromString("tcp")
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-		if want != got {
-			t.Fatalf("expected %q, got %q", want, got)
-		}
+		result, err := GetCheckTypeFromString("http")
 
-		want = ICMP
-		got, err = GetCheckTypeFromString("icmp")
-		if err != nil {
-			t.Fatalf("expected no error, got %q", err)
-		}
-		if want != got {
-			t.Fatalf("expected %q, got %q", want, got)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, result, HTTP)
+	})
 
-		want = -1
-		got, err = GetCheckTypeFromString("invalid")
-		if err == nil {
-			t.Fatal("expected an error, got none")
-		}
+	t.Run("Check type TCP", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := GetCheckTypeFromString("tcp")
+
+		assert.NoError(t, err)
+		assert.Equal(t, result, TCP)
+	})
+
+	t.Run("Check type tcp", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := GetCheckTypeFromString("tcp")
+
+		assert.NoError(t, err)
+		assert.Equal(t, result, TCP)
+	})
+
+	t.Run("Check type ICMP", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := GetCheckTypeFromString("ICMP")
+
+		assert.NoError(t, err)
+		assert.Equal(t, result, ICMP)
+	})
+
+	t.Run("Check type icmp", func(t *testing.T) {
+		t.Parallel()
+
+		result, err := GetCheckTypeFromString("icmp")
+
+		assert.NoError(t, err)
+		assert.Equal(t, result, ICMP)
+	})
+
+	t.Run("Invalid check type", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := GetCheckTypeFromString("invalid")
+
+		assert.Error(t, err)
+		assert.EqualError(t, err, "unsupported check type: invalid")
 	})
 }

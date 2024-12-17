@@ -16,33 +16,26 @@ const (
 	icmpv6ProtocolNumber int = 58
 )
 
-// Protocol defines the interface for an ICMP protocol, which allows for sending and receiving ICMP echo requests
-// (ping) for network diagnostics and availability checks. This interface abstracts the details of ICMPv4 and ICMPv6 protocols
-// and provides methods for constructing requests, validating responses, and managing packet connections.
+// Protocol defines an interface for ICMP-based diagnostics, abstracting ICMPv4 and ICMPv6 behavior.
 type Protocol interface {
 	// MakeRequest creates an ICMP echo request message with the specified identifier and sequence number.
 	// Returns the serialized byte representation of the message or an error if message construction fails.
 	MakeRequest(identifier, sequence uint16) ([]byte, error)
-
 	// ValidateReply verifies that an ICMP echo reply message matches the expected identifier and sequence number.
 	// Returns an error if the reply is invalid, such as a mismatch in identifier, sequence number, or unexpected message type.
 	ValidateReply(reply []byte, identifier, sequence uint16) error
-
 	// Network returns the network type string to be used for listening to ICMP packets, which typically indicates the IP
 	// protocol version (e.g., "ip4:icmp" for IPv4 ICMP or "ip6:ipv6-icmp" for IPv6 ICMP).
 	Network() string
-
 	// ListenPacket sets up a listener for ICMP packets on the specified network and address, using the provided context.
 	// Returns a net.PacketConn for reading and writing packets, or an error if the listener cannot be established.
 	ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error)
-
 	// SetDeadline sets the read and write deadlines for the packet connection, affecting any I/O operations on the connection.
 	// Returns an error if setting the deadline fails.
 	SetDeadline(t time.Time) error
 }
 
-// newProtocol creates a new ICMP protocol based on the given address.
-// If the address is not an IP, it will be resolved as a domain name.
+// newProtocol initializes a protocol based on the given address.
 func newProtocol(address string) (Protocol, error) {
 	ip := net.ParseIP(address)
 	if ip == nil {
@@ -61,7 +54,7 @@ func newProtocol(address string) (Protocol, error) {
 	return &ICMPv4{}, nil
 }
 
-// ICMPv4 implements the ICMP protocol for IPv4.
+// ICMPv4 implements the Protocol interface for IPv4 ICMP.
 type ICMPv4 struct {
 	conn net.PacketConn
 }
@@ -102,9 +95,7 @@ func (p *ICMPv4) ValidateReply(reply []byte, identifier, sequence uint16) error 
 }
 
 // Network returns the network type for the ICMP protocol.
-func (p *ICMPv4) Network() string {
-	return "ip4:icmp"
-}
+func (p *ICMPv4) Network() string { return "ip4:icmp" }
 
 // ListenPacket creates a new ICMPv4 packet connection.
 func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
@@ -114,16 +105,18 @@ func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net
 		return nil, fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
 	p.conn = conn
-
-	return p.conn, nil
+	return conn, nil
 }
 
 // SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
 func (p *ICMPv4) SetDeadline(t time.Time) error {
+	if p.conn == nil {
+		return fmt.Errorf("connection not initialized")
+	}
 	return p.conn.SetDeadline(t)
 }
 
-// ICMPv6 implements the ICMP protocol for IPv6.
+// ICMPv6 implements the Protocol interface for IPv6 ICMP.
 type ICMPv6 struct {
 	conn net.PacketConn
 }
@@ -164,9 +157,7 @@ func (p *ICMPv6) ValidateReply(reply []byte, identifier, sequence uint16) error 
 }
 
 // Network returns the network type for the ICMP protocol.
-func (p *ICMPv6) Network() string {
-	return "ip6:ipv6-icmp"
-}
+func (p *ICMPv6) Network() string { return "ip6:ipv6-icmp" }
 
 // ListenPacket creates a new ICMPv6 packet connection.
 func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net.PacketConn, error) {
@@ -176,11 +167,13 @@ func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net
 		return nil, fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
 	p.conn = conn
-
 	return p.conn, nil
 }
 
 // SetDeadline sets the read and write deadlines associated with the connection. It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
 func (p *ICMPv6) SetDeadline(t time.Time) error {
+	if p.conn == nil {
+		return fmt.Errorf("connection not initialized")
+	}
 	return p.conn.SetDeadline(t)
 }
