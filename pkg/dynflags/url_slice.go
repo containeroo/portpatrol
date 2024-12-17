@@ -58,8 +58,13 @@ func (pg *ParsedGroup) GetURLSlices(flagName string) ([]*url.URL, error) {
 	if !exists {
 		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
 	}
-	if slice, ok := value.([]*url.URL); ok {
-		return slice, nil
+
+	if urlSlice, ok := value.([]*url.URL); ok {
+		return urlSlice, nil
+	}
+
+	if u, ok := value.(*url.URL); ok {
+		return []*url.URL{u}, nil
 	}
 
 	return nil, fmt.Errorf("flag '%s' is not a []*url.URL", flagName)

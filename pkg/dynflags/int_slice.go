@@ -57,8 +57,13 @@ func (pg *ParsedGroup) GetIntSlices(flagName string) ([]int, error) {
 	if !exists {
 		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
 	}
+
 	if slice, ok := value.([]int); ok {
 		return slice, nil
+	}
+
+	if i, ok := value.(int); ok {
+		return []int{i}, nil
 	}
 
 	return nil, fmt.Errorf("flag '%s' is not a []int", flagName)

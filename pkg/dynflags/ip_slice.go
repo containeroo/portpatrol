@@ -58,8 +58,13 @@ func (pg *ParsedGroup) GetIPSlices(flagName string) ([]net.IP, error) {
 	if !exists {
 		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
 	}
-	if slice, ok := value.([]net.IP); ok {
-		return slice, nil
+
+	if ipSlice, ok := value.([]net.IP); ok {
+		return ipSlice, nil
+	}
+
+	if i, ok := value.(net.IP); ok {
+		return []net.IP{i}, nil
 	}
 
 	return nil, fmt.Errorf("flag '%s' is not a []net.IP", flagName)

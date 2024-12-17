@@ -62,5 +62,9 @@ func (pg *ParsedGroup) GetBoolSlices(flagName string) ([]bool, error) {
 		return slice, nil
 	}
 
+	if b, ok := value.(bool); ok {
+		return []bool{b}, nil
+	}
+
 	return nil, fmt.Errorf("flag '%s' is not a []bool", flagName)
 }

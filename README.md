@@ -38,9 +38,9 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--http.<IDENTIFIER>.method`** = `string`
   The HTTP method to use (e.g., `GET`, `POST`). Defaults to `GET`.
 
-- **`--http.<IDENTIFIER>.headers`** = `string`
-  A comma-separated list of HTTP headers in `key=value` format.
-  **Example:** `Authorization=Bearer token,Content-Type=application/json`
+- **`--http.<IDENTIFIER>.header`** = `string`
+  A HTTP header in `key=value` format. Can be specified multiple times.
+  **Example:** `Authorization=Bearer token`
 
 - **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
   Allow duplicate headers. Defaults to `false`.
@@ -91,7 +91,8 @@ portpatrol \
   --http.web.address=http://example.com:80 \
   --http.web.method=GET \
   --http.web.expected-status-codes=200,204 \
-  --http.web.headers="Authorization=Bearer token,Content-Type=application/json" \
+  --http.web.header="Authorization=Bearer token" \
+  --http.web.header="Content-Type=application/json" \
   --http.web.skip-tls-verify=false \
   --default-interval=5s \
   --debug
@@ -343,7 +344,7 @@ initContainers:
     - --target.postgres.address=postgres.default.svc.cluster.local:9000/healthz # use healthz endpoint to check if postgres is ready
     - --target.postgres.type=http
     - --target.postgres.method=POST
-    - --target.postgres.headers=Authorization=Bearer token
+    - --target.postgres.header=Authorization=Bearer token
     - --target.postgres.expected-status-codes=200,202
     - --target.redis.name=redis
     - --target.redis.address=redis.default.svc.cluster.local:6437

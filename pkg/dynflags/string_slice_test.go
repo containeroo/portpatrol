@@ -40,6 +40,38 @@ func TestStringSlicesValue(t *testing.T) {
 		assert.Error(t, err)
 		assert.EqualError(t, err, "invalid value type: expected string")
 	})
+
+	t.Run("Multiple Occurrences Append Correctly", func(t *testing.T) {
+		var bound []string
+		value := &dynflags.StringSlicesValue{Bound: &bound}
+
+		assert.NoError(t, value.Set("Content-Type=application/json"))
+		assert.NoError(t, value.Set("MyHeader=header1"))
+		assert.NoError(t, value.Set("Header1=value1,Header2=value2"))
+
+		assert.Equal(t, []string{
+			"Content-Type=application/json",
+			"MyHeader=header1",
+			"Header1=value1,Header2=value2",
+		}, bound)
+	})
+
+	t.Run("Single Value Append", func(t *testing.T) {
+		var bound []string
+		value := &dynflags.StringSlicesValue{Bound: &bound}
+
+		assert.NoError(t, value.Set("Content-Type=application/json"))
+		assert.Equal(t, []string{"Content-Type=application/json"}, bound)
+	})
+
+	t.Run("Invalid Value Type", func(t *testing.T) {
+		var bound []string
+		value := &dynflags.StringSlicesValue{Bound: &bound}
+
+		err := value.Set(123) // Invalid type
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid value type")
+	})
 }
 
 func TestGroupConfigStringSlices(t *testing.T) {

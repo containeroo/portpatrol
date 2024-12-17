@@ -48,8 +48,13 @@ func (pg *ParsedGroup) GetStringSlices(flagName string) ([]string, error) {
 	if !exists {
 		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
 	}
-	if slice, ok := value.([]string); ok {
-		return slice, nil
+
+	if strSlice, ok := value.([]string); ok {
+		return strSlice, nil
+	}
+
+	if str, ok := value.(string); ok {
+		return []string{str}, nil
 	}
 
 	return nil, fmt.Errorf("flag '%s' is not a []string", flagName)

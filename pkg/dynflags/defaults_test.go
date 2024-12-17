@@ -136,7 +136,7 @@ func TestPrintDefaults(t *testing.T) {
 		df := dynflags.New(dynflags.ContinueOnError)
 		df.SetOutput(&buf)
 		group := df.Group("test")
-		group.Usage = "Test Group Usage"
+		group.Usage("Test Group Usage")
 		group.String("flag", "", "Test flag")
 
 		df.PrintDefaults()

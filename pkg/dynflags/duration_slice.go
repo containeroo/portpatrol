@@ -58,8 +58,13 @@ func (pg *ParsedGroup) GetDurationSlices(flagName string) ([]time.Duration, erro
 	if !exists {
 		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
 	}
+
 	if slice, ok := value.([]time.Duration); ok {
 		return slice, nil
+	}
+
+	if d, ok := value.(time.Duration); ok {
+		return []time.Duration{d}, nil
 	}
 
 	return nil, fmt.Errorf("flag '%s' is not a []time.Duration", flagName)

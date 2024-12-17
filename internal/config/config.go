@@ -105,9 +105,9 @@ func setupDynamicFlags() *dynflags.DynFlags {
 	httpFlags.String("method", "GET", "HTTP method to use")
 	httpFlags.String("address", "", "HTTP target URL")
 	httpFlags.Duration("interval", 1*time.Second, "Time between HTTP requests. Can be overwritten with --default-interval.")
-	httpFlags.String("headers", "", "HTTP headers to send")
+	httpFlags.StringSlices("header", nil, "HTTP headers to send")
 	httpFlags.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
-	httpFlags.String("expected-status-codes", "", "Expected HTTP status codes")
+	httpFlags.String("expected-status-codes", "200", "Expected HTTP status codes")
 	httpFlags.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
 	httpFlags.Duration("timeout", 2*time.Second, "Timeout in seconds")
 

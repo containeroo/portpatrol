@@ -113,7 +113,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 		"--http.invalidheaders.address=http://localhost:8080",
 		"--http.invalidheaders.interval=1s",
 		"--http.invalidheaders.timeout=1s",
-		"--http.invalidheaders.headers=InvalidHeader",
+		"--http.invalidheaders.header=InvalidHeader",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -123,7 +123,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	err := run(ctx, args, &output)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "failed to initialize target checkers: invalid \"--http.invalidheaders.headers\": invalid header format: InvalidHeader")
+	assert.EqualError(t, err, "failed to initialize target checkers: invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
 }
 
 func TestRunParseError(t *testing.T) {

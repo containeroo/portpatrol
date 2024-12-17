@@ -20,7 +20,7 @@ func TestBuildCheckers(t *testing.T) {
 		httpGroup.String("address", "http://example.com", "HTTP target address")
 		httpGroup.String("method", "GET", "HTTP method")
 		httpGroup.Duration("interval", 5*time.Second, "Request interval")
-		httpGroup.String("headers", "Content-Type: application/json", "HTTP headers")
+		httpGroup.StringSlices("header", nil, "HTTP header")
 		httpGroup.Bool("skip-tls-verify", false, "Skip TLS verification")
 		httpGroup.Duration("timeout", 2*time.Second, "Timeout")
 
@@ -28,7 +28,7 @@ func TestBuildCheckers(t *testing.T) {
 			"--http.mygroup.address=http://example.com",
 			"--http.mygroup.method=GET",
 			"--http.mygroup.interval=5s",
-			"--http.mygroup.headers=\"Content-Type=application/json\"",
+			"--http.mygroup.header=Content-Type=application/json",
 			"--http.mygroup.skip-tls-verify=true",
 			"--http.mygroup.timeout=2s",
 		}
@@ -80,18 +80,21 @@ func TestBuildCheckers(t *testing.T) {
 		df := dynflags.New(dynflags.ContinueOnError)
 		httpGroup := df.Group("http")
 		httpGroup.String("address", "http://example.com", "HTTP target address")
-		httpGroup.String("headers", "InvalidHeaderFormat", "HTTP headers")
+		httpGroup.StringSlices("header", []string{}, "HTTP headers")
 
 		args := []string{
 			"--http.mygroup.address=http://example.com",
-			"--http.mygroup.headers=InvalidHeaderFormat",
+			"--http.mygroup.header=InvalidHeaderFormat", // Correct flag name
 		}
 		err := df.Parse(args)
 		assert.NoError(t, err)
 
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
+
+		assert.Error(t, err)
+		assert.EqualError(t, err, "invalid \"--http.mygroup.header\": invalid header format: \"InvalidHeaderFormat\"")
 		assert.Nil(t, checkers)
-		assert.ErrorContains(t, err, "invalid \"--http.mygroup.headers\"")
+		assert.ErrorContains(t, err, "invalid \"--http.mygroup.header\"")
 	})
 
 	t.Run("Valid TCP Checker", func(t *testing.T) {

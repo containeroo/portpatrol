@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/containeroo/portpatrol/internal/checker"
@@ -47,16 +48,29 @@ func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) (
 				if method, err := group.GetString("method"); err == nil {
 					opts = append(opts, checker.WithHTTPMethod(method))
 				}
-				if headers, err := group.GetString("headers"); err == nil && headers != "" {
-					headersMap, err := httputils.ParseHeaders(headers, true)
+
+				allowDuplicateHeaders, _ := group.GetBool("allow-duplicate-headers") // Type is checked when parsing
+				if headers, err := group.GetStringSlices("header"); err == nil {
+					headersMap, err := createHTTPHeadersMap(headers, allowDuplicateHeaders)
 					if err != nil {
-						return nil, fmt.Errorf("invalid \"--%s.%s.headers\": %w", parentName, group.Name, err)
+						return nil, fmt.Errorf("invalid \"--%s.%s.header\": %w", parentName, group.Name, err)
 					}
 					opts = append(opts, checker.WithHTTPHeaders(headersMap))
 				}
+
+				if allowedStatusCodes, err := group.GetString("expected-status-codes"); err == nil {
+					statusCodes, err := httputils.ParseStatusCodes(allowedStatusCodes)
+					if err != nil {
+						return nil, fmt.Errorf("invalid \"--%s.%s.expected-status-codes\": %w", parentName, group.Name, err)
+					}
+
+					opts = append(opts, checker.WithExpectedStatusCodes(statusCodes))
+				}
+
 				if skipTLS, err := group.GetBool("skip-tls-verify"); err == nil {
 					opts = append(opts, checker.WithHTTPSkipTLSVerify(skipTLS))
 				}
+
 				if timeout, err := group.GetDuration("timeout"); err == nil {
 					opts = append(opts, checker.WithHTTPTimeout(timeout))
 				}
@@ -94,4 +108,33 @@ func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) (
 	}
 
 	return checkers, nil
+}
+
+// createHTTPHeadersMap creates a map or slice-based map of HTTP headers from a slice of strings.
+// If allowDuplicateHeaders is true, headers with the same key will be overwritten.
+func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (map[string]string, error) {
+	if headers == nil {
+		return nil, fmt.Errorf("headers cannot be nil")
+	}
+
+	headersMap := make(map[string]string)
+
+	for _, header := range headers {
+		parts := strings.SplitN(header, "=", 2)
+
+		if len(parts) != 2 || parts[0] == "" {
+			return nil, fmt.Errorf("invalid header format: %q", header)
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		if _, exists := headersMap[key]; exists && !allowDuplicateHeaders {
+			return nil, fmt.Errorf("duplicate header: %q", header)
+		}
+
+		headersMap[key] = value
+	}
+
+	return headersMap, nil
 }

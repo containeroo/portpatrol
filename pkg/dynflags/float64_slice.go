@@ -58,8 +58,13 @@ func (pg *ParsedGroup) GetFloat64Slices(flagName string) ([]float64, error) {
 	if !exists {
 		return nil, fmt.Errorf("flag '%s' not found in group '%s'", flagName, pg.Name)
 	}
+
 	if slice, ok := value.([]float64); ok {
 		return slice, nil
+	}
+
+	if f, ok := value.(float64); ok {
+		return []float64{f}, nil
 	}
 
 	return nil, fmt.Errorf("flag '%s' is not a []float64", flagName)
