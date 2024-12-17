@@ -124,3 +124,17 @@ func TestGetIntSlices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []int")
 	})
 }
+
+func TestIntSlicesGetBound(t *testing.T) {
+	t.Run("IntSlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]int
+		val := []int{1, 2, 3}
+		slices = &val
+
+		intSlicesValue := dynflags.IntSlicesValue{Bound: slices}
+		assert.Equal(t, val, intSlicesValue.GetBound())
+
+		intSlicesValue = dynflags.IntSlicesValue{Bound: nil}
+		assert.Nil(t, intSlicesValue.GetBound())
+	})
+}

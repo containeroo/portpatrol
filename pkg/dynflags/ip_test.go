@@ -124,3 +124,17 @@ func TestParsedGroupGetIP(t *testing.T) {
 		assert.EqualError(t, err, "flag 'ipFlag' is not a IP")
 	})
 }
+
+func TestIPGetBound(t *testing.T) {
+	t.Run("IPValue - GetBound", func(t *testing.T) {
+		var ip *net.IP
+		val := net.ParseIP("127.0.0.1")
+		ip = &val
+
+		ipValue := dynflags.IPValue{Bound: ip}
+		assert.Equal(t, val, ipValue.GetBound())
+
+		ipValue = dynflags.IPValue{Bound: nil}
+		assert.Nil(t, ipValue.GetBound())
+	})
+}

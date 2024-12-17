@@ -153,3 +153,17 @@ func TestGetStringSlices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []string")
 	})
 }
+
+func TestGetStringSlicesGetBound(t *testing.T) {
+	t.Run("StringSlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]string
+		val := []string{"a", "b", "c"}
+		slices = &val
+
+		stringSlicesValue := dynflags.StringSlicesValue{Bound: slices}
+		assert.Equal(t, val, stringSlicesValue.GetBound())
+
+		stringSlicesValue = dynflags.StringSlicesValue{Bound: nil}
+		assert.Nil(t, stringSlicesValue.GetBound())
+	})
+}

@@ -93,12 +93,12 @@ func (df *DynFlags) handleFlag(parentName, identifier, flagName, value string) e
 
 // setFlagValue sets the value of a known flag in the parsed group.
 func (df *DynFlags) setFlagValue(parsedGroup *ParsedGroup, flagName string, flag *Flag, value string) error {
-	parsedValue, err := flag.Value.Parse(value)
+	parsedValue, err := flag.value.Parse(value)
 	if err != nil {
 		return fmt.Errorf("failed to parse value for flag '%s': %v", flagName, err)
 	}
 
-	if err := flag.Value.Set(parsedValue); err != nil {
+	if err := flag.value.Set(parsedValue); err != nil {
 		return fmt.Errorf("failed to set value for flag '%s': %v", flagName, err)
 	}
 

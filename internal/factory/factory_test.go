@@ -97,6 +97,28 @@ func TestBuildCheckers(t *testing.T) {
 		assert.ErrorContains(t, err, "invalid \"--http.mygroup.header\"")
 	})
 
+	t.Run("Inalid HTTP Status codes", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ContinueOnError)
+		httpGroup := df.Group("http")
+		httpGroup.String("address", "http://example.com", "HTTP target address")
+		httpGroup.String("expected-status-codes", "400,401", "HTTP expected status codes")
+
+		args := []string{
+			"--http.mygroup.address=http://example.com",
+			"--http.mygroup.expected-status-codes=201-200",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		res := httpGroup.Lookup("expected-status-codes").GetValue()
+		assert.Equal(t, "201-200", res)
+		checkers, err := factory.BuildCheckers(df, 2*time.Second)
+		assert.Error(t, err)
+		assert.Len(t, checkers, 0)
+	})
+
 	t.Run("Valid HTTP Status codes", func(t *testing.T) {
 		t.Parallel()
 

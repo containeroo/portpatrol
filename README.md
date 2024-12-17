@@ -31,6 +31,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--http.<IDENTIFIER>.address`** = `string`
   The target's address.
+  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
 
   - **`--http.<IDENTIFIER>.interval`** = `duration`
   The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -41,6 +42,7 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--http.<IDENTIFIER>.header`** = `string`
   A HTTP header in `key=value` format. Can be specified multiple times.
   **Example:** `Authorization=Bearer token`
+  **Resolvable:** The value of the Header is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`. see below.
 
 - **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
   Allow duplicate headers. Defaults to `false`.
@@ -61,6 +63,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--icmp.<IDENTIFIER>.address`** = `string`
   The target's address.
+  **Resolvable:** The value of the Address is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`.
 
 - **`--icmp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -78,9 +81,22 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--tcp.<IDENTIFIER>.address`** = `string`
   The target's address.
+  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
 
 - **`--tcp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
+
+### Resolving variables
+
+Each `address` field can be resolved using environment variables, files, or plain text:
+
+- **Plain Text**: Simply input the credentials directly in plain text.
+- **Environment Variable**: Use the `env:` prefix, followed by the name of the environment variable that stores the credentials.
+- **File**: Use the `file:` prefix, followed by the path of the file that contains the credentials. The file should contain only the credentials.
+
+In case the file contains multiple key-value pairs, the specific key for the credentials can be selected by appending `//KEY` to the end of the path. Each key-value pair in the file must follow the `key = value` format. The system will use the value corresponding to the specified `//KEY`.
+
+HTTP headers values can also be resolved using the same mechanism, (`--
 
 ### Examples
 

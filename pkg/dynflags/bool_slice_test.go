@@ -130,3 +130,17 @@ func TestGetBoolSlices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []bool")
 	})
 }
+
+func TestBoolSlicesGetBound(t *testing.T) {
+	t.Run("BoolSlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]bool
+		val := []bool{true, false, true}
+		slices = &val
+
+		boolSlicesValue := dynflags.BoolSlicesValue{Bound: slices}
+		assert.Equal(t, val, boolSlicesValue.GetBound())
+
+		boolSlicesValue = dynflags.BoolSlicesValue{Bound: nil}
+		assert.Nil(t, boolSlicesValue.GetBound())
+	})
+}

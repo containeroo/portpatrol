@@ -10,6 +10,13 @@ type BoolValue struct {
 	Bound *bool
 }
 
+func (b *BoolValue) GetBound() interface{} {
+	if b.Bound == nil {
+		return nil
+	}
+	return *b.Bound
+}
+
 func (b *BoolValue) Parse(value string) (interface{}, error) {
 	return strconv.ParseBool(value)
 }
@@ -30,7 +37,7 @@ func (g *ConfigGroup) Bool(name string, value bool, usage string) *Flag {
 		Type:    FlagTypeBool,
 		Default: value,
 		Usage:   usage,
-		Value:   &BoolValue{Bound: bound},
+		value:   &BoolValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

@@ -10,6 +10,13 @@ type URLValue struct {
 	Bound *url.URL
 }
 
+func (u *URLValue) GetBound() interface{} {
+	if u.Bound == nil {
+		return nil
+	}
+	return *u.Bound
+}
+
 func (u *URLValue) Parse(value string) (interface{}, error) {
 	return url.Parse(value)
 }
@@ -37,7 +44,7 @@ func (g *ConfigGroup) URL(name, value, usage string) *Flag {
 		Type:    FlagTypeURL,
 		Default: value,
 		Usage:   usage,
-		Value:   &URLValue{Bound: bound},
+		value:   &URLValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

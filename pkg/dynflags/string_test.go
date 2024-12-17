@@ -100,3 +100,17 @@ func TestParsedGroupGetString(t *testing.T) {
 		assert.EqualError(t, err, "flag 'stringFlag' is not a string")
 	})
 }
+
+func TestStringGetBound(t *testing.T) {
+	t.Run("StringValue - GetBound", func(t *testing.T) {
+		var str *string
+		value := "test"
+		str = &value
+
+		stringValue := dynflags.StringValue{Bound: str}
+		assert.Equal(t, "test", stringValue.GetBound())
+
+		stringValue = dynflags.StringValue{Bound: nil}
+		assert.Nil(t, stringValue.GetBound())
+	})
+}

@@ -10,6 +10,13 @@ type DurationValue struct {
 	Bound *time.Duration
 }
 
+func (d *DurationValue) GetBound() interface{} {
+	if d.Bound == nil {
+		return nil
+	}
+	return *d.Bound
+}
+
 func (d *DurationValue) Parse(value string) (interface{}, error) {
 	return time.ParseDuration(value)
 }
@@ -30,7 +37,7 @@ func (g *ConfigGroup) Duration(name string, value time.Duration, usage string) *
 		Type:    FlagTypeDuration,
 		Default: value,
 		Usage:   usage,
-		Value:   &DurationValue{Bound: bound},
+		value:   &DurationValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

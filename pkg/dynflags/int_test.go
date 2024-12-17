@@ -108,3 +108,17 @@ func TestParsedGroup_GetInt(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestIntGetBound(t *testing.T) {
+	t.Run("IntValue - GetBound", func(t *testing.T) {
+		var i *int
+		val := 42
+		i = &val
+
+		intValue := dynflags.IntValue{Bound: i}
+		assert.Equal(t, 42, intValue.GetBound())
+
+		intValue = dynflags.IntValue{Bound: nil}
+		assert.Nil(t, intValue.GetBound())
+	})
+}

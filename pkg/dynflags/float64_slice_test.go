@@ -124,3 +124,17 @@ func TestGetFloat64Slices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []float64")
 	})
 }
+
+func TestFloat64SlicesGetBound(t *testing.T) {
+	t.Run("Float64SlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]float64
+		val := []float64{1.1, 2.2, 3.3}
+		slices = &val
+
+		floatSlicesValue := dynflags.Float64SlicesValue{Bound: slices}
+		assert.Equal(t, val, floatSlicesValue.GetBound())
+
+		floatSlicesValue = dynflags.Float64SlicesValue{Bound: nil}
+		assert.Nil(t, floatSlicesValue.GetBound())
+	})
+}

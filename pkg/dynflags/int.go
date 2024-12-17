@@ -10,6 +10,13 @@ type IntValue struct {
 	Bound *int
 }
 
+func (i *IntValue) GetBound() interface{} {
+	if i.Bound == nil {
+		return nil
+	}
+	return *i.Bound
+}
+
 func (i *IntValue) Parse(value string) (interface{}, error) {
 	return strconv.Atoi(value)
 }
@@ -30,7 +37,7 @@ func (g *ConfigGroup) Int(name string, value int, usage string) *Flag {
 		Type:    FlagTypeInt,
 		Default: value,
 		Usage:   usage,
-		Value:   &IntValue{Bound: bound},
+		value:   &IntValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

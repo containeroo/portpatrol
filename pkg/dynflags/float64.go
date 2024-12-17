@@ -10,6 +10,13 @@ type Float64Value struct {
 	Bound *float64
 }
 
+func (f *Float64Value) GetBound() interface{} {
+	if f.Bound == nil {
+		return nil
+	}
+	return *f.Bound
+}
+
 func (i *Float64Value) Parse(value string) (interface{}, error) {
 	return strconv.ParseFloat(value, 64)
 }
@@ -30,7 +37,7 @@ func (g *ConfigGroup) Float64(name string, value float64, usage string) *Flag {
 		Type:    FlagTypeInt,
 		Default: value,
 		Usage:   usage,
-		Value:   &Float64Value{Bound: bound},
+		value:   &Float64Value{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

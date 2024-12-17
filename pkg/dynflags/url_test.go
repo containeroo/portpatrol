@@ -130,3 +130,17 @@ func TestParsedGroupGetURL(t *testing.T) {
 		assert.EqualError(t, err, "flag 'urlFlag' is not a URL")
 	})
 }
+
+func TestURLGetBound(t *testing.T) {
+	t.Run("URLValue - GetBound", func(t *testing.T) {
+		var u *url.URL
+		val, _ := url.Parse("http://example.com")
+		u = val
+
+		urlValue := dynflags.URLValue{Bound: u}
+		assert.Equal(t, *val, urlValue.GetBound())
+
+		urlValue = dynflags.URLValue{Bound: nil}
+		assert.Nil(t, urlValue.GetBound())
+	})
+}

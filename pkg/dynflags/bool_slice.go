@@ -11,6 +11,13 @@ type BoolSlicesValue struct {
 	Bound *[]bool
 }
 
+func (b *BoolSlicesValue) GetBound() interface{} {
+	if b.Bound == nil {
+		return nil
+	}
+	return *b.Bound
+}
+
 func (b *BoolSlicesValue) Parse(value string) (interface{}, error) {
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
@@ -39,7 +46,7 @@ func (g *ConfigGroup) BoolSlices(name string, value []bool, usage string) *Flag 
 		Type:    FlagTypeBoolSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
-		Value:   &BoolSlicesValue{Bound: bound},
+		value:   &BoolSlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

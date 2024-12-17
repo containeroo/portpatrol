@@ -169,9 +169,9 @@ func TestParseHTTPStatusCodes(t *testing.T) {
 	t.Run("Invalid status range (start > end)", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := ParseStatusCodes("202-200")
+		_, err := ParseStatusCodes("201-200")
 
 		assert.Error(t, err)
-		assert.EqualError(t, err, "invalid status range: 202-200")
+		assert.EqualError(t, err, "invalid status range: 201-200")
 	})
 }

@@ -130,3 +130,17 @@ func TestParsedGroup_GetBool(t *testing.T) {
 		assert.EqualError(t, err, "flag 'invalidBool' is not a bool")
 	})
 }
+
+func TestBoolGetBound(t *testing.T) {
+	t.Run("BoolValue - GetBound", func(t *testing.T) {
+		var b *bool
+		val := true
+		b = &val
+
+		boolValue := dynflags.BoolValue{Bound: b}
+		assert.Equal(t, true, boolValue.GetBound())
+
+		boolValue = dynflags.BoolValue{Bound: nil}
+		assert.Nil(t, boolValue.GetBound())
+	})
+}

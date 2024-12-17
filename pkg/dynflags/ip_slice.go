@@ -11,6 +11,13 @@ type IPSlicesValue struct {
 	Bound *[]net.IP
 }
 
+func (i *IPSlicesValue) GetBound() interface{} {
+	if i.Bound == nil {
+		return nil
+	}
+	return *i.Bound
+}
+
 func (s *IPSlicesValue) Parse(value string) (interface{}, error) {
 	ip := net.ParseIP(value)
 	if ip == nil {
@@ -40,7 +47,7 @@ func (g *ConfigGroup) IPSlices(name string, value []net.IP, usage string) *Flag 
 		Type:    FlagTypeIPSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
-		Value:   &IPSlicesValue{Bound: bound},
+		value:   &IPSlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

@@ -11,6 +11,13 @@ type DurationSlicesValue struct {
 	Bound *[]time.Duration
 }
 
+func (d *DurationSlicesValue) GetBound() interface{} {
+	if d.Bound == nil {
+		return nil
+	}
+	return *d.Bound
+}
+
 func (d *DurationSlicesValue) Parse(value string) (interface{}, error) {
 	parsed, err := time.ParseDuration(value)
 	if err != nil {
@@ -40,7 +47,7 @@ func (g *ConfigGroup) DurationSlices(name string, value []time.Duration, usage s
 		Type:    FlagTypeDurationSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
-		Value:   &DurationSlicesValue{Bound: bound},
+		value:   &DurationSlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

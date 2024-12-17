@@ -10,6 +10,13 @@ type StringSlicesValue struct {
 	Bound *[]string
 }
 
+func (s *StringSlicesValue) GetBound() interface{} {
+	if s.Bound == nil {
+		return nil
+	}
+	return *s.Bound
+}
+
 func (s *StringSlicesValue) Parse(value string) (interface{}, error) {
 	return value, nil
 }
@@ -30,7 +37,7 @@ func (g *ConfigGroup) StringSlices(name string, value []string, usage string) *F
 		Type:    FlagTypeStringSlice,
 		Default: strings.Join(value, ","),
 		Usage:   usage,
-		Value:   &StringSlicesValue{Bound: bound},
+		value:   &StringSlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

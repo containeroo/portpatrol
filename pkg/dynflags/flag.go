@@ -25,7 +25,7 @@ type Flag struct {
 	Type    FlagType    // Type of the flag
 	Usage   string      // Description for usage
 	metaVar string      // MetaVar for flag
-	Value   FlagValue   // Encapsulated parsing and value-setting logic
+	value   FlagValue   // Encapsulated parsing and value-setting logic
 }
 
 func (f *Flag) MetaVar(metaVar string) {
@@ -38,4 +38,14 @@ type FlagValue interface {
 	Parse(value string) (interface{}, error)
 	// Set sets the flag's value to the given value
 	Set(value interface{}) error
+	// GetBound returns the bound value of the flag.
+	GetBound() interface{}
+}
+
+// Value returns the current value of the flag.
+func (f *Flag) GetValue() interface{} {
+	if f == nil || f.value == nil {
+		return nil
+	}
+	return f.value.GetBound()
 }

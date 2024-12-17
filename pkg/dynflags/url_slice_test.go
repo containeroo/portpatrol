@@ -136,3 +136,19 @@ func TestGetURLSlices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []*url.URL")
 	})
 }
+
+func TestURLSlicesGetBound(t *testing.T) {
+	t.Run("URLSlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]*url.URL
+		u1, _ := url.Parse("http://example.com")
+		u2, _ := url.Parse("http://example.org")
+		val := []*url.URL{u1, u2}
+		slices = &val
+
+		urlSlicesValue := dynflags.URLSlicesValue{Bound: slices}
+		assert.Equal(t, val, urlSlicesValue.GetBound())
+
+		urlSlicesValue = dynflags.URLSlicesValue{Bound: nil}
+		assert.Nil(t, urlSlicesValue.GetBound())
+	})
+}

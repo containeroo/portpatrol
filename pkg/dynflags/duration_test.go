@@ -107,3 +107,17 @@ func TestParsedGroup_GetDuration(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestDurationGetBound(t *testing.T) {
+	t.Run("DurationValue - GetBound", func(t *testing.T) {
+		var d *time.Duration
+		val := 2 * time.Second
+		d = &val
+
+		durationValue := dynflags.DurationValue{Bound: d}
+		assert.Equal(t, val, durationValue.GetBound())
+
+		durationValue = dynflags.DurationValue{Bound: nil}
+		assert.Nil(t, durationValue.GetBound())
+	})
+}

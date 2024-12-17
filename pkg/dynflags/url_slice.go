@@ -11,6 +11,13 @@ type URLSlicesValue struct {
 	Bound *[]*url.URL
 }
 
+func (u *URLSlicesValue) GetBound() interface{} {
+	if u.Bound == nil {
+		return nil
+	}
+	return *u.Bound
+}
+
 func (u *URLSlicesValue) Parse(value string) (interface{}, error) {
 	parsedURL, err := url.Parse(value)
 	if err != nil {
@@ -40,7 +47,7 @@ func (g *ConfigGroup) URLSlices(name string, value []*url.URL, usage string) *Fl
 		Type:    FlagTypeURLSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
-		Value:   &URLSlicesValue{Bound: bound},
+		value:   &URLSlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

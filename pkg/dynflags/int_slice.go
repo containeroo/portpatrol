@@ -11,6 +11,13 @@ type IntSlicesValue struct {
 	Bound *[]int
 }
 
+func (i *IntSlicesValue) GetBound() interface{} {
+	if i.Bound == nil {
+		return nil
+	}
+	return *i.Bound
+}
+
 func (s *IntSlicesValue) Parse(value string) (interface{}, error) {
 	parsedValue, err := strconv.Atoi(value)
 	if err != nil {
@@ -39,7 +46,7 @@ func (g *ConfigGroup) IntSlices(name string, value []int, usage string) *Flag {
 		Type:    FlagTypeIntSlice,
 		Default: strings.Join(defaults, ","),
 		Usage:   usage,
-		Value:   &IntSlicesValue{Bound: bound},
+		value:   &IntSlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

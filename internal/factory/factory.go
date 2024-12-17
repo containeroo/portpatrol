@@ -8,6 +8,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/checker"
 	"github.com/containeroo/portpatrol/pkg/dynflags"
 	"github.com/containeroo/portpatrol/pkg/httputils"
+	"github.com/containeroo/portpatrol/pkg/resolver"
 )
 
 // CheckerWithInterval represents a checker with its interval.
@@ -32,6 +33,11 @@ func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) (
 			address, err := group.GetString("address")
 			if err != nil {
 				return nil, fmt.Errorf("missing address for %s checker: %w", parentName, err)
+			}
+
+			resolvedAddress, err := resolver.ResolveVariable(address)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve variable in address: %w", err)
 			}
 
 			// Default interval for the checker
@@ -94,7 +100,7 @@ func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) (
 				name = group.Name
 			}
 
-			instance, err := checker.NewChecker(checkType, name, address, opts...)
+			instance, err := checker.NewChecker(checkType, name, resolvedAddress, opts...)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create %s checker: %w", parentName, err)
 			}
@@ -129,11 +135,16 @@ func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (map[str
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
+		resolved, err := resolver.ResolveVariable(value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve variable in header: %w", err)
+		}
+
 		if _, exists := headersMap[key]; exists && !allowDuplicateHeaders {
 			return nil, fmt.Errorf("duplicate header: %q", header)
 		}
 
-		headersMap[key] = value
+		headersMap[key] = resolved
 	}
 
 	return headersMap, nil

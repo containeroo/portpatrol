@@ -131,3 +131,17 @@ func TestGetDurationSlices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []time.Duration")
 	})
 }
+
+func TestDurationSlicesGetBound(t *testing.T) {
+	t.Run("DurationSlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]time.Duration
+		val := []time.Duration{1 * time.Second, 2 * time.Second}
+		slices = &val
+
+		durationSlicesValue := dynflags.DurationSlicesValue{Bound: slices}
+		assert.Equal(t, val, durationSlicesValue.GetBound())
+
+		durationSlicesValue = dynflags.DurationSlicesValue{Bound: nil}
+		assert.Nil(t, durationSlicesValue.GetBound())
+	})
+}

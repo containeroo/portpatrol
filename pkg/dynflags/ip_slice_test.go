@@ -130,3 +130,17 @@ func TestGetIPSlices(t *testing.T) {
 		assert.EqualError(t, err, "flag 'flag1' is not a []net.IP")
 	})
 }
+
+func TestIPSlicesGetBound(t *testing.T) {
+	t.Run("IPSlicesValue - GetBound", func(t *testing.T) {
+		var slices *[]net.IP
+		val := []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("10.0.0.1")}
+		slices = &val
+
+		ipSlicesValue := dynflags.IPSlicesValue{Bound: slices}
+		assert.Equal(t, val, ipSlicesValue.GetBound())
+
+		ipSlicesValue = dynflags.IPSlicesValue{Bound: nil}
+		assert.Nil(t, ipSlicesValue.GetBound())
+	})
+}

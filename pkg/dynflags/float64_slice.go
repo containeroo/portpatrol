@@ -11,6 +11,13 @@ type Float64SlicesValue struct {
 	Bound *[]float64
 }
 
+func (f *Float64SlicesValue) GetBound() interface{} {
+	if f.Bound == nil {
+		return nil
+	}
+	return *f.Bound
+}
+
 func (f *Float64SlicesValue) Parse(value string) (interface{}, error) {
 	parsed, err := strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -40,7 +47,7 @@ func (g *ConfigGroup) Float64Slices(name string, value []float64, usage string) 
 		Type:    FlagTypeFloatSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
-		Value:   &Float64SlicesValue{Bound: bound},
+		value:   &Float64SlicesValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

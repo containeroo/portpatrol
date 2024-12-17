@@ -7,6 +7,13 @@ type StringValue struct {
 	Bound *string
 }
 
+func (s *StringValue) GetBound() interface{} {
+	if s.Bound == nil {
+		return nil
+	}
+	return *s.Bound
+}
+
 func (s *StringValue) Parse(value string) (interface{}, error) {
 	return value, nil
 }
@@ -27,7 +34,7 @@ func (g *ConfigGroup) String(name, value, usage string) *Flag {
 		Type:    FlagTypeString,
 		Default: value,
 		Usage:   usage,
-		Value:   &StringValue{Bound: bound},
+		value:   &StringValue{Bound: bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)

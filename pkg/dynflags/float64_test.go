@@ -114,3 +114,17 @@ func TestParsedGroup_GetFloat64(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestFloat64GetBound(t *testing.T) {
+	t.Run("Float64Value - GetBound", func(t *testing.T) {
+		var f *float64
+		val := 3.14
+		f = &val
+
+		floatValue := dynflags.Float64Value{Bound: f}
+		assert.Equal(t, 3.14, floatValue.GetBound())
+
+		floatValue = dynflags.Float64Value{Bound: nil}
+		assert.Nil(t, floatValue.GetBound())
+	})
+}

@@ -10,6 +10,13 @@ type IPValue struct {
 	Bound *net.IP
 }
 
+func (i *IPValue) GetBound() interface{} {
+	if i.Bound == nil {
+		return nil
+	}
+	return *i.Bound
+}
+
 func (u *IPValue) Parse(value string) (interface{}, error) {
 	result := net.ParseIP(value)
 	if result == nil {
@@ -41,7 +48,7 @@ func (g *ConfigGroup) IP(name, value, usage string) *Flag {
 		Type:    FlagTypeIP,
 		Default: value,
 		Usage:   usage,
-		Value:   &IPValue{Bound: *bound},
+		value:   &IPValue{Bound: *bound},
 	}
 	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
