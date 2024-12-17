@@ -27,29 +27,24 @@ func (b *BoolSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected bool")
 }
 
-// BoolSlicesVar defines a bool slice flag with specified name, default value, and usage string.
-// The argument p points to a slice of bool in which to store the value of the flag.
-func (g *ConfigGroup) BoolSlicesVar(p *[]bool, name string, value []bool, usage string) {
-	*p = *g.BoolSlices(name, value, usage)
-}
-
 // BoolSlices defines a bool slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of bool that stores the value of the flag.
-func (g *ConfigGroup) BoolSlices(name string, value []bool, usage string) *[]bool {
+func (g *ConfigGroup) BoolSlices(name string, value []bool, usage string) *Flag {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, v := range value {
 		defaultValue[i] = strconv.FormatBool(v)
 	}
-
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeBoolSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
 		Value:   &BoolSlicesValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+
+	return flag
 }
 
 // GetBoolSlices returns the []bool value of a flag with the given name

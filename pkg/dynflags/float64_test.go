@@ -69,24 +69,7 @@ func TestGroupConfig_Float64(t *testing.T) {
 		value := group.Float64("float64-test", 123.456, "test float64 flag")
 
 		assert.NotNil(t, value)
-		assert.Equal(t, 123.456, *value)
-		assert.Contains(t, group.Flags, "float64-test")
-	})
-}
-
-func TestGroupConfig_Float64Var(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Define Float64Var Flag", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{
-			Flags: make(map[string]*dynflags.Flag),
-		}
-		var boundValue float64
-		group.Float64Var(&boundValue, "float64-test", 123.456, "test float64 flag")
-
-		assert.Equal(t, 123.456, boundValue)
+		assert.Equal(t, 123.456, value.Default)
 		assert.Contains(t, group.Flags, "float64-test")
 	})
 }

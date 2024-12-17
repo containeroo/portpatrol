@@ -189,6 +189,38 @@ TCP
   --tcp.<IDENTIFIER>.address STRING  TCP target address (default: 127.0.0.1:8080)
 ```
 
+## MetaVar
+
+`MetaVar` is a string that is used to represent the flag in the usage message. It defaults to the flag type in uppercase.
+
+- String flags: `--<IDENTIFIER>.<FLAG>.<FLAG> STRING`
+- Boolean flags: `--<IDENTIFIER>.<FLAG>.<FLAG> BOOL`
+
+Slices will have a `MetaVar` with the base type in uppdercase, followed by a small `s`.
+
+- String Slices: `--<IDENTIFIER>.<FLAG>.<FLAG> STRINGs`
+- Boolean Slices: `--<IDENTIFIER>.<FLAG>.<FLAG> BOOLs`
+
+To change the `MetaVar` for a flag, set the `MetaVar` field on the flag.
+
+**Example:**
+
+```go
+dynFlags := dynflags.New(dynflags.ContinueOnError)
+tcpGroup := dynFlags.Group("tcp")
+timeout := tcpGroup.String("Timeout", "10s", "TCP timeout")
+timeout.MetaVar("CUSTOM")
+dynFlags.PrintDefaults()
+```
+
+**Output:**
+
+```text
+TCP
+  Flag                                   Usage
+  --tcp.<IDENTIFIER>.Timeout CUSTOM      TCP timeout (default: 10s)
+```
+
 ## Examples
 
 The `examples` directory contains a simple example that demonstrates the usage of `dynflags`, as well as an advanced example that shows how to use `dynflags` with `pflag`.

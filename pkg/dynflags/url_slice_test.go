@@ -66,24 +66,11 @@ func TestGroupConfigURLSlices(t *testing.T) {
 			{Scheme: "https", Host: "example.com"},
 			{Scheme: "http", Host: "localhost"},
 		}
-		urlSlice := group.URLSlices("urlSliceFlag", defaultValue, "A URL slices flag")
+		group.URLSlices("urlSliceFlag", defaultValue, "A URL slices flag")
 
-		assert.Equal(t, []*url.URL{
-			{Scheme: "https", Host: "example.com"},
-			{Scheme: "http", Host: "localhost"},
-		}, *urlSlice)
 		assert.Contains(t, group.Flags, "urlSliceFlag")
 		assert.Equal(t, "A URL slices flag", group.Flags["urlSliceFlag"].Usage)
 		assert.Equal(t, "https://example.com,http://localhost", group.Flags["urlSliceFlag"].Default)
-	})
-
-	t.Run("Define URLSlicesVar and set value", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
-		var urlSlice []*url.URL
-		group.URLSlicesVar(&urlSlice, "urlSliceFlag", []*url.URL{{Scheme: "https", Host: "google.com"}}, "URL slices flag variable")
-		assert.Equal(t, []*url.URL{{Scheme: "https", Host: "google.com"}}, urlSlice)
 	})
 }
 

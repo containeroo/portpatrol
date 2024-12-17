@@ -195,4 +195,29 @@ func TestDynFlagsParse(t *testing.T) {
 		unparsedArgs := df.UnparsedArgs()
 		assert.Contains(t, unparsedArgs, "--http.identifier1.method")
 	})
+
+	t.Run("Same unknown group", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ParseUnknown)
+
+		args := []string{
+			"--unknownGroup.identifier.flag=value1",
+			"--unknownGroup.identifier2.flag2=value2",
+		}
+
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		unknownGroups := df.Unknown()
+
+		group1 := unknownGroups.Lookup("unknownGroup").Lookup("identifier")
+		assert.NotNil(t, group1, "Expected group 'unknownGroup.identifier' to exist")
+		assert.Equal(t, "value1", group1.Values["flag"], "Expected 'flag' to have the correct value")
+
+		group2 := unknownGroups.Lookup("unknownGroup").Lookup("identifier2")
+		assert.NotNil(t, group2, "Expected group 'unknownGroup.identifier2' to exist")
+		assert.Equal(t, "value2", group2.Values["flag2"], "Expected 'flag2' to have the correct value")
+		assert.Len(t, unknownGroups.Groups()["unknownGroup"], 2, "Expected exactly 2 identifiers in 'unknownGroup'")
+	})
 }

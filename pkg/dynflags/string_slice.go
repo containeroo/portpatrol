@@ -22,24 +22,19 @@ func (s *StringSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected string")
 }
 
-// StringSlicesVar defines a string slice flag with specified name, default value, and usage string.
-// The argument p points to a slice of strings in which to store the value of the flag.
-func (g *ConfigGroup) StringSlicesVar(p *[]string, name string, value []string, usage string) {
-	*p = *g.StringSlices(name, value, usage)
-}
-
 // StringSlices defines a string slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of strings that stores the value of the flag.
-func (g *ConfigGroup) StringSlices(name string, value []string, usage string) *[]string {
+func (g *ConfigGroup) StringSlices(name string, value []string, usage string) *Flag {
 	bound := &value
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeStringSlice,
 		Default: strings.Join(value, ","),
 		Usage:   usage,
 		Value:   &StringSlicesValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetStringSlices returns the []string value of a flag with the given name

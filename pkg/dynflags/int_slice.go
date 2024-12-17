@@ -27,28 +27,23 @@ func (s *IntSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected int")
 }
 
-// IntSlicesVar defines an int slice flag with specified name, default value, and usage string.
-// The argument p points to a slice of integers in which to store the value of the flag.
-func (g *ConfigGroup) IntSlicesVar(p *[]int, name string, value []int, usage string) {
-	*p = *g.IntSlices(name, value, usage)
-}
-
 // IntSlices defines an int slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of integers that stores the value of the flag.
-func (g *ConfigGroup) IntSlices(name string, value []int, usage string) *[]int {
+func (g *ConfigGroup) IntSlices(name string, value []int, usage string) *Flag {
 	bound := &value
 	defaults := make([]string, len(value))
 	for i, v := range value {
 		defaults[i] = strconv.Itoa(v)
 	}
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeIntSlice,
 		Default: strings.Join(defaults, ","),
 		Usage:   usage,
 		Value:   &IntSlicesValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetIntSlices returns the []int value of a flag with the given name

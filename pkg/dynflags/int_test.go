@@ -60,27 +60,6 @@ func TestGroupConfig_Int(t *testing.T) {
 		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		bound := group.Int("test-int", 100, "Test integer flag")
 		assert.NotNil(t, bound)
-		assert.Equal(t, 100, *bound)
-
-		flag, exists := group.Flags["test-int"]
-		assert.True(t, exists)
-		assert.NotNil(t, flag)
-		assert.Equal(t, dynflags.FlagTypeInt, flag.Type)
-		assert.Equal(t, 100, flag.Default)
-		assert.Equal(t, "Test integer flag", flag.Usage)
-	})
-}
-
-func TestGroupConfig_IntVar(t *testing.T) {
-	t.Parallel()
-
-	t.Run("SetIntVar", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
-		var bound int
-		group.IntVar(&bound, "test-int", 100, "Test integer flag")
-		assert.Equal(t, 100, bound)
 
 		flag, exists := group.Flags["test-int"]
 		assert.True(t, exists)

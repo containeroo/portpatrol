@@ -26,15 +26,9 @@ func (u *IPValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected IP")
 }
 
-// IPVar defines an net.IP flag with specified name, default value, and usage string.
-// The argument p points to an net.IP variable in which to store the value of the flag.
-func (g *ConfigGroup) IPVar(p *net.IP, name, value, usage string) {
-	*p = *g.IP(name, value, usage)
-}
-
 // IP defines an net.IP flag with specified name, default value, and usage string.
 // The return value is the address of an net.IP variable that stores the value of the flag.
-func (g *ConfigGroup) IP(name, value, usage string) *net.IP {
+func (g *ConfigGroup) IP(name, value, usage string) *Flag {
 	bound := new(*net.IP)
 	if value != "" {
 		parsed := net.ParseIP(value)
@@ -43,14 +37,15 @@ func (g *ConfigGroup) IP(name, value, usage string) *net.IP {
 		}
 		*bound = &parsed // Copy the parsed URL into bound
 	}
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeIP,
 		Default: value,
 		Usage:   usage,
 		Value:   &IPValue{Bound: *bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return *bound
+	return flag
 }
 
 // GetIP returns the net.IP value of a flag with the given name

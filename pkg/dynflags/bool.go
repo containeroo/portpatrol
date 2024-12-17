@@ -22,24 +22,19 @@ func (b *BoolValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected bool")
 }
 
-// BoolVar defines a bool flag with specified name, default value, and usage string.
-// The argument p points to a bool variable in which to store the value of the flag.
-func (g *ConfigGroup) BoolVar(p *bool, name string, value bool, usage string) {
-	*p = *g.Bool(name, value, usage)
-}
-
 // Bool defines a bool flag with specified name, default value, and usage string.
 // The return value is the address of a bool variable that stores the value of the flag.
-func (g *ConfigGroup) Bool(name string, value bool, usage string) *bool {
+func (g *ConfigGroup) Bool(name string, value bool, usage string) *Flag {
 	bound := &value
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeBool,
 		Default: value,
 		Usage:   usage,
 		Value:   &BoolValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetBool returns the bool value of a flag with the given name

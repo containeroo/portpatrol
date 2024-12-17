@@ -50,21 +50,11 @@ func TestGroupConfigString(t *testing.T) {
 
 		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := "default"
-		str := group.String("stringFlag", defaultValue, "A string flag")
+		group.String("stringFlag", defaultValue, "A string flag")
 
-		assert.Equal(t, "default", *str)
 		assert.Contains(t, group.Flags, "stringFlag")
 		assert.Equal(t, "A string flag", group.Flags["stringFlag"].Usage)
 		assert.Equal(t, defaultValue, group.Flags["stringFlag"].Default)
-	})
-
-	t.Run("Define StringVar and set value", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
-		var str string
-		group.StringVar(&str, "stringFlag", "initial", "String flag variable")
-		assert.Equal(t, "initial", str)
 	})
 }
 

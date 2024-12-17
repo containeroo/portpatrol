@@ -67,7 +67,7 @@ func TestGroupConfigURL(t *testing.T) {
 		defaultValue := "https://default.com"
 		urlFlag := group.URL("urlFlag", defaultValue, "A URL flag")
 
-		assert.Equal(t, "https://default.com", urlFlag.String())
+		assert.Equal(t, "https://default.com", urlFlag.Default)
 		assert.Contains(t, group.Flags, "urlFlag")
 		assert.Equal(t, "A URL flag", group.Flags["urlFlag"].Usage)
 		assert.Equal(t, defaultValue, group.Flags["urlFlag"].Default)
@@ -83,15 +83,6 @@ func TestGroupConfigURL(t *testing.T) {
 			func() {
 				group.URL("urlFlag", "http://i nvalid-url", "Invalid URL flag")
 			})
-	})
-
-	t.Run("Define URLVar and set value", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
-		var boundURL url.URL
-		group.URLVar(&boundURL, "urlFlag", "https://example.com", "URL flag variable")
-		assert.Equal(t, "https://example.com", boundURL.String())
 	})
 }
 

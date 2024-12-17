@@ -22,24 +22,19 @@ func (i *Float64Value) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected float64")
 }
 
-// Float64Var defines a float64 flag with specified name, default value, and usage string.
-// The argument p points to a float64 variable in which to store the value of the flag.
-func (g *ConfigGroup) Float64Var(p *float64, name string, value float64, usage string) {
-	*p = *g.Float64(name, value, usage)
-}
-
 // Float64 defines a float64 flag with specified name, default value, and usage string.
 // The return value is the address of a float64 variable that stores the value of the flag.
-func (g *ConfigGroup) Float64(name string, value float64, usage string) *float64 {
+func (g *ConfigGroup) Float64(name string, value float64, usage string) *Flag {
 	bound := &value
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeInt,
 		Default: value,
 		Usage:   usage,
 		Value:   &Float64Value{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetFloat64 returns the float64 value of a flag with the given name

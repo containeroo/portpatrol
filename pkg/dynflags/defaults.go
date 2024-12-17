@@ -54,7 +54,12 @@ func (df *DynFlags) PrintDefaults() {
 				if flag.Default != nil && flag.Default != "" {
 					usage = fmt.Sprintf("%s (default: %v)", flag.Usage, flag.Default)
 				}
-				fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, flag.Type, usage)
+				metavar := string(flag.Type)
+				if flag.metaVar != "" {
+					metavar = flag.metaVar
+				}
+
+				fmt.Fprintf(w, "  --%s.<IDENTIFIER>.%s %s\t%s\n", groupName, flagName, metavar, usage)
 			}
 			fmt.Fprintln(w, "")
 		}

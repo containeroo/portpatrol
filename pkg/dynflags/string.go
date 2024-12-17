@@ -19,24 +19,19 @@ func (s *StringValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected string")
 }
 
-// StringVar defines a string flag with specified name, default value, and usage string.
-// The argument p points to a string variable in which to store the value of the flag.
-func (g *ConfigGroup) StringVar(p *string, name, value, usage string) {
-	*p = *g.String(name, value, usage)
-}
-
 // String defines a string flag with specified name, default value, and usage string.
-// The return value is the address of a string variable that stores the value of the flag.
-func (g *ConfigGroup) String(name, value, usage string) *string {
+// It returns the *Flag for further customization.
+func (g *ConfigGroup) String(name, value, usage string) *Flag {
 	bound := &value
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeString,
 		Default: value,
 		Usage:   usage,
 		Value:   &StringValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetString returns the string value of a flag with the given name

@@ -27,29 +27,24 @@ func (f *Float64SlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected float64")
 }
 
-// Float64SlicesVar defines a float64 slice flag with specified name, default value, and usage string.
-// The argument p points to a slice of float64 in which to store the value of the flag.
-func (g *ConfigGroup) Float64SlicesVar(p *[]float64, name string, value []float64, usage string) {
-	*p = *g.Float64Slices(name, value, usage)
-}
-
 // Float64Slices defines a float64 slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of float64 that stores the value of the flag.
-func (g *ConfigGroup) Float64Slices(name string, value []float64, usage string) *[]float64 {
+func (g *ConfigGroup) Float64Slices(name string, value []float64, usage string) *Flag {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, v := range value {
 		defaultValue[i] = strconv.FormatFloat(v, 'f', -1, 64)
 	}
 
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeFloatSlice,
 		Default: strings.Join(defaultValue, ","),
 		Usage:   usage,
 		Value:   &Float64SlicesValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetFloat64Slices returns the []float64 value of a flag with the given name

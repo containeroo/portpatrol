@@ -24,7 +24,12 @@ type Flag struct {
 	Default interface{} // Default value for the flag
 	Type    FlagType    // Type of the flag
 	Usage   string      // Description for usage
+	metaVar string      // MetaVar for flag
 	Value   FlagValue   // Encapsulated parsing and value-setting logic
+}
+
+func (f *Flag) MetaVar(metaVar string) {
+	f.metaVar = metaVar
 }
 
 // FlagValue interface encapsulates parsing and value-setting logic

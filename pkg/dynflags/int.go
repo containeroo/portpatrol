@@ -22,24 +22,19 @@ func (i *IntValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected int")
 }
 
-// IntVar defines an int flag with specified name, default value, and usage string.
-// The argument p points to an int variable in which to store the value of the flag.
-func (g *ConfigGroup) IntVar(p *int, name string, value int, usage string) {
-	*p = *g.Int(name, value, usage)
-}
-
 // Int defines an int flag with specified name, default value, and usage string.
 // The return value is the address of an int variable that stores the value of the flag.
-func (g *ConfigGroup) Int(name string, value int, usage string) *int {
+func (g *ConfigGroup) Int(name string, value int, usage string) *Flag {
 	bound := &value
-	g.Flags[name] = &Flag{
+	flag := &Flag{
 		Type:    FlagTypeInt,
 		Default: value,
 		Usage:   usage,
 		Value:   &IntValue{Bound: bound},
 	}
+	g.Flags[name] = flag
 	g.flagOrder = append(g.flagOrder, name)
-	return bound
+	return flag
 }
 
 // GetInt returns the int value of a flag with the given name

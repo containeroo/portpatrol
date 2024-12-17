@@ -63,25 +63,9 @@ func TestGroupConfig_Duration(t *testing.T) {
 		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := 5 * time.Second
 		bound := group.Duration("timeout", defaultValue, "Timeout duration")
-		assert.Equal(t, defaultValue, *bound)
+		assert.Equal(t, defaultValue, bound.Default)
 		assert.Contains(t, group.Flags, "timeout")
 		assert.Equal(t, defaultValue, group.Flags["timeout"].Default)
-		assert.Equal(t, dynflags.FlagTypeDuration, group.Flags["timeout"].Type)
-	})
-}
-
-func TestGroupConfig_DurationVar(t *testing.T) {
-	t.Parallel()
-
-	t.Run("DurationVar", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
-		var duration time.Duration
-		group.DurationVar(&duration, "timeout", 10*time.Second, "Timeout duration")
-		assert.Equal(t, 10*time.Second, duration)
-		assert.Contains(t, group.Flags, "timeout")
-		assert.Equal(t, 10*time.Second, group.Flags["timeout"].Default)
 		assert.Equal(t, dynflags.FlagTypeDuration, group.Flags["timeout"].Type)
 	})
 }

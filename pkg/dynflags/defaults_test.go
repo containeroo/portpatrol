@@ -179,4 +179,21 @@ func TestPrintDefaults(t *testing.T) {
 		assert.Contains(t, output, "TEST")
 		assert.NotContains(t, output, "Flag\tUsage")
 	})
+
+	t.Run("Metavar", func(t *testing.T) {
+		t.Parallel()
+
+		var buf bytes.Buffer
+		df := dynflags.New(dynflags.ContinueOnError)
+		df.SetOutput(&buf)
+		g := df.Group("test")
+		s := g.String("test", "", "Test flag")
+		s.MetaVar("CUSTOM")
+
+		df.PrintDefaults()
+
+		output := buf.String()
+		assert.Contains(t, output, "CUSTOM")
+		assert.NotContains(t, output, "Flag\tUsage")
+	})
 }

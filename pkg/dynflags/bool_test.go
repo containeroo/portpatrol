@@ -81,27 +81,11 @@ func TestGroupConfig_Bool(t *testing.T) {
 		group := &dynflags.ConfigGroup{
 			Flags: make(map[string]*dynflags.Flag),
 		}
-		boolVar := group.Bool("testBool", true, "Test boolean flag")
-		assert.Equal(t, true, *boolVar)
+		group.Bool("testBool", true, "Test boolean flag")
 		flag := group.Flags["testBool"]
 		assert.NotNil(t, flag)
 		assert.Equal(t, dynflags.FlagTypeBool, flag.Type)
 		assert.Equal(t, true, flag.Default)
-	})
-
-	t.Run("BindBoolVar", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{
-			Flags: make(map[string]*dynflags.Flag),
-		}
-		var boundBool bool
-		group.BoolVar(&boundBool, "testBoolVar", false, "Test bound boolean flag")
-		assert.Equal(t, false, boundBool)
-		flag := group.Flags["testBoolVar"]
-		assert.NotNil(t, flag)
-		assert.Equal(t, dynflags.FlagTypeBool, flag.Type)
-		assert.Equal(t, false, flag.Default)
 	})
 }
 

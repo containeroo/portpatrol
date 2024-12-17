@@ -59,21 +59,11 @@ func TestGroupConfigBoolSlices(t *testing.T) {
 
 		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []bool{true, false}
-		boolSlice := group.BoolSlices("boolSliceFlag", defaultValue, "A bool slices flag")
+		group.BoolSlices("boolSliceFlag", defaultValue, "A bool slices flag")
 
-		assert.Equal(t, []bool{true, false}, *boolSlice)
 		assert.Contains(t, group.Flags, "boolSliceFlag")
 		assert.Equal(t, "A bool slices flag", group.Flags["boolSliceFlag"].Usage)
 		assert.Equal(t, "true,false", group.Flags["boolSliceFlag"].Default)
-	})
-
-	t.Run("Define BoolSlicesVar and set value", func(t *testing.T) {
-		t.Parallel()
-
-		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
-		var boolSlice []bool
-		group.BoolSlicesVar(&boolSlice, "boolSliceFlag", []bool{true}, "Bool slices flag variable")
-		assert.Equal(t, []bool{true}, boolSlice)
 	})
 }
 
