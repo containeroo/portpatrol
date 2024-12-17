@@ -3,9 +3,14 @@ package dynflags
 // ConfigGroup represents the static configuration for a group.
 type ConfigGroup struct {
 	Name      string           // Name of the group.
-	Usage     string           // Title for usage. If not set it takes the name of the group in Uppercase.
+	usage     string           // Title for usage. If not set it takes the name of the group in Uppercase.
 	Flags     map[string]*Flag // Flags within the group.
 	flagOrder []string         // Order of flags.
+}
+
+// Usage sets the usage for the group.
+func (cg *ConfigGroup) Usage(usage string) {
+	cg.usage = usage
 }
 
 // Lookup retrieves a flag in the group by its name.

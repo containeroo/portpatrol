@@ -107,6 +107,88 @@ for groupName, groups := range dynFlags.Parsed().Groups() {
 }
 ```
 
+## Title, Description, and Epilog
+
+`dynflags` allows you to set a title, description, and epilog for the help message.
+You can also change the default usage output by setting the `Usage` field of a group. If not set, it uses the Group name in uppercase.
+
+**Example:**
+
+```go
+dynFlags := dynflags.New(dynflags.ContinueOnError)
+dynFlags.Title("DynFlags Example Application")
+dynFlags.Description("This application demonstrates the usage of DynFlags for managing hierarchical flags dynamically.")
+dynFlags.Epilog("For more information, see https://github.com/containerish/portpatrol")
+
+tcpGroup := dynFlags.Group("tcp")
+tcGroup.Usage("TCP flags")
+tcpGroup.String("Timeout", "10s", "TCP timeout")
+tcpGroup.String("address", "127.0.0.1:8080", "TCP target address")
+
+httpGroup := dynFlags.Group("http")
+httpGroup.Usage("HTTP flags")
+httpGroup.String("method", "GET", "HTTP method to use")
+httpGroup.String("address", "https://example.com", "HTTP target URL")
+
+dynFlags.PrintDefaults()
+```
+
+**Output:**
+
+```text
+DynFlags Example Application
+
+This application demonstrates the usage of DynFlags for managing hierarchical flags dynamically.
+
+TCP flags
+  Flag                               Usage
+  --tcp.<IDENTIFIER>.Timeout STRING  TCP timeout (default: 10s)
+  --tcp.<IDENTIFIER>.address STRING  TCP target address (default: 127.0.0.1:8080)
+
+HTTP flags
+  Flag                                Usage
+  --http.<IDENTIFIER>.method STRING   HTTP method to use (default: GET)
+  --http.<IDENTIFIER>.address STRING  HTTP target URL (default: https://example.com)
+
+
+For more information, see https://github.com/containerish/portpatrol
+```
+
+## Disable sorting of flags
+
+`dynflags` allows you to disable sorting of groups and flags for help and usage message. Sort is disabled by default.
+
+**Example:**
+
+```go
+dynFlags := dynflags.New(dynflags.ContinueOnError)
+tcpGroup := dynFlags.Group("tcp")
+tcpGroup.String("Timeout", "10s", "TCP timeout")
+tcpGroup.String("address", "127.0.0.1:8080", "TCP target address")
+
+httpGroup := dynFlags.Group("http")
+httpGroup.String("method", "GET", "HTTP method to use")
+httpGroup.String("address", "https://example.com", "HTTP target URL")
+
+dynFlags.SortGroups = true
+dynFlags.SortFlags = true
+dynFlags.PrintDefaults()
+```
+
+**Output:**
+
+```text
+HTTP
+  Flag                                Usage
+  --http.<IDENTIFIER>.address STRING  HTTP target URL (default: https://example.com)
+  --http.<IDENTIFIER>.method STRING   HTTP method to use (default: GET)
+
+TCP
+  Flag                               Usage
+  --tcp.<IDENTIFIER>.Timeout STRING  TCP timeout (default: 10s)
+  --tcp.<IDENTIFIER>.address STRING  TCP target address (default: 127.0.0.1:8080)
+```
+
 ## Examples
 
 The `examples` directory contains a simple example that demonstrates the usage of `dynflags`, as well as an advanced example that shows how to use `dynflags` with `pflag`.

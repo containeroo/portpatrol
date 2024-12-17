@@ -34,8 +34,8 @@ func (df *DynFlags) PrintDefaults() {
 		group := df.configGroups[groupName]
 
 		// Print group usage or fallback to uppercase group name
-		if group.Usage != "" {
-			fmt.Fprintln(w, group.Usage)
+		if group.usage != "" {
+			fmt.Fprintln(w, group.usage)
 		} else {
 			fmt.Fprintln(w, strings.ToUpper(groupName))
 		}
