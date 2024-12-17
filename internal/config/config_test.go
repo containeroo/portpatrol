@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,7 +85,10 @@ func TestParseFlags(t *testing.T) {
 
 func TestIsHelpRequested(t *testing.T) {
 	t.Parallel()
+
 	t.Run("Help requested", func(t *testing.T) {
+		t.Parallel()
+
 		err := &HelpRequested{Message: "Help requested"}
 		assert.ErrorIs(t, err, &HelpRequested{})
 	})
@@ -191,6 +195,19 @@ func TestGetDurationFlag(t *testing.T) {
 		duration, err := getDurationFlag(flagSet, "default-interval", time.Second)
 		assert.NoError(t, err)
 		assert.Equal(t, 10*time.Second, duration)
+	})
+
+	t.Run("Invalid Duration", func(t *testing.T) {
+		t.Parallel()
+
+		flagSet := pflag.NewFlagSet("portpatrol", pflag.ContinueOnError)
+		flagSet.String("invalid-flag", "invalid", "Invalid flag")
+		err := flagSet.Set("invalid-flag", "invalid")
+		assert.NoError(t, err)
+
+		_, err = getDurationFlag(flagSet, "invalid-flag", time.Second)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "invalid duration for flag 'invalid'")
 	})
 
 	t.Run("Missing Duration Flag", func(t *testing.T) {
