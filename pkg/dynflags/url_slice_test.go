@@ -87,51 +87,65 @@ func TestGroupConfigURLSlices(t *testing.T) {
 	})
 }
 
-func TestParsedGroupGetURLSlices(t *testing.T) {
+func TestGetURLSlices(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get existing URL slices flag", func(t *testing.T) {
+	t.Run("Retrieve []*url.URL value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"urlSliceFlag": []*url.URL{
-					{Scheme: "https", Host: "example.com"},
-					{Scheme: "http", Host: "localhost"},
-				},
-			},
+		parsedURL1, _ := url.Parse("https://example.com")
+		parsedURL2, _ := url.Parse("https://example.org")
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": []*url.URL{parsedURL1, parsedURL2}},
 		}
-		slice, err := group.GetURLSlices("urlSliceFlag")
+
+		result, err := parsedGroup.GetURLSlices("flag1")
 		assert.NoError(t, err)
-		assert.Equal(t, []*url.URL{
-			{Scheme: "https", Host: "example.com"},
-			{Scheme: "http", Host: "localhost"},
-		}, slice)
+		assert.Equal(t, []*url.URL{parsedURL1, parsedURL2}, result)
 	})
 
-	t.Run("Get non-existent URL slices flag", func(t *testing.T) {
+	t.Run("Retrieve single *url.URL value as []*url.URL", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		parsedURL, _ := url.Parse("https://example.com")
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": parsedURL},
+		}
+
+		result, err := parsedGroup.GetURLSlices("flag1")
+		assert.NoError(t, err)
+		assert.Equal(t, []*url.URL{parsedURL}, result)
+	})
+
+	t.Run("Flag not found", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
 			Values: map[string]interface{}{},
 		}
-		slice, err := group.GetURLSlices("urlSliceFlag")
+
+		result, err := parsedGroup.GetURLSlices("nonExistentFlag")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'urlSliceFlag' not found in group ''")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'nonExistentFlag' not found in group 'testGroup'")
 	})
 
-	t.Run("Get URL slices flag with invalid type", func(t *testing.T) {
+	t.Run("Flag value is invalid type", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"urlSliceFlag": "invalid-type", // Invalid type
-			},
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": 123}, // Invalid type (int)
 		}
-		slice, err := group.GetURLSlices("urlSliceFlag")
+
+		result, err := parsedGroup.GetURLSlices("flag1")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'urlSliceFlag' is not a []*url.URL")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'flag1' is not a []*url.URL")
 	})
 }

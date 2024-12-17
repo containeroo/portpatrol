@@ -42,6 +42,8 @@ func TestStringSlicesValue(t *testing.T) {
 	})
 
 	t.Run("Multiple Occurrences Append Correctly", func(t *testing.T) {
+		t.Parallel()
+
 		var bound []string
 		value := &dynflags.StringSlicesValue{Bound: &bound}
 
@@ -57,6 +59,8 @@ func TestStringSlicesValue(t *testing.T) {
 	})
 
 	t.Run("Single Value Append", func(t *testing.T) {
+		t.Parallel()
+
 		var bound []string
 		value := &dynflags.StringSlicesValue{Bound: &bound}
 
@@ -65,6 +69,8 @@ func TestStringSlicesValue(t *testing.T) {
 	})
 
 	t.Run("Invalid Value Type", func(t *testing.T) {
+		t.Parallel()
+
 		var bound []string
 		value := &dynflags.StringSlicesValue{Bound: &bound}
 
@@ -100,45 +106,60 @@ func TestGroupConfigStringSlices(t *testing.T) {
 	})
 }
 
-func TestParsedGroupGetStringSlices(t *testing.T) {
+func TestGetStringSlices(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get existing string slices flag", func(t *testing.T) {
+	t.Run("Retrieve []string value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"stringSliceFlag": []string{"value1", "value2"},
-			},
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": []string{"value1", "value2"}},
 		}
-		slice, err := group.GetStringSlices("stringSliceFlag")
+
+		result, err := parsedGroup.GetStringSlices("flag1")
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"value1", "value2"}, slice)
+		assert.Equal(t, []string{"value1", "value2"}, result)
 	})
 
-	t.Run("Get non-existent string slices flag", func(t *testing.T) {
+	t.Run("Retrieve single string value as []string", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": "singleValue"},
+		}
+
+		result, err := parsedGroup.GetStringSlices("flag1")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"singleValue"}, result)
+	})
+
+	t.Run("Flag not found", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
 			Values: map[string]interface{}{},
 		}
-		slice, err := group.GetStringSlices("stringSliceFlag")
+
+		result, err := parsedGroup.GetStringSlices("nonExistentFlag")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'stringSliceFlag' not found in group ''")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'nonExistentFlag' not found in group 'testGroup'")
 	})
 
-	t.Run("Get string slices flag with invalid type", func(t *testing.T) {
+	t.Run("Flag value is invalid type", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"stringSliceFlag": 123, // Invalid type
-			},
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": 123}, // Invalid type (int)
 		}
-		slice, err := group.GetStringSlices("stringSliceFlag")
+
+		result, err := parsedGroup.GetStringSlices("flag1")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'stringSliceFlag' is not a []string")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'flag1' is not a []string")
 	})
 }

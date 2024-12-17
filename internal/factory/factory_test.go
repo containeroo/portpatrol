@@ -84,7 +84,7 @@ func TestBuildCheckers(t *testing.T) {
 
 		args := []string{
 			"--http.mygroup.address=http://example.com",
-			"--http.mygroup.header=InvalidHeaderFormat", // Correct flag name
+			"--http.mygroup.header=InvalidHeaderFormat",
 		}
 		err := df.Parse(args)
 		assert.NoError(t, err)
@@ -95,6 +95,26 @@ func TestBuildCheckers(t *testing.T) {
 		assert.EqualError(t, err, "invalid \"--http.mygroup.header\": invalid header format: \"InvalidHeaderFormat\"")
 		assert.Nil(t, checkers)
 		assert.ErrorContains(t, err, "invalid \"--http.mygroup.header\"")
+	})
+
+	t.Run("Valid HTTP Status codes", func(t *testing.T) {
+		t.Parallel()
+
+		df := dynflags.New(dynflags.ContinueOnError)
+		httpGroup := df.Group("http")
+		httpGroup.String("address", "http://example.com", "HTTP target address")
+		httpGroup.String("expected-status-codes", "200,201", "HTTP expected status codes")
+
+		args := []string{
+			"--http.mygroup.address=http://example.com",
+			"--http.mygroup.expected-status-codes=200,201",
+		}
+		err := df.Parse(args)
+		assert.NoError(t, err)
+
+		checkers, err := factory.BuildCheckers(df, 2*time.Second)
+		assert.NoError(t, err)
+		assert.Len(t, checkers, 1)
 	})
 
 	t.Run("Valid TCP Checker", func(t *testing.T) {

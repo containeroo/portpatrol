@@ -78,45 +78,66 @@ func TestGroupConfigDurationSlices(t *testing.T) {
 	})
 }
 
-func TestParsedGroupGetDurationSlices(t *testing.T) {
+func TestGetDurationSlices(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get existing duration slices flag", func(t *testing.T) {
+	t.Run("Retrieve []time.Duration value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		parsedGroup := &dynflags.ParsedGroup{
+			Name: "testGroup",
 			Values: map[string]interface{}{
-				"durationSliceFlag": []time.Duration{1 * time.Second, 2 * time.Second},
+				"flag1": []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second},
 			},
 		}
-		slice, err := group.GetDurationSlices("durationSliceFlag")
+
+		result, err := parsedGroup.GetDurationSlices("flag1")
 		assert.NoError(t, err)
-		assert.Equal(t, []time.Duration{1 * time.Second, 2 * time.Second}, slice)
+		assert.Equal(t, []time.Duration{1 * time.Second, 2 * time.Second, 3 * time.Second}, result)
 	})
 
-	t.Run("Get non-existent duration slices flag", func(t *testing.T) {
+	t.Run("Retrieve single time.Duration value as []time.Duration", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		parsedGroup := &dynflags.ParsedGroup{
+			Name: "testGroup",
+			Values: map[string]interface{}{
+				"flag1": 5 * time.Second,
+			},
+		}
+
+		result, err := parsedGroup.GetDurationSlices("flag1")
+		assert.NoError(t, err)
+		assert.Equal(t, []time.Duration{5 * time.Second}, result)
+	})
+
+	t.Run("Flag not found", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
 			Values: map[string]interface{}{},
 		}
-		slice, err := group.GetDurationSlices("durationSliceFlag")
+
+		result, err := parsedGroup.GetDurationSlices("nonExistentFlag")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'durationSliceFlag' not found in group ''")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'nonExistentFlag' not found in group 'testGroup'")
 	})
 
-	t.Run("Get duration slices flag with invalid type", func(t *testing.T) {
+	t.Run("Flag value is invalid type", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		parsedGroup := &dynflags.ParsedGroup{
+			Name: "testGroup",
 			Values: map[string]interface{}{
-				"durationSliceFlag": "invalid-type", // Invalid type
+				"flag1": "invalid",
 			},
 		}
-		slice, err := group.GetDurationSlices("durationSliceFlag")
+
+		result, err := parsedGroup.GetDurationSlices("flag1")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'durationSliceFlag' is not a []time.Duration")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'flag1' is not a []time.Duration")
 	})
 }

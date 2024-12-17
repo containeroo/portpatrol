@@ -78,45 +78,65 @@ func TestGroupConfigIPSlices(t *testing.T) {
 	})
 }
 
-func TestParsedGroupGetIPSlices(t *testing.T) {
+func TestGetIPSlices(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get existing IP slices flag", func(t *testing.T) {
+	t.Run("Retrieve []net.IP value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"ipSliceFlag": []net.IP{net.ParseIP("192.168.0.1"), net.ParseIP("10.0.0.1")},
-			},
+		ip1 := net.ParseIP("192.168.1.1")
+		ip2 := net.ParseIP("10.0.0.1")
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": []net.IP{ip1, ip2}},
 		}
-		slice, err := group.GetIPSlices("ipSliceFlag")
+
+		result, err := parsedGroup.GetIPSlices("flag1")
 		assert.NoError(t, err)
-		assert.Equal(t, []net.IP{net.ParseIP("192.168.0.1"), net.ParseIP("10.0.0.1")}, slice)
+		assert.Equal(t, []net.IP{ip1, ip2}, result)
 	})
 
-	t.Run("Get non-existent IP slices flag", func(t *testing.T) {
+	t.Run("Retrieve single net.IP value as []net.IP", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		ip := net.ParseIP("127.0.0.1")
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": ip},
+		}
+
+		result, err := parsedGroup.GetIPSlices("flag1")
+		assert.NoError(t, err)
+		assert.Equal(t, []net.IP{ip}, result)
+	})
+
+	t.Run("Flag not found", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
 			Values: map[string]interface{}{},
 		}
-		slice, err := group.GetIPSlices("ipSliceFlag")
+
+		result, err := parsedGroup.GetIPSlices("nonExistentFlag")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'ipSliceFlag' not found in group ''")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'nonExistentFlag' not found in group 'testGroup'")
 	})
 
-	t.Run("Get IP slices flag with invalid type", func(t *testing.T) {
+	t.Run("Flag value is invalid type", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"ipSliceFlag": "invalid-type", // Invalid type
-			},
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": "invalid"},
 		}
-		slice, err := group.GetIPSlices("ipSliceFlag")
+
+		result, err := parsedGroup.GetIPSlices("flag1")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'ipSliceFlag' is not a []net.IP")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'flag1' is not a []net.IP")
 	})
 }

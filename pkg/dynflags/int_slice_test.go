@@ -77,45 +77,60 @@ func TestGroupConfigIntSlices(t *testing.T) {
 	})
 }
 
-func TestParsedGroupGetIntSlices(t *testing.T) {
+func TestGetIntSlices(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Get existing int slices flag", func(t *testing.T) {
+	t.Run("Retrieve []int value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"intSliceFlag": []int{1, 2},
-			},
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": []int{1, 2, 3}},
 		}
-		slice, err := group.GetIntSlices("intSliceFlag")
+
+		result, err := parsedGroup.GetIntSlices("flag1")
 		assert.NoError(t, err)
-		assert.Equal(t, []int{1, 2}, slice)
+		assert.Equal(t, []int{1, 2, 3}, result)
 	})
 
-	t.Run("Get non-existent int slices flag", func(t *testing.T) {
+	t.Run("Retrieve single int value as []int", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": 42},
+		}
+
+		result, err := parsedGroup.GetIntSlices("flag1")
+		assert.NoError(t, err)
+		assert.Equal(t, []int{42}, result)
+	})
+
+	t.Run("Flag not found", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
 			Values: map[string]interface{}{},
 		}
-		slice, err := group.GetIntSlices("intSliceFlag")
+
+		result, err := parsedGroup.GetIntSlices("nonExistentFlag")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'intSliceFlag' not found in group ''")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'nonExistentFlag' not found in group 'testGroup'")
 	})
 
-	t.Run("Get int slices flag with invalid type", func(t *testing.T) {
+	t.Run("Flag value is invalid type", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.ParsedGroup{
-			Values: map[string]interface{}{
-				"intSliceFlag": "invalid", // Invalid type
-			},
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "testGroup",
+			Values: map[string]interface{}{"flag1": "invalid"},
 		}
-		slice, err := group.GetIntSlices("intSliceFlag")
+
+		result, err := parsedGroup.GetIntSlices("flag1")
 		assert.Error(t, err)
-		assert.Nil(t, slice)
-		assert.EqualError(t, err, "flag 'intSliceFlag' is not a []int")
+		assert.Nil(t, result)
+		assert.EqualError(t, err, "flag 'flag1' is not a []int")
 	})
 }
