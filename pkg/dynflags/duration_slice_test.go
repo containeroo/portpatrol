@@ -58,7 +58,7 @@ func TestGroupConfigDurationSlices(t *testing.T) {
 	t.Run("Define duration slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []time.Duration{1 * time.Second, 2 * time.Second}
 		durationSlice := group.DurationSlices("durationSliceFlag", defaultValue, "A duration slices flag")
 
@@ -71,7 +71,7 @@ func TestGroupConfigDurationSlices(t *testing.T) {
 	t.Run("Define DurationSlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var durationSlice []time.Duration
 		group.DurationSlicesVar(&durationSlice, "durationSliceFlag", []time.Duration{3 * time.Second}, "Duration slices flag variable")
 		assert.Equal(t, []time.Duration{3 * time.Second}, durationSlice)

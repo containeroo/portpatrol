@@ -78,7 +78,7 @@ func TestGroupConfig_Bool(t *testing.T) {
 	t.Run("DefaultBool", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{
+		group := &dynflags.ConfigGroup{
 			Flags: make(map[string]*dynflags.Flag),
 		}
 		boolVar := group.Bool("testBool", true, "Test boolean flag")
@@ -92,7 +92,7 @@ func TestGroupConfig_Bool(t *testing.T) {
 	t.Run("BindBoolVar", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{
+		group := &dynflags.ConfigGroup{
 			Flags: make(map[string]*dynflags.Flag),
 		}
 		var boundBool bool

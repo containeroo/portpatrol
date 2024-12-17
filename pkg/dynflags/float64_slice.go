@@ -29,13 +29,13 @@ func (f *Float64SlicesValue) Set(value interface{}) error {
 
 // Float64SlicesVar defines a float64 slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of float64 in which to store the value of the flag.
-func (g *GroupConfig) Float64SlicesVar(p *[]float64, name string, value []float64, usage string) {
+func (g *ConfigGroup) Float64SlicesVar(p *[]float64, name string, value []float64, usage string) {
 	*p = *g.Float64Slices(name, value, usage)
 }
 
 // Float64Slices defines a float64 slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of float64 that stores the value of the flag.
-func (g *GroupConfig) Float64Slices(name string, value []float64, usage string) *[]float64 {
+func (g *ConfigGroup) Float64Slices(name string, value []float64, usage string) *[]float64 {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, v := range value {

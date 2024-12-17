@@ -57,7 +57,7 @@ func TestGroupConfigIntSlices(t *testing.T) {
 	t.Run("Define int slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []int{1, 2}
 		intSlice := group.IntSlices("intSliceFlag", defaultValue, "An int slices flag")
 
@@ -70,7 +70,7 @@ func TestGroupConfigIntSlices(t *testing.T) {
 	t.Run("Define IntSlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var intSlice []int
 		group.IntSlicesVar(&intSlice, "intSliceFlag", []int{1, 2}, "Int slices flag variable")
 		assert.Equal(t, []int{1, 2}, intSlice)

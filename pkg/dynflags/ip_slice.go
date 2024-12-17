@@ -29,13 +29,13 @@ func (s *IPSlicesValue) Set(value interface{}) error {
 
 // IPSlicesVar defines an IP slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of IPs in which to store the value of the flag.
-func (g *GroupConfig) IPSlicesVar(p *[]net.IP, name string, value []net.IP, usage string) {
+func (g *ConfigGroup) IPSlicesVar(p *[]net.IP, name string, value []net.IP, usage string) {
 	*p = *g.IPSlices(name, value, usage)
 }
 
 // IPSlices defines an IP slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of IPs that stores the value of the flag.
-func (g *GroupConfig) IPSlices(name string, value []net.IP, usage string) *[]net.IP {
+func (g *ConfigGroup) IPSlices(name string, value []net.IP, usage string) *[]net.IP {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, ip := range value {

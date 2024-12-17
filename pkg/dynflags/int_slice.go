@@ -29,13 +29,13 @@ func (s *IntSlicesValue) Set(value interface{}) error {
 
 // IntSlicesVar defines an int slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of integers in which to store the value of the flag.
-func (g *GroupConfig) IntSlicesVar(p *[]int, name string, value []int, usage string) {
+func (g *ConfigGroup) IntSlicesVar(p *[]int, name string, value []int, usage string) {
 	*p = *g.IntSlices(name, value, usage)
 }
 
 // IntSlices defines an int slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of integers that stores the value of the flag.
-func (g *GroupConfig) IntSlices(name string, value []int, usage string) *[]int {
+func (g *ConfigGroup) IntSlices(name string, value []int, usage string) *[]int {
 	bound := &value
 	defaults := make([]string, len(value))
 	for i, v := range value {

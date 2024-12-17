@@ -8,6 +8,10 @@ type UnknownGroup struct {
 
 // Lookup retrieves the value of a flag in the unknown group.
 func (ug *UnknownGroup) Lookup(flagName string) interface{} {
+	if ug == nil {
+		return nil
+	}
+
 	return ug.Values[flagName]
 }
 
@@ -19,6 +23,10 @@ type UnknownGroups struct {
 
 // Lookup retrieves unknown groups by name.
 func (ug *UnknownGroups) Lookup(groupName string) *UnknownIdentifiers {
+	if ug == nil {
+		return nil
+	}
+
 	if identifiers, exists := ug.groups[groupName]; exists {
 		return &UnknownIdentifiers{Name: groupName, identifiers: identifiers}
 	}
@@ -38,6 +46,10 @@ type UnknownIdentifiers struct {
 
 // Lookup retrieves a specific identifier within a group.
 func (ui *UnknownIdentifiers) Lookup(identifier string) *UnknownGroup {
+	if ui == nil {
+		return nil
+	}
+
 	return ui.identifiers[identifier]
 }
 

@@ -24,13 +24,13 @@ func (s *StringSlicesValue) Set(value interface{}) error {
 
 // StringSlicesVar defines a string slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of strings in which to store the value of the flag.
-func (g *GroupConfig) StringSlicesVar(p *[]string, name string, value []string, usage string) {
+func (g *ConfigGroup) StringSlicesVar(p *[]string, name string, value []string, usage string) {
 	*p = *g.StringSlices(name, value, usage)
 }
 
 // StringSlices defines a string slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of strings that stores the value of the flag.
-func (g *GroupConfig) StringSlices(name string, value []string, usage string) *[]string {
+func (g *ConfigGroup) StringSlices(name string, value []string, usage string) *[]string {
 	bound := &value
 	g.Flags[name] = &Flag{
 		Type:    FlagTypeStringSlice,

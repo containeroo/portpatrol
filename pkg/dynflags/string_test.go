@@ -48,7 +48,7 @@ func TestGroupConfigString(t *testing.T) {
 	t.Run("Define string flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := "default"
 		str := group.String("stringFlag", defaultValue, "A string flag")
 
@@ -61,7 +61,7 @@ func TestGroupConfigString(t *testing.T) {
 	t.Run("Define StringVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var str string
 		group.StringVar(&str, "stringFlag", "initial", "String flag variable")
 		assert.Equal(t, "initial", str)

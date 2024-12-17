@@ -2,13 +2,17 @@ package dynflags
 
 // ParsedGroup represents a runtime group with parsed values.
 type ParsedGroup struct {
-	Parent *GroupConfig           // Reference to the parent static group.
+	Parent *ConfigGroup           // Reference to the parent static group.
 	Name   string                 // Identifier for the child group (e.g., "IDENTIFIER1").
 	Values map[string]interface{} // Parsed values for the group's flags.
 }
 
 // Lookup retrieves the value of a flag in the parsed group.
 func (pg *ParsedGroup) Lookup(flagName string) interface{} {
+	if pg == nil {
+		return nil
+	}
+
 	return pg.Values[flagName]
 }
 
@@ -19,6 +23,9 @@ type ParsedGroups struct {
 
 // Lookup retrieves a group by its name.
 func (pg *ParsedGroups) Lookup(groupName string) *ParsedIdentifiers {
+	if pg == nil {
+		return nil
+	}
 	if identifiers, exists := pg.groups[groupName]; exists {
 		return &ParsedIdentifiers{Name: groupName, identifiers: identifiers}
 	}
@@ -38,6 +45,10 @@ type ParsedIdentifiers struct {
 
 // Lookup retrieves a specific identifier within a group.
 func (gi *ParsedIdentifiers) Lookup(identifier string) *ParsedGroup {
+	if gi == nil {
+		return nil
+	}
+
 	return gi.identifiers[identifier]
 }
 

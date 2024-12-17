@@ -60,7 +60,7 @@ func TestGroupConfig_Duration(t *testing.T) {
 	t.Run("DurationDefault", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := 5 * time.Second
 		bound := group.Duration("timeout", defaultValue, "Timeout duration")
 		assert.Equal(t, defaultValue, *bound)
@@ -76,7 +76,7 @@ func TestGroupConfig_DurationVar(t *testing.T) {
 	t.Run("DurationVar", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var duration time.Duration
 		group.DurationVar(&duration, "timeout", 10*time.Second, "Timeout duration")
 		assert.Equal(t, 10*time.Second, duration)

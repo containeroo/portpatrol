@@ -48,7 +48,7 @@ func TestGroupConfigStringSlices(t *testing.T) {
 	t.Run("Define string slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []string{"default1", "default2"}
 		strSlice := group.StringSlices("stringSliceFlag", defaultValue, "A string slices flag")
 
@@ -61,7 +61,7 @@ func TestGroupConfigStringSlices(t *testing.T) {
 	t.Run("Define StringSlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var strSlice []string
 		group.StringSlicesVar(&strSlice, "stringSliceFlag", []string{"initial1", "initial2"}, "String slices flag variable")
 		assert.Equal(t, []string{"initial1", "initial2"}, strSlice)

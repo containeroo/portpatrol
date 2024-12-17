@@ -57,7 +57,7 @@ func TestGroupConfigBoolSlices(t *testing.T) {
 	t.Run("Define bool slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []bool{true, false}
 		boolSlice := group.BoolSlices("boolSliceFlag", defaultValue, "A bool slices flag")
 
@@ -70,7 +70,7 @@ func TestGroupConfigBoolSlices(t *testing.T) {
 	t.Run("Define BoolSlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var boolSlice []bool
 		group.BoolSlicesVar(&boolSlice, "boolSliceFlag", []bool{true}, "Bool slices flag variable")
 		assert.Equal(t, []bool{true}, boolSlice)

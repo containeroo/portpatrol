@@ -24,13 +24,13 @@ func (d *DurationValue) Set(value interface{}) error {
 
 // DurationVar defines a duration flag with specified name, default value, and usage string.
 // The argument p points to a time.Duration variable in which to store the value of the flag.
-func (g *GroupConfig) DurationVar(p *time.Duration, name string, value time.Duration, usage string) {
+func (g *ConfigGroup) DurationVar(p *time.Duration, name string, value time.Duration, usage string) {
 	*p = *g.Duration(name, value, usage)
 }
 
 // Duration defines a duration flag with specified name, default value, and usage string.
 // The return value is the address of a time.Duration variable that stores the value of the flag.
-func (g *GroupConfig) Duration(name string, value time.Duration, usage string) *time.Duration {
+func (g *ConfigGroup) Duration(name string, value time.Duration, usage string) *time.Duration {
 	bound := &value
 	g.Flags[name] = &Flag{
 		Type:    FlagTypeDuration,

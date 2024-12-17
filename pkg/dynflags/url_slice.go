@@ -29,13 +29,13 @@ func (u *URLSlicesValue) Set(value interface{}) error {
 
 // URLSlicesVar defines a URL slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of URLs in which to store the value of the flag.
-func (g *GroupConfig) URLSlicesVar(p *[]*url.URL, name string, value []*url.URL, usage string) {
+func (g *ConfigGroup) URLSlicesVar(p *[]*url.URL, name string, value []*url.URL, usage string) {
 	*p = *g.URLSlices(name, value, usage)
 }
 
 // URLSlices defines a URL slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of URLs that stores the value of the flag.
-func (g *GroupConfig) URLSlices(name string, value []*url.URL, usage string) *[]*url.URL {
+func (g *ConfigGroup) URLSlices(name string, value []*url.URL, usage string) *[]*url.URL {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, u := range value {

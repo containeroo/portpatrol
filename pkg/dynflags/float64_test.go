@@ -63,7 +63,7 @@ func TestGroupConfig_Float64(t *testing.T) {
 	t.Run("Define Float64 Flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{
+		group := &dynflags.ConfigGroup{
 			Flags: make(map[string]*dynflags.Flag),
 		}
 		value := group.Float64("float64-test", 123.456, "test float64 flag")
@@ -80,7 +80,7 @@ func TestGroupConfig_Float64Var(t *testing.T) {
 	t.Run("Define Float64Var Flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{
+		group := &dynflags.ConfigGroup{
 			Flags: make(map[string]*dynflags.Flag),
 		}
 		var boundValue float64

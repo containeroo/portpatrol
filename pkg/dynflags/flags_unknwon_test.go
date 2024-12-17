@@ -107,3 +107,69 @@ func TestDynFlagsUnknown(t *testing.T) {
 		assert.Nil(t, group)
 	})
 }
+
+func TestUnknownGroups_Lookup_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Lookup on nil UnknownGroups returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		var unknownGroups *dynflags.UnknownGroups
+		result := unknownGroups.Lookup("http")
+		assert.Nil(t, result, "Expected Lookup on nil UnknownGroups to return nil")
+	})
+
+	t.Run("Lookup non-existing group returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		unknownGroups := &dynflags.UnknownGroups{}
+
+		result := unknownGroups.Lookup("nonExistingGroup")
+		assert.Nil(t, result, "Expected Lookup for non-existing group to return nil")
+	})
+}
+
+func TestUnknownIdentifiers_Lookup_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Lookup on nil UnknownIdentifiers returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		var unknownIdentifiers *dynflags.UnknownIdentifiers
+		result := unknownIdentifiers.Lookup("identifier1")
+		assert.Nil(t, result, "Expected Lookup on nil UnknownIdentifiers to return nil")
+	})
+
+	t.Run("Lookup non-existing identifier returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		unknownIdentifiers := &dynflags.UnknownIdentifiers{}
+
+		result := unknownIdentifiers.Lookup("nonExistingIdentifier")
+		assert.Nil(t, result, "Expected Lookup for non-existing identifier to return nil")
+	})
+}
+
+func TestUnknownGroup_Lookup_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Lookup on nil UnknownGroup returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		var unknownGroup *dynflags.UnknownGroup
+		result := unknownGroup.Lookup("flag1")
+		assert.Nil(t, result, "Expected Lookup on nil UnknownGroup to return nil")
+	})
+
+	t.Run("Lookup non-existing flag returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		unknownGroup := &dynflags.UnknownGroup{
+			Name:   "identifier1",
+			Values: map[string]interface{}{},
+		}
+
+		result := unknownGroup.Lookup("nonExistingFlag")
+		assert.Nil(t, result, "Expected Lookup for non-existing flag to return nil")
+	})
+}

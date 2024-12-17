@@ -60,7 +60,7 @@ func TestGroupConfigIP(t *testing.T) {
 	t.Run("Define IP flag with valid default", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultIP := "192.168.1.1"
 		ip := group.IP("ipFlag", defaultIP, "An example IP flag")
 
@@ -73,7 +73,7 @@ func TestGroupConfigIP(t *testing.T) {
 	t.Run("Define IP flag with invalid default", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 
 		assert.PanicsWithValue(t,
 			"ipFlag has a invalid default IP flag 'invalid-ip'",
@@ -85,7 +85,7 @@ func TestGroupConfigIP(t *testing.T) {
 	t.Run("Define IPVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var ip net.IP
 		group.IPVar(&ip, "ipFlag", "10.0.0.1", "IP flag variable")
 		assert.Equal(t, net.ParseIP("10.0.0.1"), ip)

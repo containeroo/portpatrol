@@ -24,13 +24,13 @@ func (b *BoolValue) Set(value interface{}) error {
 
 // BoolVar defines a bool flag with specified name, default value, and usage string.
 // The argument p points to a bool variable in which to store the value of the flag.
-func (g *GroupConfig) BoolVar(p *bool, name string, value bool, usage string) {
+func (g *ConfigGroup) BoolVar(p *bool, name string, value bool, usage string) {
 	*p = *g.Bool(name, value, usage)
 }
 
 // Bool defines a bool flag with specified name, default value, and usage string.
 // The return value is the address of a bool variable that stores the value of the flag.
-func (g *GroupConfig) Bool(name string, value bool, usage string) *bool {
+func (g *ConfigGroup) Bool(name string, value bool, usage string) *bool {
 	bound := &value
 	g.Flags[name] = &Flag{
 		Type:    FlagTypeBool,

@@ -119,7 +119,7 @@ func (df *DynFlags) handleUnknownFlag(parentName, identifier, flagName, value st
 }
 
 // createOrGetParsedGroup retrieves or initializes a parsed group.
-func (df *DynFlags) createOrGetParsedGroup(parentGroup *GroupConfig, identifier string) *ParsedGroup {
+func (df *DynFlags) createOrGetParsedGroup(parentGroup *ConfigGroup, identifier string) *ParsedGroup {
 	for _, group := range df.parsedGroups[parentGroup.Name] {
 		if group.Name == identifier {
 			return group

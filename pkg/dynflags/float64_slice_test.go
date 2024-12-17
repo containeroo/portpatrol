@@ -57,7 +57,7 @@ func TestGroupConfigFloat64Slices(t *testing.T) {
 	t.Run("Define float64 slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []float64{1.23, 4.56}
 		floatSlice := group.Float64Slices("float64SliceFlag", defaultValue, "A float64 slices flag")
 
@@ -70,7 +70,7 @@ func TestGroupConfigFloat64Slices(t *testing.T) {
 	t.Run("Define Float64SlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var floatSlice []float64
 		group.Float64SlicesVar(&floatSlice, "float64SliceFlag", []float64{1.23, 4.56}, "Float64 slices flag variable")
 		assert.Equal(t, []float64{1.23, 4.56}, floatSlice)

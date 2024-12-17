@@ -29,13 +29,13 @@ func (d *DurationSlicesValue) Set(value interface{}) error {
 
 // DurationSlicesVar defines a duration slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of durations in which to store the value of the flag.
-func (g *GroupConfig) DurationSlicesVar(p *[]time.Duration, name string, value []time.Duration, usage string) {
+func (g *ConfigGroup) DurationSlicesVar(p *[]time.Duration, name string, value []time.Duration, usage string) {
 	*p = *g.DurationSlices(name, value, usage)
 }
 
 // DurationSlices defines a duration slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of durations that stores the value of the flag.
-func (g *GroupConfig) DurationSlices(name string, value []time.Duration, usage string) *[]time.Duration {
+func (g *ConfigGroup) DurationSlices(name string, value []time.Duration, usage string) *[]time.Duration {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, v := range value {

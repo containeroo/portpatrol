@@ -63,7 +63,7 @@ func TestGroupConfigURL(t *testing.T) {
 	t.Run("Define URL flag with default value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := "https://default.com"
 		urlFlag := group.URL("urlFlag", defaultValue, "A URL flag")
 
@@ -76,7 +76,7 @@ func TestGroupConfigURL(t *testing.T) {
 	t.Run("Define URL flag with invalid default", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 
 		assert.PanicsWithValue(t,
 			"invalid default URL for flag 'urlFlag': parse \"http://i nvalid-url\": invalid character \" \" in host name",
@@ -88,7 +88,7 @@ func TestGroupConfigURL(t *testing.T) {
 	t.Run("Define URLVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var boundURL url.URL
 		group.URLVar(&boundURL, "urlFlag", "https://example.com", "URL flag variable")
 		assert.Equal(t, "https://example.com", boundURL.String())

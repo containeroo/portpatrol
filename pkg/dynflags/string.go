@@ -21,13 +21,13 @@ func (s *StringValue) Set(value interface{}) error {
 
 // StringVar defines a string flag with specified name, default value, and usage string.
 // The argument p points to a string variable in which to store the value of the flag.
-func (g *GroupConfig) StringVar(p *string, name, value, usage string) {
+func (g *ConfigGroup) StringVar(p *string, name, value, usage string) {
 	*p = *g.String(name, value, usage)
 }
 
 // String defines a string flag with specified name, default value, and usage string.
 // The return value is the address of a string variable that stores the value of the flag.
-func (g *GroupConfig) String(name, value, usage string) *string {
+func (g *ConfigGroup) String(name, value, usage string) *string {
 	bound := &value
 	g.Flags[name] = &Flag{
 		Type:    FlagTypeString,

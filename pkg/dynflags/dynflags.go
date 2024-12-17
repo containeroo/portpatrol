@@ -20,7 +20,7 @@ const (
 
 // DynFlags manages configuration and parsed values
 type DynFlags struct {
-	configGroups  map[string]*GroupConfig    // Static parent groups
+	configGroups  map[string]*ConfigGroup    // Static parent groups
 	groupOrder    []string                   // Order of group names
 	SortGroups    bool                       // Sort groups in help message
 	SortFlags     bool                       // Sort flags in help message
@@ -38,7 +38,7 @@ type DynFlags struct {
 // New initializes a new DynFlags instance
 func New(behavior ParseBehavior) *DynFlags {
 	df := &DynFlags{
-		configGroups:  make(map[string]*GroupConfig),
+		configGroups:  make(map[string]*ConfigGroup),
 		parsedGroups:  make(map[string][]*ParsedGroup),
 		unknownGroups: make(map[string][]*UnknownGroup),
 		parseBehavior: behavior,
@@ -64,14 +64,14 @@ func (df *DynFlags) Epilog(epilog string) {
 }
 
 // Group defines a new group or retrieves an existing one
-func (df *DynFlags) Group(name string) *GroupConfig {
+func (df *DynFlags) Group(name string) *ConfigGroup {
 	if _, exists := df.configGroups[name]; exists {
 		return df.configGroups[name]
 	}
 
 	df.groupOrder = append(df.groupOrder, name)
 
-	group := &GroupConfig{
+	group := &ConfigGroup{
 		Name:  name,
 		Flags: make(map[string]*Flag),
 	}

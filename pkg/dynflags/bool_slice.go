@@ -29,13 +29,13 @@ func (b *BoolSlicesValue) Set(value interface{}) error {
 
 // BoolSlicesVar defines a bool slice flag with specified name, default value, and usage string.
 // The argument p points to a slice of bool in which to store the value of the flag.
-func (g *GroupConfig) BoolSlicesVar(p *[]bool, name string, value []bool, usage string) {
+func (g *ConfigGroup) BoolSlicesVar(p *[]bool, name string, value []bool, usage string) {
 	*p = *g.BoolSlices(name, value, usage)
 }
 
 // BoolSlices defines a bool slice flag with specified name, default value, and usage string.
 // The return value is the address of a slice of bool that stores the value of the flag.
-func (g *GroupConfig) BoolSlices(name string, value []bool, usage string) *[]bool {
+func (g *ConfigGroup) BoolSlices(name string, value []bool, usage string) *[]bool {
 	bound := &value
 	defaultValue := make([]string, len(value))
 	for i, v := range value {

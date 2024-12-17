@@ -61,7 +61,7 @@ func TestGroupConfigURLSlices(t *testing.T) {
 	t.Run("Define URL slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []*url.URL{
 			{Scheme: "https", Host: "example.com"},
 			{Scheme: "http", Host: "localhost"},
@@ -80,7 +80,7 @@ func TestGroupConfigURLSlices(t *testing.T) {
 	t.Run("Define URLSlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var urlSlice []*url.URL
 		group.URLSlicesVar(&urlSlice, "urlSliceFlag", []*url.URL{{Scheme: "https", Host: "google.com"}}, "URL slices flag variable")
 		assert.Equal(t, []*url.URL{{Scheme: "https", Host: "google.com"}}, urlSlice)

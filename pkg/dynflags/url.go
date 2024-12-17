@@ -24,13 +24,13 @@ func (u *URLValue) Set(value interface{}) error {
 
 // URLVar defines a URL flag with specified name, default value, and usage string.
 // The argument p points to a url.URL variable in which to store the value of the flag.
-func (g *GroupConfig) URLVar(p *url.URL, name, value, usage string) {
+func (g *ConfigGroup) URLVar(p *url.URL, name, value, usage string) {
 	*p = *g.URL(name, value, usage)
 }
 
 // URL defines a URL flag with specified name, default value, and usage string.
 // The return value is the address of a url.URL variable that stores the value of the flag.
-func (g *GroupConfig) URL(name, value, usage string) *url.URL {
+func (g *ConfigGroup) URL(name, value, usage string) *url.URL {
 	bound := new(url.URL)
 	if value != "" {
 		parsed, err := url.Parse(value)

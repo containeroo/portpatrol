@@ -28,13 +28,13 @@ func (u *IPValue) Set(value interface{}) error {
 
 // IPVar defines an net.IP flag with specified name, default value, and usage string.
 // The argument p points to an net.IP variable in which to store the value of the flag.
-func (g *GroupConfig) IPVar(p *net.IP, name, value, usage string) {
+func (g *ConfigGroup) IPVar(p *net.IP, name, value, usage string) {
 	*p = *g.IP(name, value, usage)
 }
 
 // IP defines an net.IP flag with specified name, default value, and usage string.
 // The return value is the address of an net.IP variable that stores the value of the flag.
-func (g *GroupConfig) IP(name, value, usage string) *net.IP {
+func (g *ConfigGroup) IP(name, value, usage string) *net.IP {
 	bound := new(*net.IP)
 	if value != "" {
 		parsed := net.ParseIP(value)

@@ -99,3 +99,69 @@ func TestDynFlagsParsed(t *testing.T) {
 		assert.Nil(t, group)
 	})
 }
+
+func TestParsedGroups_Lookup_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Lookup on nil ParsedGroups returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		var parsedGroups *dynflags.ParsedGroups
+		result := parsedGroups.Lookup("http")
+		assert.Nil(t, result, "Expected Lookup on nil ParsedGroups to return nil")
+	})
+
+	t.Run("Lookup non-existing group returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroups := &dynflags.ParsedGroups{}
+
+		result := parsedGroups.Lookup("nonExistingGroup")
+		assert.Nil(t, result, "Expected Lookup for non-existing group to return nil")
+	})
+}
+
+func TestParsedIdentifiers_Lookup_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Lookup on nil ParsedIdentifiers returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		var parsedIdentifiers *dynflags.ParsedIdentifiers
+		result := parsedIdentifiers.Lookup("identifier1")
+		assert.Nil(t, result, "Expected Lookup on nil ParsedIdentifiers to return nil")
+	})
+
+	t.Run("Lookup non-existing identifier returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		parsedIdentifiers := &dynflags.ParsedIdentifiers{}
+
+		result := parsedIdentifiers.Lookup("nonExistingIdentifier")
+		assert.Nil(t, result, "Expected Lookup for non-existing identifier to return nil")
+	})
+}
+
+func TestParsedGroup_Lookup_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Lookup on nil ParsedGroup returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		var parsedGroup *dynflags.ParsedGroup
+		result := parsedGroup.Lookup("flag1")
+		assert.Nil(t, result, "Expected Lookup on nil ParsedGroup to return nil")
+	})
+
+	t.Run("Lookup non-existing flag returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		parsedGroup := &dynflags.ParsedGroup{
+			Name:   "identifier1",
+			Values: map[string]interface{}{},
+		}
+
+		result := parsedGroup.Lookup("nonExistingFlag")
+		assert.Nil(t, result, "Expected Lookup for non-existing flag to return nil")
+	})
+}

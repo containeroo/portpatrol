@@ -58,7 +58,7 @@ func TestGroupConfigIPSlices(t *testing.T) {
 	t.Run("Define IP slices flag", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		defaultValue := []net.IP{net.ParseIP("192.168.0.1"), net.ParseIP("10.0.0.1")}
 		ipSlice := group.IPSlices("ipSliceFlag", defaultValue, "An IP slices flag")
 
@@ -71,7 +71,7 @@ func TestGroupConfigIPSlices(t *testing.T) {
 	t.Run("Define IPSlicesVar and set value", func(t *testing.T) {
 		t.Parallel()
 
-		group := &dynflags.GroupConfig{Flags: make(map[string]*dynflags.Flag)}
+		group := &dynflags.ConfigGroup{Flags: make(map[string]*dynflags.Flag)}
 		var ipSlice []net.IP
 		group.IPSlicesVar(&ipSlice, "ipSliceFlag", []net.IP{net.ParseIP("8.8.8.8")}, "IP slices flag variable")
 		assert.Equal(t, []net.IP{net.ParseIP("8.8.8.8")}, ipSlice)
