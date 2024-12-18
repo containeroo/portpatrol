@@ -15,3 +15,6 @@ cover:
 clean:
 	rm -f coverage.out coverage.html
 
+# Update dependencies
+update:
+	go get -u ./...
