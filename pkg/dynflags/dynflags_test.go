@@ -18,7 +18,6 @@ func TestDynFlagsInitialization(t *testing.T) {
 		assert.NotNil(t, df)
 		assert.NotNil(t, df.Config())
 		assert.NotNil(t, df.Parsed())
-		assert.NotNil(t, df.Unknown())
 	})
 }
 
@@ -77,30 +76,12 @@ func TestDynFlagsParsedAndUnknown(t *testing.T) {
 		df := dynflags.New(dynflags.ContinueOnError)
 
 		assert.Empty(t, df.Parsed().Groups())
-		assert.Empty(t, df.Unknown().Groups())
+		assert.Empty(t, df.UnknownArgs())
 	})
 }
 
 func TestParsedGroupMethods(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Retrieve unknown values", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ParseUnknown)
-		df.Group("known")
-		args := []string{"--unknown.identifier.value", "value1"}
-		err := df.Parse(args)
-		assert.NoError(t, err)
-
-		unknownGroups := df.Unknown()
-		group := unknownGroups.Lookup("unknown")
-		assert.NotNil(t, group)
-
-		identifier := group.Lookup("identifier")
-		assert.NotNil(t, identifier)
-		assert.Equal(t, "value1", identifier.Lookup("value"))
-	})
 
 	t.Run("Retrieve parsed group values", func(t *testing.T) {
 		t.Parallel()
@@ -119,25 +100,9 @@ func TestParsedGroupMethods(t *testing.T) {
 		assert.NotNil(t, identifier)
 		assert.Equal(t, "value1", identifier.Lookup("flag1"))
 	})
-
-	t.Run("Non-existent flag in parsed group", func(t *testing.T) {
-		t.Parallel()
-
-		df := dynflags.New(dynflags.ContinueOnError)
-		df.Group("testGroup")
-		args := []string{"--testGroup.identifier1.flag1", "value1"}
-		err := df.Parse(args)
-		assert.NoError(t, err)
-
-		parsedGroups := df.Parsed()
-		assert.Len(t, parsedGroups.Groups(), 0)
-
-		unknownGroup := df.Unknown()
-		assert.NotNil(t, unknownGroup)
-	})
 }
 
-func TestDynFlagsUnparsedArgs(t *testing.T) {
+func TestDynFlagsUnknownArgs(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Retrieve unparsed arguments", func(t *testing.T) {
@@ -150,7 +115,7 @@ func TestDynFlagsUnparsedArgs(t *testing.T) {
 		err := df.Parse(args)
 		assert.NoError(t, err)
 
-		unparsedArgs := df.UnparsedArgs()
+		unparsedArgs := df.UnknownArgs()
 		assert.Contains(t, unparsedArgs, "--unparsable")
 	})
 }

@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// Float64SlicesValue implementation for float64 slice flags
 type Float64SlicesValue struct {
 	Bound *[]float64
 }
@@ -34,8 +33,8 @@ func (f *Float64SlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected float64")
 }
 
-// Float64Slices defines a float64 slice flag with specified name, default value, and usage string.
-// The return value is the address of a slice of float64 that stores the value of the flag.
+// Float64Slices defines a float64 slice flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) Float64Slices(name string, value []float64, usage string) *Flag {
 	bound := &value
 	defaultValue := make([]string, len(value))

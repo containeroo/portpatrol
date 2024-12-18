@@ -88,7 +88,7 @@ func (df *DynFlags) handleFlag(parentName, identifier, flagName, value string) e
 	}
 
 	// Unknown flag
-	return df.handleUnknownFlag(parentName, identifier, flagName, value)
+	return fmt.Errorf("unknown flag '%s' in group '%s'", flagName, parentName)
 }
 
 // setFlagValue sets the value of a known flag in the parsed group.
@@ -106,18 +106,6 @@ func (df *DynFlags) setFlagValue(parsedGroup *ParsedGroup, flagName string, flag
 	return nil
 }
 
-// handleUnknownFlag handles unknown flags based on the parse behavior.
-func (df *DynFlags) handleUnknownFlag(parentName, identifier, flagName, value string) error {
-	switch df.parseBehavior {
-	case ExitOnError:
-		return fmt.Errorf("unknown flag '%s' in group '%s'", flagName, parentName)
-	case ParseUnknown:
-		unknownGroup := df.createOrGetUnknownGroup(parentName, identifier)
-		unknownGroup.Values[flagName] = value
-	}
-	return nil
-}
-
 // createOrGetParsedGroup retrieves or initializes a parsed group.
 func (df *DynFlags) createOrGetParsedGroup(parentGroup *ConfigGroup, identifier string) *ParsedGroup {
 	for _, group := range df.parsedGroups[parentGroup.Name] {
@@ -132,21 +120,5 @@ func (df *DynFlags) createOrGetParsedGroup(parentGroup *ConfigGroup, identifier 
 		Values: make(map[string]interface{}),
 	}
 	df.parsedGroups[parentGroup.Name] = append(df.parsedGroups[parentGroup.Name], newGroup)
-	return newGroup
-}
-
-// createOrGetUnknownGroup retrieves or initializes an unknown group.
-func (df *DynFlags) createOrGetUnknownGroup(parentName, identifier string) *UnknownGroup {
-	for _, group := range df.unknownGroups[parentName] {
-		if group.Name == identifier {
-			return group
-		}
-	}
-
-	newGroup := &UnknownGroup{
-		Name:   identifier,
-		Values: make(map[string]interface{}),
-	}
-	df.unknownGroups[parentName] = append(df.unknownGroups[parentName], newGroup)
 	return newGroup
 }

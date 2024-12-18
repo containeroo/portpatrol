@@ -5,7 +5,6 @@ import (
 	"strconv"
 )
 
-// IntValue implementation for integer flags
 type Float64Value struct {
 	Bound *float64
 }
@@ -29,8 +28,8 @@ func (i *Float64Value) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected float64")
 }
 
-// Float64 defines a float64 flag with specified name, default value, and usage string.
-// The return value is the address of a float64 variable that stores the value of the flag.
+// Float64 defines a float64 flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) Float64(name string, value float64, usage string) *Flag {
 	bound := &value
 	flag := &Flag{

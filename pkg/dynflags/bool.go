@@ -5,7 +5,6 @@ import (
 	"strconv"
 )
 
-// BoolValue implementation for boolean flags
 type BoolValue struct {
 	Bound *bool
 }
@@ -29,8 +28,8 @@ func (b *BoolValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected bool")
 }
 
-// Bool defines a bool flag with specified name, default value, and usage string.
-// The return value is the address of a bool variable that stores the value of the flag.
+// Bool defines a boolean flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) Bool(name string, value bool, usage string) *Flag {
 	bound := &value
 	flag := &Flag{

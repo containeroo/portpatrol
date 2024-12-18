@@ -5,7 +5,6 @@ import (
 	"strconv"
 )
 
-// IntValue implementation for integer flags
 type IntValue struct {
 	Bound *int
 }
@@ -29,8 +28,8 @@ func (i *IntValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected int")
 }
 
-// Int defines an int flag with specified name, default value, and usage string.
-// The return value is the address of an int variable that stores the value of the flag.
+// Int defines an integer flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) Int(name string, value int, usage string) *Flag {
 	bound := &value
 	flag := &Flag{

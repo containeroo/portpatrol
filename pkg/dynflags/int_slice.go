@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// IntSlicesValue implementation for int slice flags
 type IntSlicesValue struct {
 	Bound *[]int
 }
@@ -34,8 +33,8 @@ func (s *IntSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected int")
 }
 
-// IntSlices defines an int slice flag with specified name, default value, and usage string.
-// The return value is the address of a slice of integers that stores the value of the flag.
+// IntSlices defines an integer slice flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) IntSlices(name string, value []int, usage string) *Flag {
 	bound := &value
 	defaults := make([]string, len(value))

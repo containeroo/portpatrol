@@ -5,7 +5,6 @@ import (
 	"net/url"
 )
 
-// URLValue implementation for URL flags
 type URLValue struct {
 	Bound *url.URL
 }
@@ -29,8 +28,8 @@ func (u *URLValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected URL")
 }
 
-// URL defines a URL flag with specified name, default value, and usage string.
-// The return value is the address of a url.URL variable that stores the value of the flag.
+// URL defines a URL flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) URL(name, value, usage string) *Flag {
 	bound := new(url.URL)
 	if value != "" {

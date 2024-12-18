@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// DurationValue implementation for duration flags
 type DurationValue struct {
 	Bound *time.Duration
 }
@@ -29,8 +28,8 @@ func (d *DurationValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected duration")
 }
 
-// Duration defines a duration flag with specified name, default value, and usage string.
-// The return value is the address of a time.Duration variable that stores the value of the flag.
+// Duration defines a duration flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) Duration(name string, value time.Duration, usage string) *Flag {
 	bound := &value
 	flag := &Flag{

@@ -44,8 +44,8 @@ httpGroup := dynFlags.Group("http")
 Add flags to the `DynFlags` instance:
 
 ```go
-httpGroup.String("method", "GET", "HTTP method to use")
-httpGroup.Int("timeout", 5, "Timeout for HTTP requests")
+httpGroup.String("method", "GET", "HTTP method for requests")
+httpGroup.Int("timeout", 5, "Timeout duration for HTTP requests in seconds")
 // httpGroup.Bool, httpGroup.Float64, httpGroup.Duration, etc.
 ```
 
@@ -57,7 +57,7 @@ dynflags.Parse(args)
 ```
 
 to parse the command line into the defined flags. `args` are the command-line arguments to parse.
-When using `pflag`, the the ParseBehavior is set to `dynflags.ContinueOnError` and parse first `dynflags` and then `pflag`.
+When integrating with `pflag`, set the `ParseBehavior` to `dynflags.ContinueOnError`. Parse `dynflags` arguments first, followed by `pflag`. Refer to `./examples/advanced/main.go` for a detailed example.
 Unparsed arguments are stored in `dynflags.UnparsedArgs()`.
 
 ```go
@@ -76,11 +76,10 @@ if err := flagSet.Parse(unknownArgs); err != nil {
 }
 ```
 
-`dynflags` provides 3 Groups:
+`dynflags` provides 2 Groups:
 
 - `dynflags.Config()` returns a `ConfigGroups` instance that provides direct access to the static configuration of the `DynFlags` instance.
 - `dynflags.Parsed()` returns a `ParsedGroups` instance that provides direct access to the parsed configuration of the `DynFlags` instance.
-- `dynflags.Unknown()` returns a `UnknownGroups` instance that provides direct access to the unknown configuration of the `DynFlags` instance.
 
 Each of these Groups provides a `Lookup("SEARCH")` method that can be used to retrieve a specific group or flag.
 
@@ -110,6 +109,8 @@ for groupName, groups := range dynFlags.Parsed().Groups() {
 }
 ```
 
+Unrecognized or unparsed arguments can be retrieved via `dynflags.UnknownArgs()`.
+
 ## Title, Description, and Epilog
 
 `dynflags` allows you to set a title, description, and epilog for the help message.
@@ -124,7 +125,7 @@ dynFlags.Description("This application demonstrates the usage of DynFlags for ma
 dynFlags.Epilog("For more information, see https://github.com/containerish/portpatrol")
 
 tcpGroup := dynFlags.Group("tcp")
-tcGroup.Usage("TCP flags")
+tcpGroup.Usage("TCP flags")
 tcpGroup.String("Timeout", "10s", "TCP timeout")
 tcpGroup.String("address", "127.0.0.1:8080", "TCP target address")
 
@@ -199,10 +200,10 @@ TCP
 - String flags: `--<IDENTIFIER>.<FLAG>.<FLAG> STRING`
 - Boolean flags: `--<IDENTIFIER>.<FLAG>.<FLAG> BOOL`
 
-Slices will have a `MetaVar` with the base type in uppdercase, followed by a small `s`.
+Slices will have a `MetaVar` with the base type in uppercase, followed by a lowercase `s`.
 
-- String Slices: `--<IDENTIFIER>.<FLAG>.<FLAG> STRINGs`
-- Boolean Slices: `--<IDENTIFIER>.<FLAG>.<FLAG> BOOLs`
+- String Slices: `--<IDENTIFIER>.<FLAG>.<FLAG> ..STRINGs`
+- Boolean Slices: `--<IDENTIFIER>.<FLAG>.<FLAG> ..BOOLs`
 
 To change the `MetaVar` for a flag, set the `MetaVar` field on the flag.
 
@@ -212,7 +213,7 @@ To change the `MetaVar` for a flag, set the `MetaVar` field on the flag.
 dynFlags := dynflags.New(dynflags.ContinueOnError)
 tcpGroup := dynFlags.Group("tcp")
 timeout := tcpGroup.String("Timeout", "10s", "TCP timeout")
-timeout.MetaVar("CUSTOM")
+timeout.MetaVar("TIMEOUT")
 dynFlags.PrintDefaults()
 ```
 
@@ -221,7 +222,7 @@ dynFlags.PrintDefaults()
 ```text
 TCP
   Flag                                   Usage
-  --tcp.<IDENTIFIER>.Timeout CUSTOM      TCP timeout (default: 10s)
+  --tcp.<IDENTIFIER>.Timeout TIMEOUT     TCP timeout (default: 10s)
 ```
 
 ## Examples

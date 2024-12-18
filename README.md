@@ -34,7 +34,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--http.<IDENTIFIER>.address`** = `string`
   The target's address.
-  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+  **Resolvable:** Use `env:ENV_VAR` or `file:path/to/file.txt` to resolve the value from a environment variable or a file. See below.
 
   - **`--http.<IDENTIFIER>.interval`** = `duration`
   The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -66,7 +66,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--icmp.<IDENTIFIER>.address`** = `string`
   The target's address.
-  **Resolvable:** The value of the Address is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`.
+  **Resolvable:** Use `env:ENV_VAR` or `file:path/to/file.txt` to resolve the value from a environment variable or a file. See below.
 
 - **`--icmp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -84,7 +84,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--tcp.<IDENTIFIER>.address`** = `string`
   The target's address.
-  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+  **Resolvable:** Use `env:ENV_VAR` or `file:path/to/file.txt` to resolve the value from a environment variable or a file. See below.
 
 - **`--tcp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -99,7 +99,7 @@ Each `address` field can be resolved using environment variables, files, or plai
 
 In case the file contains multiple key-value pairs, the specific key for the credentials can be selected by appending `//KEY` to the end of the path. Each key-value pair in the file must follow the `key = value` format. The system will use the value corresponding to the specified `//KEY`.
 
-HTTP headers values can also be resolved using the same mechanism, (`--
+HTTP headers values can also be resolved using the same mechanism, (from a environment variable `--http.<IDENTIFIER>.header="header=env:SECRET_HEADER"` or from a file `--http.<IDENTIFIER>.header="header=file:PATH_TO_FILE"`).
 
 ### Examples
 

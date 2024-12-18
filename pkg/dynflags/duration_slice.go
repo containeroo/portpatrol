@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// DurationSlicesValue implementation for duration slice flags
 type DurationSlicesValue struct {
 	Bound *[]time.Duration
 }
@@ -34,8 +33,8 @@ func (d *DurationSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected time.Duration")
 }
 
-// DurationSlices defines a duration slice flag with specified name, default value, and usage string.
-// The return value is the address of a slice of durations that stores the value of the flag.
+// DurationSlices defines a duration slice flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) DurationSlices(name string, value []time.Duration, usage string) *Flag {
 	bound := &value
 	defaultValue := make([]string, len(value))

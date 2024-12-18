@@ -37,6 +37,12 @@ func main() {
 		return
 	}
 
+	// Print unparsable flags
+	fmt.Println("Unparsable flags:")
+	for _, flag := range dynFlags.UnknownArgs() {
+		fmt.Printf("  %s\n", flag)
+	}
+
 	// ITERATION: Iterate over all config groups
 	fmt.Println("=== Iterating over Config Groups ===")
 	for groupName, group := range dynFlags.Config().Groups() {
@@ -50,18 +56,6 @@ func main() {
 	fmt.Println("\n=== Iterating over Parsed Groups ===")
 	for groupName, groups := range dynFlags.Parsed().Groups() {
 		fmt.Printf("Group: %s\n", groupName)
-		for _, group := range groups {
-			fmt.Printf("  Identifier: %s\n", group.Name)
-			for flagName, value := range group.Values {
-				fmt.Printf("    Flag: %s, Value: %v\n", flagName, value)
-			}
-		}
-	}
-
-	// ITERATION: Iterate over all unknown groups
-	fmt.Println("\n=== Iterating over Unknown Groups ===")
-	for groupName, groups := range dynFlags.Unknown().Groups() {
-		fmt.Printf("Unknown Group: %s\n", groupName)
 		for _, group := range groups {
 			fmt.Printf("  Identifier: %s\n", group.Name)
 			for flagName, value := range group.Values {
@@ -87,17 +81,6 @@ func main() {
 		if httpIdentifier1 != nil {
 			method := httpIdentifier1.Lookup("method")
 			fmt.Printf("HTTP Method (Lookup): %s\n", method)
-		}
-	}
-
-	// Lookup the "unknown" group
-	unknownGroups := dynFlags.Unknown().Lookup("unknown")
-	if unknownGroups != nil {
-		// Lookup "identifier3.flag" within the "unknown" group
-		unknownIdentifier3 := unknownGroups.Lookup("identifier3")
-		if unknownIdentifier3 != nil {
-			unknownValue := unknownIdentifier3.Lookup("flag")
-			fmt.Printf("Unknown Value (Lookup): %s\n", unknownValue)
 		}
 	}
 

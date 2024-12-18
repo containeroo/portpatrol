@@ -29,7 +29,7 @@ func main() {
 	flagSet.SetOutput(&output) // Output to the io.Writer
 
 	// Initialize DynFlags with ContinueOnError behavior
-	dynFlags := dynflags.New(dynflags.ParseUnknown)
+	dynFlags := dynflags.New(dynflags.ContinueOnError)
 
 	// Set the output for the DynFlags instance to the same io.Writer
 	dynFlags.SetOutput(&output)
@@ -65,13 +65,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// retrieve all unknown groups
-	unparsedArgs := dynFlags.UnparsedArgs()
-
-	// Parse flags wich were not parsed by dynflags with pflag
-	if err := flagSet.Parse(unparsedArgs); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
-		os.Exit(1)
+	// Print unparsable flags
+	fmt.Println("Unparsable flags:")
+	for _, flag := range dynFlags.UnknownArgs() {
+		fmt.Printf("  %s\n", flag)
 	}
 
 	// Retrieve values from parsed group http
@@ -87,19 +84,4 @@ func main() {
 
 	fmt.Println("TCP Address:", tcpAddress)
 	fmt.Println("TCP Timeout:", tcpTimeout)
-
-	// Retrieve all unknown groups
-	unknownGroups := dynFlags.Unknown().Groups()
-	if len(unknownGroups) > 0 {
-		fmt.Println("\n=== Unknown Groups ===")
-		for groupName, groups := range unknownGroups {
-			fmt.Println("Group:", groupName)
-			for _, group := range groups {
-				fmt.Println("  Identifier:", group.Name)
-				for key, value := range group.Values {
-					fmt.Printf("    Flag: %s, Value: %v\n", key, value)
-				}
-			}
-		}
-	}
 }

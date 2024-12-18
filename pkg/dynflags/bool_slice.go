@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// BoolSlicesValue implementation for bool slice flags
 type BoolSlicesValue struct {
 	Bound *[]bool
 }
@@ -34,8 +33,8 @@ func (b *BoolSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected bool")
 }
 
-// BoolSlices defines a bool slice flag with specified name, default value, and usage string.
-// The return value is the address of a slice of bool that stores the value of the flag.
+// BoolSlices defines a boolean slice flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) BoolSlices(name string, value []bool, usage string) *Flag {
 	bound := &value
 	defaultValue := make([]string, len(value))

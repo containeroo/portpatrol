@@ -5,7 +5,6 @@ import (
 	"net"
 )
 
-// IPValue implementation for URL flags
 type IPValue struct {
 	Bound *net.IP
 }
@@ -33,8 +32,8 @@ func (u *IPValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected IP")
 }
 
-// IP defines an net.IP flag with specified name, default value, and usage string.
-// The return value is the address of an net.IP variable that stores the value of the flag.
+// IP defines an IP flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) IP(name, value, usage string) *Flag {
 	bound := new(*net.IP)
 	if value != "" {

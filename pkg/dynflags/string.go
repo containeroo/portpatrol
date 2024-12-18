@@ -2,7 +2,6 @@ package dynflags
 
 import "fmt"
 
-// StringValue implementation for string flags
 type StringValue struct {
 	Bound *string
 }
@@ -26,8 +25,8 @@ func (s *StringValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected string")
 }
 
-// String defines a string flag with specified name, default value, and usage string.
-// It returns the *Flag for further customization.
+// String defines a string flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) String(name, value, usage string) *Flag {
 	bound := &value
 	flag := &Flag{

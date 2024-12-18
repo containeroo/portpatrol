@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// StringSlicesValue implementation for string slice flags
 type StringSlicesValue struct {
 	Bound *[]string
 }
@@ -29,8 +28,8 @@ func (s *StringSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected string")
 }
 
-// StringSlices defines a string slice flag with specified name, default value, and usage string.
-// The return value is the address of a slice of strings that stores the value of the flag.
+// StringSlices defines a string slice flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) StringSlices(name string, value []string, usage string) *Flag {
 	bound := &value
 	flag := &Flag{

@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// IPSlicesValue implementation for IP slice flags
 type IPSlicesValue struct {
 	Bound *[]net.IP
 }
@@ -34,8 +33,8 @@ func (s *IPSlicesValue) Set(value interface{}) error {
 	return fmt.Errorf("invalid value type: expected net.IP")
 }
 
-// IPSlices defines an IP slice flag with specified name, default value, and usage string.
-// The return value is the address of a slice of IPs that stores the value of the flag.
+// IPSlices defines an IP slice flag with the specified name, default value, and usage description.
+// The flag is added to the group's flag list and returned as a *Flag instance.
 func (g *ConfigGroup) IPSlices(name string, value []net.IP, usage string) *Flag {
 	bound := &value
 	defaultValue := make([]string, len(value))
