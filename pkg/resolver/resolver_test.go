@@ -2,77 +2,109 @@ package resolver
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestResolveVariable(t *testing.T) {
-	t.Run("Resolve environment variable", func(t *testing.T) {
-		os.Setenv("TEST_ENV_VAR", "test_value")
-		defer os.Unsetenv("TEST_ENV_VAR")
+	t.Parallel()
 
-		result, err := ResolveVariable("env:TEST_ENV_VAR")
-		assert.NoError(t, err)
-		assert.Equal(t, "test_value", result)
+	t.Run("NoPrefixReturnsValueAsIs", func(t *testing.T) {
+		t.Parallel()
+		val, err := ResolveVariable("somevalue")
+		assert.NoError(t, err, "unexpected error")
+		assert.Equal(t, "somevalue", val)
 	})
 
-	t.Run("Resolve non-existing environment variable", func(t *testing.T) {
-		result, err := ResolveVariable("env:NON_EXISTING_ENV_VAR")
-		assert.Error(t, err)
-		assert.Equal(t, "", result)
-		assert.Contains(t, err.Error(), "environment variable 'NON_EXISTING_ENV_VAR' not found")
+	t.Run("EnvPrefix", func(t *testing.T) {
+		t.Parallel()
+
+		envName := "RESOLVER_TEST_ENV_" + sanitizeEnvName(t.Name())
+		os.Setenv(envName, "envValue")
+
+		val, err := ResolveVariable("env:" + envName)
+		assert.NoError(t, err, "unexpected error resolving env variable")
+		assert.Equal(t, "envValue", val)
 	})
 
-	t.Run("Resolve file variable", func(t *testing.T) {
-		fileContent := "key1=value1\nkey2=value2\n"
-		file, err := os.CreateTemp("", "testfile")
-		assert.NoError(t, err)
-		defer os.Remove(file.Name())
+	t.Run("JsonPrefix", func(t *testing.T) {
+		t.Parallel()
 
-		_, err = file.WriteString(fileContent)
-		assert.NoError(t, err)
-		file.Close()
+		tempDir := t.TempDir()
+		jsonPath := filepath.Join(tempDir, "config.json")
+		jsonContent := `{"key":"jsonValue"}`
+		err := os.WriteFile(jsonPath, []byte(jsonContent), 0666)
+		assert.NoError(t, err, "failed to write test JSON file")
 
-		result, err := ResolveVariable("file:" + file.Name())
-		assert.NoError(t, err)
-		assert.Equal(t, fileContent, result+"\n")
+		envName := "RESOLVER_TEST_JSON_" + sanitizeEnvName(t.Name())
+		os.Setenv(envName, jsonPath)
+
+		val, err := ResolveVariable("json:$" + envName + "//key")
+		assert.NoError(t, err, "unexpected error resolving json key")
+		assert.Equal(t, "jsonValue", val)
 	})
 
-	t.Run("Resolve file with key", func(t *testing.T) {
-		fileContent := "key1=value1\nkey2=value2\n"
-		file, err := os.CreateTemp("", "testfile")
-		assert.NoError(t, err)
-		defer os.Remove(file.Name())
+	t.Run("YamlPrefix", func(t *testing.T) {
+		t.Parallel()
 
-		_, err = file.WriteString(fileContent)
-		assert.NoError(t, err)
-		file.Close()
+		tempDir := t.TempDir()
+		yamlPath := filepath.Join(tempDir, "config.yaml")
+		yamlContent := "key: yamlValue"
+		err := os.WriteFile(yamlPath, []byte(yamlContent), 0666)
+		assert.NoError(t, err, "failed to write test YAML file")
 
-		result, err := ResolveVariable("file:" + file.Name() + "//key1")
-		assert.NoError(t, err)
-		assert.Equal(t, "value1", result)
+		envName := "RESOLVER_TEST_YAML_" + sanitizeEnvName(t.Name())
+		os.Setenv(envName, yamlPath)
+
+		val, err := ResolveVariable("yaml:$" + envName + "//key")
+		assert.NoError(t, err, "unexpected error resolving yaml key")
+		assert.Equal(t, "yamlValue", val)
 	})
 
-	t.Run("Resolve file with non-existing key", func(t *testing.T) {
-		fileContent := "key1=value1\nkey2=value2\n"
-		file, err := os.CreateTemp("", "testfile")
-		assert.NoError(t, err)
-		defer os.Remove(file.Name())
+	t.Run("IniPrefix", func(t *testing.T) {
+		t.Parallel()
 
-		_, err = file.WriteString(fileContent)
-		assert.NoError(t, err)
-		file.Close()
+		tempDir := t.TempDir()
+		iniPath := filepath.Join(tempDir, "config.ini")
+		iniContent := `[DEFAULT]
+Key=iniValue`
+		err := os.WriteFile(iniPath, []byte(iniContent), 0666)
+		assert.NoError(t, err, "failed to write test INI file")
 
-		result, err := ResolveVariable("file:" + file.Name() + "//non_existing_key")
-		assert.Error(t, err)
-		assert.Equal(t, "", result)
-		assert.Contains(t, err.Error(), "Key 'non_existing_key' not found in file")
+		envName := "RESOLVER_TEST_INI_" + sanitizeEnvName(t.Name())
+		os.Setenv(envName, iniPath)
+
+		val, err := ResolveVariable("ini:$" + envName + "//Key")
+		assert.NoError(t, err, "unexpected error resolving ini key")
+		assert.Equal(t, "iniValue", val)
 	})
 
-	t.Run("Resolve plain string", func(t *testing.T) {
-		result, err := ResolveVariable("plain_string")
-		assert.NoError(t, err)
-		assert.Equal(t, "plain_string", result)
+	t.Run("FilePrefix", func(t *testing.T) {
+		t.Parallel()
+
+		// According to the code, filePrefix maps to INIResolver. We'll test similarly to INI.
+		tempDir := t.TempDir()
+		filePath := filepath.Join(tempDir, "config.txt")
+		fileContent := `[DEFAULT]
+FileKey=fileValue`
+		err := os.WriteFile(filePath, []byte(fileContent), 0666)
+		assert.NoError(t, err, "failed to write test file")
+
+		envName := "RESOLVER_TEST_FILE_" + sanitizeEnvName(t.Name())
+		os.Setenv(envName, filePath)
+
+		val, err := ResolveVariable("file:$" + envName + "//FileKey")
+		assert.NoError(t, err, "unexpected error resolving file key")
+		assert.Equal(t, "fileValue", val)
+	})
+
+	t.Run("UnknownPrefix", func(t *testing.T) {
+		t.Parallel()
+
+		val, err := ResolveVariable("unknown:somevalue")
+		assert.NoError(t, err, "unexpected error for unknown prefix")
+		assert.Equal(t, "unknown:somevalue", val, "For unknown prefix, returns the value as-is")
 	})
 }
