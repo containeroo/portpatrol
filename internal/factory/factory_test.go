@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containeroo/dynflags"
 	"github.com/containeroo/portpatrol/internal/factory"
-	"github.com/containeroo/portpatrol/pkg/dynflags"
 	"github.com/stretchr/testify/assert"
 )
 

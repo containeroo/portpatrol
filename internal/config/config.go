@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/containeroo/portpatrol/pkg/dynflags"
+	"github.com/containeroo/dynflags"
 	"github.com/spf13/pflag"
 )
 

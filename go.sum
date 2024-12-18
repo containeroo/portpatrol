@@ -1,7 +1,11 @@
+github.com/containeroo/dynflags v0.0.2 h1:UmGXDnJ54QwezYHxPzjI1qUJY2Hs0HwywMtO16frtlc=
+github.com/containeroo/dynflags v0.0.2/go.mod h1:RFbmo73djvKZKwrlcsAcxfij/LJDtJ1dsbSIKcbzOLg=
+github.com/containeroo/httputils v0.0.1 h1:W9SbW6nbmnGgaEOXRH5nY9ZwLarBo3+FLUCx6EtS2mc=
+github.com/containeroo/httputils v0.0.1/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
+github.com/containeroo/resolver v0.0.1 h1:fGDZ6XlLC3TNvLaQsbcPpJOl3leLazCEMbsQGmWp7Lo=
+github.com/containeroo/resolver v0.0.1/go.mod h1:Mii90RfUdmpyjDAt5aJxEjZS05tbfZGu4X3DfuIVGJ8=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
-github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=

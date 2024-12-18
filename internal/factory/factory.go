@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containeroo/dynflags"
+	"github.com/containeroo/httputils"
 	"github.com/containeroo/portpatrol/internal/checker"
-	"github.com/containeroo/portpatrol/pkg/dynflags"
-	"github.com/containeroo/portpatrol/pkg/httputils"
-	"github.com/containeroo/portpatrol/pkg/resolver"
+	"github.com/containeroo/resolver"
 )
 
 // CheckerWithInterval represents a checker with its interval.
