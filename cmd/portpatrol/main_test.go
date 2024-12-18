@@ -102,7 +102,7 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	err := run(ctx, args, &output)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "configuration error: no checkers configured")
+	assert.EqualError(t, err, "configuration error: Flag parsing error: unknown flag: --target.unsupported.name")
 }
 
 func TestRunConfigErrorInvalidHeaders(t *testing.T) {

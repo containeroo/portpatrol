@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/containeroo/portpatrol/pkg/dynflags"
+	"github.com/containeroo/dynflags"
 	"github.com/spf13/pflag"
 )
 
@@ -57,12 +57,13 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 		return nil, fmt.Errorf("error parsing dynamic flags: %w", err)
 	}
 
-	unknownArgs := dynFlags.UnparsedArgs()
+	unknownArgs := dynFlags.UnknownArgs()
 
 	// Parse known flags
 	if err := flagSet.Parse(unknownArgs); err != nil {
 		return nil, fmt.Errorf("Flag parsing error: %s", err.Error())
 	}
+
 	// Handle special flags (e.g., --help or --version)
 	if err := handleSpecialFlags(flagSet, version); err != nil {
 		return nil, err

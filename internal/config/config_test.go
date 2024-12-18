@@ -25,21 +25,6 @@ func TestParseFlags(t *testing.T) {
 		assert.Equal(t, 5*time.Second, parsedFlags.DefaultCheckInterval)
 	})
 
-	t.Run("Unknown Dynamic Flag", func(t *testing.T) {
-		t.Parallel()
-
-		args := []string{"--unknown.identifier.flag=value"}
-		var output bytes.Buffer
-
-		parsedFlags, err := ParseFlags(args, "1.0.0", &output)
-		assert.NoError(t, err)
-
-		df := parsedFlags.DynFlags
-		g := df.Unknown()
-
-		assert.NotNil(t, g)
-	})
-
 	t.Run("Handle Help Flag", func(t *testing.T) {
 		t.Parallel()
 

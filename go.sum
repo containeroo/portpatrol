@@ -1,3 +1,9 @@
+github.com/containeroo/dynflags v0.0.2 h1:UmGXDnJ54QwezYHxPzjI1qUJY2Hs0HwywMtO16frtlc=
+github.com/containeroo/dynflags v0.0.2/go.mod h1:RFbmo73djvKZKwrlcsAcxfij/LJDtJ1dsbSIKcbzOLg=
+github.com/containeroo/httputils v0.0.1 h1:W9SbW6nbmnGgaEOXRH5nY9ZwLarBo3+FLUCx6EtS2mc=
+github.com/containeroo/httputils v0.0.1/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
+github.com/containeroo/resolver v0.0.1 h1:fGDZ6XlLC3TNvLaQsbcPpJOl3leLazCEMbsQGmWp7Lo=
+github.com/containeroo/resolver v0.0.1/go.mod h1:Mii90RfUdmpyjDAt5aJxEjZS05tbfZGu4X3DfuIVGJ8=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -14,5 +20,7 @@ golang.org/x/sys v0.28.0 h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=
 golang.org/x/sys v0.28.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/ini.v1 v1.67.0 h1:Dgnx+6+nfE+IfzjUEISNeydPJh9AXNNsWbGP9KzCsOA=
+gopkg.in/ini.v1 v1.67.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

@@ -8,10 +8,13 @@ test:
 
 # Generate and display test coverage
 cover:
-	sudo go test ./cmd/... ./pkg/... ./internal/... -count=1 -coverprofile=coverage.out
+	sudo go test ./cmd/... ./internal/... -count=1 -coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
 # Clean up generated files
 clean:
 	rm -f coverage.out coverage.html
 
+# Update dependencies
+update:
+	go get -u ./...

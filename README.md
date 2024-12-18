@@ -34,7 +34,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--http.<IDENTIFIER>.address`** = `string`
   The target's address.
-  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
   - **`--http.<IDENTIFIER>.interval`** = `duration`
   The interval between HTTP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -45,7 +45,7 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--http.<IDENTIFIER>.header`** = `string`
   A HTTP header in `key=value` format. Can be specified multiple times.
   **Example:** `Authorization=Bearer token`
-  **Resolvable:** The value of the Header is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--http.<IDENTIFIER>.allow-duplicate-headers`** = `bool`
   Allow duplicate headers. Defaults to `false`.
@@ -66,7 +66,7 @@ Types are: `http`, `icmp` or `tcp`.
 
 - **`--icmp.<IDENTIFIER>.address`** = `string`
   The target's address.
-  **Resolvable:** The value of the Address is resolvable: `env:ENV_VAR`, `file:path/to/file.txt`.
+  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--icmp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
@@ -77,29 +77,35 @@ Types are: `http`, `icmp` or `tcp`.
 - **`--icmp.<IDENTIFIER>.write-timeout`** = `duration`
   The write timeout for the ICMP connection (e.g., `1s`).Defaults to `1s`.
 
-### TCP Flags
+#### TCP Flags
 
 - **`--tcp.<IDENTIFIER>.name`** = `string`
   The name of the target. If not specified, it uses the `<IDENTIFIER>` as the name.
 
 - **`--tcp.<IDENTIFIER>.address`** = `string`
   The target's address.
-  **Resolvable:** `env:ENV_VAR`, `file:path/to/file.txt`. see below.
+  **Resolvable:** See [Resolving Variables](#resolving-variables) below.
 
 - **`--tcp.<IDENTIFIER>.interval`** = `duration`
   The interval between ICMP requests (e.g., `1s`). Overwrites the global `--default-interval`.
 
-### Resolving variables
+#### Resolving variables
 
-Each `address` field can be resolved using environment variables, files, or plain text:
+Each `address` field can be resolved using `environment variables`, `files`, `JSON`, `YAML`, and `INI` files.
 
-- **Plain Text**: Simply input the credentials directly in plain text.
-- **Environment Variable**: Use the `env:` prefix, followed by the name of the environment variable that stores the credentials.
-- **File**: Use the `file:` prefix, followed by the path of the file that contains the credentials. The file should contain only the credentials.
+- `env`: – Resolves environment variables.
+  Example: `env:PATH` returns the value of the `PATH` environment variable.
+- `file`: – Resolves values from a simple key-value file.
+  Example: `file:/config/app.txt//KeyName` returns the value associated with `KeyName` in `app.txt`.
+- `json`: – Resolves values from a JSON file. Supports dot notation for nested keys.
+  Example: `json:/config/app.json//database.host` returns `host` field under `database` in `app.json`. It is also possible to indexing into arrays (e.g., `json:/config/app.json//servers.0.host`).
+- `yaml`: – Resolves values from a YAML file. Supports dot notation for nested keys.
+  Example: `yaml:/config/app.yaml//server.port` returns `port` under `server` in `app.yaml`.It is also possible to indexing into arrays (e.g., `yaml:/config/app.yaml//servers.0.host`).
+- `ini`: – Resolves values from an INI file. Can specify a section and key, or just a key in the default section.
+  Example: `ini:/config/app.ini//Section.Key` returns the value of `Key` under `Section`.
+- No prefix – Returns the value as-is, unchanged.
 
-In case the file contains multiple key-value pairs, the specific key for the credentials can be selected by appending `//KEY` to the end of the path. Each key-value pair in the file must follow the `key = value` format. The system will use the value corresponding to the specified `//KEY`.
-
-HTTP headers values can also be resolved using the same mechanism, (`--
+HTTP headers values can also be resolved using the same mechanism, (from a environment variable `--http.<IDENTIFIER>.header="header=env:SECRET_HEADER"` or from a file `--http.<IDENTIFIER>.header="header=file:PATH_TO_FILE"`).
 
 ### Examples
 
