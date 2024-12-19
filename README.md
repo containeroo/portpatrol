@@ -17,7 +17,6 @@ You can check multiple targets at once.
 | Flag                  | Type     | Default | Description                                                                                   |
 |-----------------------|----------|---------|-----------------------------------------------------------------------------------------------|
 | `--default-interval`  | duration | `2s`    | Default interval between checks. Can be overridden for each target.                           |
-| `--debug`             | bool     | `false` | Enable logging of additional fields.                                                         |
 | `--version`           | bool     | `false` | Show version and exit.                                                                        |
 | `--help`, `-h`        | bool     | `false` | Show help.                                                                                    |
 
@@ -119,8 +118,7 @@ portpatrol \
   --http.web.header="Authorization=Bearer token" \
   --http.web.header="Content-Type=application/json" \
   --http.web.skip-tls-verify=false \
-  --default-interval=5s \
-  --debug
+  --default-interval=5s
 ```
 
 #### Define Multiple Targets (HTTP and TCP) Running in Parallel
