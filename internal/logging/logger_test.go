@@ -3,6 +3,8 @@ package logging
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSetupLogger(t *testing.T) {
@@ -16,20 +18,12 @@ func TestSetupLogger(t *testing.T) {
 		version := "1.0.0"
 
 		logger := SetupLogger(version, &output)
-		if logger == nil {
-			t.Fatalf("Expected a logger instance, got nil")
-		}
+		assert.NotNil(t, logger)
 
 		logger.Info("Test log message")
-
 		logOutput := output.String()
-		if !strings.Contains(logOutput, "Test log message") {
-			t.Errorf("Expected log output to contain 'Test log message', got %q", logOutput)
-		}
-
-		if !strings.Contains(logOutput, "version=1.0.0") {
-			t.Errorf("Expected log output to contain 'version=1.0.0', got %q", logOutput)
-		}
+		assert.Contains(t, logOutput, "Test log message")
+		assert.Contains(t, logOutput, "version=1.0.0")
 	})
 
 	// Test that the logger writes output to the correct writer.
@@ -40,15 +34,11 @@ func TestSetupLogger(t *testing.T) {
 		version := "2.0.0"
 
 		logger := SetupLogger(version, &output)
-		if logger == nil {
-			t.Fatalf("Expected a logger instance, got nil")
-		}
+		assert.NotNil(t, logger)
 
 		logger.Warn("This is a warning")
 
 		logOutput := output.String()
-		if !strings.Contains(logOutput, "This is a warning") {
-			t.Errorf("Expected log output to contain 'This is a warning', got %q", logOutput)
-		}
+		assert.Contains(t, logOutput, "This is a warning")
 	})
 }
