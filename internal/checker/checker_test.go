@@ -42,10 +42,10 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Invalid checker type", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := NewChecker(99, "example", "example.com")
+		_, err := NewChecker("", "example", "example.com")
 
 		assert.Error(t, err)
-		assert.EqualError(t, err, "unsupported check type: 99")
+		assert.EqualError(t, err, "unsupported check type: ")
 	})
 }
 

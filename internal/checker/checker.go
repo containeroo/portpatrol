@@ -7,17 +7,17 @@ import (
 )
 
 // CheckType represents the type of check to perform.
-type CheckType int
+type CheckType string
 
 const (
-	TCP  CheckType = iota // TCP represents a check over the TCP protocol.
-	HTTP                  // HTTP represents a check over the HTTP protocol.
-	ICMP                  // ICMP represents a check using the ICMP protocol (ping).
+	TCP  CheckType = "TCP" // TCP represents a check over the TCP protocol.
+	HTTP CheckType = "HTTP"
+	ICMP CheckType = "ICMP"
 )
 
 // String returns the string representation of the CheckType.
 func (c CheckType) String() string {
-	return [...]string{"TCP", "HTTP", "ICMP"}[c]
+	return string(c)
 }
 
 // Option defines a functional option for configuring a Checker.
@@ -59,7 +59,7 @@ func GetCheckTypeFromString(checkTypeStr string) (CheckType, error) {
 	case "icmp":
 		return ICMP, nil
 	default:
-		return -1, fmt.Errorf("unsupported check type: %s", checkTypeStr)
+		return "", fmt.Errorf("unsupported check type: %s", checkTypeStr)
 	}
 }
 
@@ -74,6 +74,6 @@ func NewChecker(checkType CheckType, name, address string, opts ...Option) (Chec
 	case ICMP:
 		return newICMPChecker(name, address, opts...)
 	default:
-		return nil, fmt.Errorf("unsupported check type: %d", checkType)
+		return nil, fmt.Errorf("unsupported check type: %s", checkType)
 	}
 }
