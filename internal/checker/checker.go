@@ -36,17 +36,10 @@ func (f OptionFunc) apply(c Checker) {
 // Checker defines an interface for performing various types of checks, such as TCP, HTTP, or ICMP.
 // It provides methods for executing the check and obtaining a string representation of the checker.
 type Checker interface {
-	// Check performs a check and returns an error if the check fails.
-	Check(ctx context.Context) error
-
-	// GetName returns the name of the checker.
-	GetName() string
-
-	// GetType returns the type of the checker.
-	GetType() string
-
-	// GetAddress returns the address of the checker.
-	GetAddress() string
+	Check(ctx context.Context) error // Check performs a check and returns an error if the check fails.
+	GetName() string                 // GetName returns the name of the checker.
+	GetType() string                 // GetType returns the type of the checker.
+	GetAddress() string              // GetAddress returns the address of the checker.
 }
 
 // GetCheckTypeFromString converts a string to a CheckType enum.
