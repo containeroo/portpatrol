@@ -112,7 +112,7 @@ func TestSetupUsage(t *testing.T) {
 	dynFlags := setupDynamicFlags()
 	dynFlags.SetOutput(&output)
 
-	setupUsage(&output, flagSet, dynFlags)
+	setupUsage(flagSet, dynFlags)
 	flagSet.Usage()
 
 	usageOutput := output.String()

@@ -50,7 +50,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 	dynFlags.SetOutput(output)
 
 	// Set up custom usage function
-	setupUsage(output, flagSet, dynFlags)
+	setupUsage(flagSet, dynFlags)
 
 	// Parse unknown arguments with dynamic flags
 	if err := dynFlags.Parse(args); err != nil {
@@ -131,14 +131,14 @@ func setupDynamicFlags() *dynflags.DynFlags {
 }
 
 // setupUsage sets the custom usage function.
-func setupUsage(output io.Writer, flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
+func setupUsage(flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
 	flagSet.Usage = func() {
-		fmt.Fprintln(output, "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+		fmt.Fprintln(flagSet.Output(), "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
 
-		fmt.Fprintln(output, "\nGlobal Flags:")
+		fmt.Fprintln(flagSet.Output(), "\nGlobal Flags:")
 		flagSet.PrintDefaults()
 
-		fmt.Fprintln(output, "\nDynamic Flags:")
+		fmt.Fprintln(flagSet.Output(), "\nDynamic Flags:")
 		dynFlags.PrintDefaults()
 	}
 }
