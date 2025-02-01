@@ -1,12 +1,14 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"time"
 
 	"github.com/containeroo/dynflags"
-	"github.com/spf13/pflag"
+
+	flag "github.com/spf13/pflag"
 )
 
 const (
@@ -82,8 +84,8 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 }
 
 // setupGlobalFlags sets up global application flags.
-func setupGlobalFlags() *pflag.FlagSet {
-	flagSet := pflag.NewFlagSet("portpatrol", pflag.ContinueOnError)
+func setupGlobalFlags() *flag.FlagSet {
+	flagSet := flag.NewFlagSet("portpatrol", flag.ContinueOnError)
 	flagSet.SortFlags = false
 
 	flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
@@ -131,7 +133,7 @@ func setupDynamicFlags() *dynflags.DynFlags {
 }
 
 // setupUsage sets the custom usage function.
-func setupUsage(flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
+func setupUsage(flagSet *flag.FlagSet, dynFlags *dynflags.DynFlags) {
 	flagSet.Usage = func() {
 		fmt.Fprintln(flagSet.Output(), "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
 
@@ -144,13 +146,18 @@ func setupUsage(flagSet *pflag.FlagSet, dynFlags *dynflags.DynFlags) {
 }
 
 // handleSpecialFlags handles help and version flags.
-func handleSpecialFlags(flagSet *pflag.FlagSet, version string) error {
-	if flagSet.Lookup("help").Value.String() == "true" {
+func handleSpecialFlags(flagSet *flag.FlagSet, version string) error {
+	helpFlag := flagSet.Lookup("help")
+	if helpFlag != nil && helpFlag.Value.String() == "true" {
+		// create a buffer to capture the output to pass to the HelpRequested error message
+		buffer := &bytes.Buffer{}
+		flagSet.SetOutput(buffer)
 		flagSet.Usage()
-		return &HelpRequested{Message: ""}
+		return &HelpRequested{Message: buffer.String()}
 	}
 
-	if flagSet.Lookup("version").Value.String() == "true" {
+	versionFlag := flagSet.Lookup("version")
+	if versionFlag != nil && versionFlag.Value.String() == "true" {
 		return &HelpRequested{Message: fmt.Sprintf("PortPatrol version %s\n", version)}
 	}
 
@@ -158,7 +165,7 @@ func handleSpecialFlags(flagSet *pflag.FlagSet, version string) error {
 }
 
 // Example of getting a flag value as a time.Duration
-func getDurationFlag(flagSet *pflag.FlagSet, name string, defaultValue time.Duration) (time.Duration, error) {
+func getDurationFlag(flagSet *flag.FlagSet, name string, defaultValue time.Duration) (time.Duration, error) {
 	flag := flagSet.Lookup(name)
 	if flag == nil {
 		return defaultValue, nil
