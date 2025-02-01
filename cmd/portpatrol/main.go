@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const version string = "0.5.3"
+const version string = "v0.5.3"
 
 // run is the main function of the application.
 func run(ctx context.Context, args []string, output io.Writer) error {
