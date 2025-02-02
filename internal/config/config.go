@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/containeroo/dynflags"
@@ -85,7 +86,7 @@ func ParseFlags(args []string, version string, output io.Writer) (*ParsedFlags, 
 
 // setupGlobalFlags sets up global application flags.
 func setupGlobalFlags() *flag.FlagSet {
-	flagSet := flag.NewFlagSet("portpatrol", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("PortPatrol", flag.ContinueOnError)
 	flagSet.SortFlags = false
 
 	flagSet.Duration(paramDefaultInterval, defaultCheckInterval, "Default interval between checks. Can be overridden for each target.")
@@ -135,7 +136,7 @@ func setupDynamicFlags() *dynflags.DynFlags {
 // setupUsage sets the custom usage function.
 func setupUsage(flagSet *flag.FlagSet, dynFlags *dynflags.DynFlags) {
 	flagSet.Usage = func() {
-		fmt.Fprintln(flagSet.Output(), "Usage: portpatrol [FLAGS] [DYNAMIC FLAGS..]")
+		fmt.Fprintf(flagSet.Output(), "Usage: %s [FLAGS] [DYNAMIC FLAGS..]\n", strings.ToLower(flagSet.Name()))
 
 		fmt.Fprintln(flagSet.Output(), "\nGlobal Flags:")
 		flagSet.PrintDefaults()
@@ -158,7 +159,7 @@ func handleSpecialFlags(flagSet *flag.FlagSet, version string) error {
 
 	versionFlag := flagSet.Lookup("version")
 	if versionFlag != nil && versionFlag.Value.String() == "true" {
-		return &HelpRequested{Message: fmt.Sprintf("PortPatrol version %s\n", version)}
+		return &HelpRequested{Message: fmt.Sprintf("%s version %s\n", flagSet.Name(), version)}
 	}
 
 	return nil
