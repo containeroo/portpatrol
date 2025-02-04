@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const version string = "v0.5.6"
+const version string = "v0.5.7"
 
 // run is the main function of the application.
 func run(ctx context.Context, args []string, output io.Writer) error {
@@ -25,7 +25,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	defer cancel()
 
 	// Parse command-line flags
-	f, err := config.ParseFlags(args, version, output)
+	parsedFlags, err := config.ParseFlags(args, version, output)
 	if err != nil {
 		if errors.Is(err, &config.HelpRequested{}) {
 			fmt.Fprint(output, err.Error())
@@ -35,7 +35,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	}
 
 	// Initialize target checkers
-	checkers, err := factory.BuildCheckers(f.DynFlags, f.DefaultCheckInterval)
+	checkers, err := factory.BuildCheckers(parsedFlags.DynFlags, parsedFlags.DefaultCheckInterval)
 	if err != nil {
 		return fmt.Errorf("failed to initialize target checkers: %w", err)
 	}
