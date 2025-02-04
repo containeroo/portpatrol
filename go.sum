@@ -1,5 +1,5 @@
-github.com/containeroo/dynflags v0.0.2 h1:UmGXDnJ54QwezYHxPzjI1qUJY2Hs0HwywMtO16frtlc=
-github.com/containeroo/dynflags v0.0.2/go.mod h1:RFbmo73djvKZKwrlcsAcxfij/LJDtJ1dsbSIKcbzOLg=
+github.com/containeroo/dynflags v0.0.3 h1:FtPhOzLKU4AmuUdZFOLKrd+nY6MF3acp2vfjppduCnA=
+github.com/containeroo/dynflags v0.0.3/go.mod h1:YmSfpL9trViFWdXOz+RUXQMTFiUBkcOeVajzoh+rMVw=
 github.com/containeroo/httputils v0.0.1 h1:W9SbW6nbmnGgaEOXRH5nY9ZwLarBo3+FLUCx6EtS2mc=
 github.com/containeroo/httputils v0.0.1/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
 github.com/containeroo/resolver v0.0.1 h1:fGDZ6XlLC3TNvLaQsbcPpJOl3leLazCEMbsQGmWp7Lo=
