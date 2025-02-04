@@ -1,9 +1,9 @@
 module github.com/containeroo/portpatrol
 
-go 1.23.2
+go 1.23.5
 
 require (
-	github.com/containeroo/dynflags v0.0.2
+	github.com/containeroo/dynflags v0.0.3
 	github.com/containeroo/httputils v0.0.1
 	github.com/containeroo/resolver v0.0.1
 	github.com/spf13/pflag v1.0.6
