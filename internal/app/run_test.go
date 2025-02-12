@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -34,7 +34,9 @@ func TestRunHTTPReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := run(ctx, args, &output)
+	version := "0.0.0"
+
+	err := Run(ctx, version, args, &output)
 	assert.NoError(t, err)
 
 	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
@@ -61,7 +63,9 @@ func TestRunTCPReady(t *testing.T) {
 	defer cancel()
 
 	var output strings.Builder
-	err = run(ctx, args, &output)
+	version := "0.0.0"
+
+	err = Run(ctx, version, args, &output)
 	assert.NoError(t, err)
 
 	outputEntries := strings.Split(strings.TrimSpace(output.String()), "\n")
@@ -79,7 +83,9 @@ func TestRunConfigErrorMissingTarget(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	err := run(ctx, args, &output)
+	version := "0.0.0"
+
+	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "configuration error: no checkers configured")
@@ -99,7 +105,9 @@ func TestRunConfigErrorUnsupportedCheckType(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	err := run(ctx, args, &output)
+	version := "0.0.0"
+
+	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "configuration error: Flag parsing error: unknown flag: --target.unsupported.name")
@@ -120,7 +128,9 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	err := run(ctx, args, &output)
+	version := "0.0.0"
+
+	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "failed to initialize target checkers: invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
@@ -138,7 +148,9 @@ func TestRunParseError(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	err := run(ctx, args, &output)
+	version := "0.0.0"
+
+	err := Run(ctx, version, args, &output)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "configuration error: Flag parsing error: unknown flag: --invalid")
@@ -157,7 +169,9 @@ func TestRunShowVersion(t *testing.T) {
 	defer cancel()
 
 	var output bytes.Buffer
-	err := run(ctx, args, &output)
+	version := "0.0.0"
+
+	err := Run(ctx, version, args, &output)
 
 	assert.NoError(t, err)
 }
