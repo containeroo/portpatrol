@@ -25,8 +25,8 @@ func TestNewICMPCheckerValidIPv4(t *testing.T) {
 	checker, err := newICMPChecker("ValidIPv4", "127.0.0.1", r, w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, checker.GetName(), "ValidIPv4")
-	assert.Equal(t, checker.GetAddress(), "127.0.0.1")
+	assert.Equal(t, checker.Name(), "ValidIPv4")
+	assert.Equal(t, checker.Address(), "127.0.0.1")
 }
 
 // TestNewICMPCheckerInvalidAddress tests creating an ICMPChecker with an invalid address.

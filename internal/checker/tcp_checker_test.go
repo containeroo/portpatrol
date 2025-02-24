@@ -21,9 +21,9 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 	checker, err := newTCPChecker("example", ln.Addr().String(), WithTCPTimeout(1*time.Second))
 	assert.NoError(t, err)
 
-	assert.Equal(t, checker.GetName(), "example")
-	assert.Equal(t, checker.GetAddress(), ln.Addr().String())
-	assert.Equal(t, checker.GetType(), TCP.String())
+	assert.Equal(t, checker.Name(), "example")
+	assert.Equal(t, checker.Address(), ln.Addr().String())
+	assert.Equal(t, checker.Type(), TCP.String())
 }
 
 func TestTCPChecker_ValidConnection(t *testing.T) {

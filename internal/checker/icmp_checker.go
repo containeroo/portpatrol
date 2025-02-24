@@ -23,9 +23,9 @@ type ICMPChecker struct {
 	protocol     Protocol
 }
 
-func (c *ICMPChecker) GetAddress() string { return c.address }
-func (c *ICMPChecker) GetName() string    { return c.name }
-func (c *ICMPChecker) GetType() string    { return ICMP.String() }
+func (c *ICMPChecker) Address() string { return c.address }
+func (c *ICMPChecker) Name() string    { return c.name }
+func (c *ICMPChecker) Type() string    { return ICMP.String() }
 
 func (c *ICMPChecker) Check(ctx context.Context) error {
 	dst, err := net.ResolveIPAddr(c.protocol.Network(), c.address)

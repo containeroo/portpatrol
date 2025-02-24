@@ -15,8 +15,8 @@ func TestNewChecker(t *testing.T) {
 		check, err := NewChecker(HTTP, "example", "http://example.com")
 
 		assert.NoError(t, err)
-		assert.Equal(t, check.GetName(), "example")
-		assert.Equal(t, check.GetType(), "HTTP")
+		assert.Equal(t, check.Name(), "example")
+		assert.Equal(t, check.Type(), "HTTP")
 	})
 
 	t.Run("Valid TCP checker", func(t *testing.T) {
@@ -25,8 +25,8 @@ func TestNewChecker(t *testing.T) {
 		check, err := NewChecker(TCP, "example", "example.com:80")
 
 		assert.NoError(t, err)
-		assert.Equal(t, check.GetName(), "example")
-		assert.Equal(t, check.GetType(), "TCP")
+		assert.Equal(t, check.Name(), "example")
+		assert.Equal(t, check.Type(), "TCP")
 	})
 
 	t.Run("Valid ICMP checker", func(t *testing.T) {
@@ -35,8 +35,8 @@ func TestNewChecker(t *testing.T) {
 		check, err := NewChecker(ICMP, "example", "example.com")
 
 		assert.NoError(t, err)
-		assert.Equal(t, check.GetName(), "example")
-		assert.Equal(t, check.GetType(), "ICMP")
+		assert.Equal(t, check.Name(), "example")
+		assert.Equal(t, check.Type(), "ICMP")
 	})
 
 	t.Run("Invalid checker type", func(t *testing.T) {

@@ -31,7 +31,7 @@ func TestHTTPChecker(t *testing.T) {
 
 		err = checker.Check(ctx)
 		assert.NoError(t, err)
-		assert.Equal(t, checker.GetAddress(), server.URL)
+		assert.Equal(t, checker.Address(), server.URL)
 	})
 
 	t.Run("HTTP check with custom headers", func(t *testing.T) {

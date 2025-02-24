@@ -51,7 +51,7 @@ func Run(ctx context.Context, version string, args []string, output io.Writer) e
 		eg.Go(func() error {
 			err := wait.WaitUntilReady(ctx, checker.Interval, checker.Checker, logger)
 			if err != nil {
-				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.GetName(), err)
+				return fmt.Errorf("checker '%s' failed: %w", checker.Checker.Name(), err)
 			}
 			return nil
 		})

@@ -28,9 +28,9 @@ type HTTPChecker struct {
 	client              *http.Client
 }
 
-func (c *HTTPChecker) GetAddress() string { return c.address }
-func (c *HTTPChecker) GetName() string    { return c.name }
-func (c *HTTPChecker) GetType() string    { return HTTP.String() }
+func (c *HTTPChecker) Address() string { return c.address }
+func (c *HTTPChecker) Name() string    { return c.name }
+func (c *HTTPChecker) Type() string    { return HTTP.String() }
 func (c *HTTPChecker) Check(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, c.method, c.address, nil)
 	if err != nil {

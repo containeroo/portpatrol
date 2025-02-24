@@ -38,7 +38,7 @@ func TestBuildCheckers(t *testing.T) {
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.NoError(t, err)
 		assert.Len(t, checkers, 1)
-		assert.Equal(t, "http://example.com", checkers[0].Checker.GetAddress())
+		assert.Equal(t, "http://example.com", checkers[0].Checker.Address())
 		assert.Equal(t, 5*time.Second, checkers[0].Interval)
 	})
 
@@ -157,7 +157,7 @@ func TestBuildCheckers(t *testing.T) {
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.NoError(t, err)
 		assert.Len(t, checkers, 1)
-		assert.Equal(t, "127.0.0.1:8080", checkers[0].Checker.GetAddress())
+		assert.Equal(t, "127.0.0.1:8080", checkers[0].Checker.Address())
 	})
 
 	t.Run("Valid ICMP Checker", func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestBuildCheckers(t *testing.T) {
 		checkers, err := factory.BuildCheckers(df, 2*time.Second)
 		assert.NoError(t, err)
 		assert.Len(t, checkers, 1)
-		assert.Equal(t, "8.8.8.8", checkers[0].Checker.GetAddress())
+		assert.Equal(t, "8.8.8.8", checkers[0].Checker.Address())
 	})
 
 	t.Run("Invalid ICMP Checker", func(t *testing.T) {
