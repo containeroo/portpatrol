@@ -39,10 +39,10 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	identifier := uint16(os.Getpid() & 0xffff)                    // Create a unique identifier
-	sequence := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Create a unique sequence number
+	id := uint16(os.Getpid() & 0xffff)                       // Create a unique identifier
+	seq := uint16(atomic.AddUint32(new(uint32), 1) & 0xffff) // Create a unique sequence number
 
-	msg, err := c.protocol.MakeRequest(identifier, sequence)
+	msg, err := c.protocol.MakeRequest(id, seq)
 	if err != nil {
 		return fmt.Errorf("failed to create ICMP request: %w", err)
 	}
@@ -65,7 +65,7 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 		return fmt.Errorf("failed to read ICMP reply: %w", err)
 	}
 
-	if err := c.protocol.ValidateReply(reply[:n], identifier, sequence); err != nil {
+	if err := c.protocol.ValidateReply(reply[:n], id, seq); err != nil {
 		return fmt.Errorf("failed to validate ICMP reply: %w", err)
 	}
 

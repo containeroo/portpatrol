@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 )
 
@@ -47,10 +48,8 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
-	for _, code := range c.expectedStatusCodes {
-		if resp.StatusCode == code {
-			return nil
-		}
+	if slices.Contains(c.expectedStatusCodes, resp.StatusCode) {
+		return nil
 	}
 
 	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.expectedStatusCodes)

@@ -49,13 +49,13 @@ func TestNewChecker(t *testing.T) {
 	})
 }
 
-func TestGetCheckTypeFromString(t *testing.T) {
+func TestParseCheckType(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Check type HTTP", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := GetCheckTypeFromString("HTTP")
+		result, err := ParseCheckType("HTTP")
 
 		assert.NoError(t, err)
 		assert.Equal(t, result, HTTP)
@@ -64,7 +64,7 @@ func TestGetCheckTypeFromString(t *testing.T) {
 	t.Run("Check type http", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := GetCheckTypeFromString("http")
+		result, err := ParseCheckType("http")
 
 		assert.NoError(t, err)
 		assert.Equal(t, result, HTTP)
@@ -73,7 +73,7 @@ func TestGetCheckTypeFromString(t *testing.T) {
 	t.Run("Check type TCP", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := GetCheckTypeFromString("tcp")
+		result, err := ParseCheckType("tcp")
 
 		assert.NoError(t, err)
 		assert.Equal(t, result, TCP)
@@ -82,7 +82,7 @@ func TestGetCheckTypeFromString(t *testing.T) {
 	t.Run("Check type tcp", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := GetCheckTypeFromString("tcp")
+		result, err := ParseCheckType("tcp")
 
 		assert.NoError(t, err)
 		assert.Equal(t, result, TCP)
@@ -91,7 +91,7 @@ func TestGetCheckTypeFromString(t *testing.T) {
 	t.Run("Check type ICMP", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := GetCheckTypeFromString("ICMP")
+		result, err := ParseCheckType("ICMP")
 
 		assert.NoError(t, err)
 		assert.Equal(t, result, ICMP)
@@ -100,7 +100,7 @@ func TestGetCheckTypeFromString(t *testing.T) {
 	t.Run("Check type icmp", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := GetCheckTypeFromString("icmp")
+		result, err := ParseCheckType("icmp")
 
 		assert.NoError(t, err)
 		assert.Equal(t, result, ICMP)
@@ -109,7 +109,7 @@ func TestGetCheckTypeFromString(t *testing.T) {
 	t.Run("Invalid check type", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := GetCheckTypeFromString("invalid")
+		_, err := ParseCheckType("invalid")
 
 		assert.Error(t, err)
 		assert.EqualError(t, err, "unsupported check type: invalid")

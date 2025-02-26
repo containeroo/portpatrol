@@ -42,9 +42,9 @@ type Checker interface {
 	Address() string                 // Address returns the address of the checker.
 }
 
-// GetCheckTypeFromString converts a string to a CheckType enum.
-func GetCheckTypeFromString(checkTypeStr string) (CheckType, error) {
-	switch strings.ToLower(checkTypeStr) {
+// ParseCheckType converts a string to a CheckType enum.
+func ParseCheckType(typeStr string) (CheckType, error) {
+	switch strings.ToLower(typeStr) {
 	case "http", "https":
 		return HTTP, nil
 	case "tcp":
@@ -52,13 +52,13 @@ func GetCheckTypeFromString(checkTypeStr string) (CheckType, error) {
 	case "icmp":
 		return ICMP, nil
 	default:
-		return "", fmt.Errorf("unsupported check type: %s", checkTypeStr)
+		return "", fmt.Errorf("unsupported check type: %s", typeStr)
 	}
 }
 
 // NewChecker creates a new Checker based on the specified CheckType, name, address, and options.
 func NewChecker(checkType CheckType, name, address string, opts ...Option) (Checker, error) {
-	// Create the appropriate checker based on the type
+	// Create the appropriate checker based on the type.
 	switch checkType {
 	case HTTP:
 		return newHTTPChecker(name, address, opts...)

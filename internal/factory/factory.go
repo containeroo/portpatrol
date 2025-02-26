@@ -23,7 +23,7 @@ func BuildCheckers(dynFlags *dynflags.DynFlags, defaultInterval time.Duration) (
 
 	// Iterate over all parsed groups
 	for parentName, childGroups := range dynFlags.Parsed().Groups() {
-		checkType, err := checker.GetCheckTypeFromString(parentName)
+		checkType, err := checker.ParseCheckType(parentName)
 		if err != nil {
 			return nil, fmt.Errorf("invalid check type '%s': %w", parentName, err)
 		}
