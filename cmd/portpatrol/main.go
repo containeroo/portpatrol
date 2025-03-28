@@ -8,7 +8,7 @@ import (
 	"github.com/containeroo/portpatrol/internal/app"
 )
 
-const version string = "v0.5.10"
+const version string = "v0.5.11"
 
 func main() {
 	// Create a root context
