@@ -42,7 +42,8 @@ func TestParseFlagsHTTPAddressDetail(t *testing.T) {
 			cfg, err := ParseFlags(args, "1.0.0")
 			require.NoError(t, err)
 			require.Len(t, cfg.Targets, 1)
-			httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+			httpConfig, ok := cfg.Targets[0].Config.(checker.HTTPConfig)
+			require.True(t, ok)
 			assert.Equal(t, tt.want, httpConfig.AddressDetail)
 		})
 	}
@@ -54,7 +55,14 @@ func TestParseFlagsHTTPAddressDetail(t *testing.T) {
 			httpWebAddressFlag,
 			"--http.web.address-detail=invalid",
 		}, "1.0.0")
-		assertInvalidFlagValueError(t, err, "--http.web.address-detail", "invalid", "origin", "path", "query", "full")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "invalid value for flag --http.web.address-detail")
+		assert.ErrorContains(t, err, `"invalid"`)
+		assert.ErrorContains(t, err, "must be one of")
+		assert.ErrorContains(t, err, "origin")
+		assert.ErrorContains(t, err, "path")
+		assert.ErrorContains(t, err, "query")
+		assert.ErrorContains(t, err, "full")
 	})
 
 	t.Run("per target", func(t *testing.T) {
@@ -69,8 +77,12 @@ func TestParseFlagsHTTPAddressDetail(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, cfg.Targets, 2)
 
-		assert.Equal(t, checker.HTTPAddressFull, requireHTTPConfig(t, cfg.Targets[0]).AddressDetail)
-		assert.Equal(t, checker.HTTPAddressPath, requireHTTPConfig(t, cfg.Targets[1]).AddressDetail)
+		apiConfig, ok := cfg.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
+		webConfig, ok := cfg.Targets[1].Config.(checker.HTTPConfig)
+		require.True(t, ok)
+		assert.Equal(t, checker.HTTPAddressFull, apiConfig.AddressDetail)
+		assert.Equal(t, checker.HTTPAddressPath, webConfig.AddressDetail)
 	})
 }
 
@@ -87,7 +99,8 @@ func TestParseFlagsHTTPMethod(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		cfg, ok := parsedFlags.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.Equal(t, http.MethodPost, cfg.Method)
 	})
 
@@ -98,7 +111,12 @@ func TestParseFlagsHTTPMethod(t *testing.T) {
 			httpWebAddressFlag,
 			"--http.web.method=INVALID",
 		}, "1.0.0")
-		assertInvalidFlagValueError(t, err, "--http.web.method", "INVALID", http.MethodGet, http.MethodPost)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "invalid value for flag --http.web.method")
+		assert.ErrorContains(t, err, `"INVALID"`)
+		assert.ErrorContains(t, err, "must be one of")
+		assert.ErrorContains(t, err, http.MethodGet)
+		assert.ErrorContains(t, err, http.MethodPost)
 	})
 }
 
@@ -129,7 +147,8 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	assert.Equal(t, "web", target.ID)
 	assert.Equal(t, "Web", target.Name)
 	assert.Equal(t, httpExampleURL, target.Address)
-	cfg := requireHTTPConfig(t, target)
+	cfg, ok := target.Config.(checker.HTTPConfig)
+	require.True(t, ok)
 	assert.Equal(t, http.MethodPost, cfg.Method)
 	assert.Equal(t, http.Header{"Authorization": {"Bearer token"}}, cfg.Headers)
 	assert.Equal(t, []int{200, 201, 202, 204}, cfg.ExpectedStatusCodes)
@@ -152,7 +171,8 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		cfg, ok := parsedFlags.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.Equal(t, defaultHTTPMaxRedirects, cfg.MaxRedirects)
 	})
 
@@ -165,7 +185,8 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		cfg, ok := parsedFlags.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.Zero(t, cfg.MaxRedirects)
 	})
 
@@ -191,7 +212,8 @@ func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
 		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		cfg, ok := parsedFlags.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.True(t, cfg.FollowRedirects)
 	})
 
@@ -204,7 +226,8 @@ func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		cfg, ok := parsedFlags.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.False(t, cfg.FollowRedirects)
 	})
 }
@@ -231,7 +254,12 @@ func TestParseFlagsHTTPBackoff(t *testing.T) {
 			httpWebAddressFlag,
 			"--http.web.backoff=invalid",
 		}, "1.0.0")
-		assertInvalidFlagValueError(t, err, "--http.web.backoff", "invalid", backoff.ModeLinear.String(), backoff.ModeExponential.String())
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "invalid value for flag --http.web.backoff")
+		assert.ErrorContains(t, err, `"invalid"`)
+		assert.ErrorContains(t, err, "must be one of")
+		assert.ErrorContains(t, err, backoff.ModeLinear.String())
+		assert.ErrorContains(t, err, backoff.ModeExponential.String())
 	})
 }
 
@@ -314,7 +342,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, cfg.Targets, 1)
-		httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+		httpConfig, ok := cfg.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.Equal(t, []string{"one", "two"}, httpConfig.Headers.Values("X-Test"))
 	})
 
@@ -327,7 +356,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, cfg.Targets, 1)
-		httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+		httpConfig, ok := cfg.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.Equal(t, []string{"no-cache, no-store"}, httpConfig.Headers.Values("Cache-Control"))
 	})
 
@@ -352,7 +382,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, cfg.Targets, 1)
-		httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+		httpConfig, ok := cfg.Targets[0].Config.(checker.HTTPConfig)
+		require.True(t, ok)
 		assert.Equal(t, "secret", httpConfig.Headers.Get("Authorization"))
 	})
 

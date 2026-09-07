@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containeroo/never/internal/checker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +23,8 @@ func TestParseFlagsTCPTarget(t *testing.T) {
 	require.Len(t, parsedFlags.Targets, 1)
 
 	target := parsedFlags.Targets[0]
-	cfg := requireTCPConfig(t, target)
+	cfg, ok := target.Config.(checker.TCPConfig)
+	require.True(t, ok)
 	assert.Equal(t, "db", target.ID)
 	assert.Equal(t, "Database", target.Name)
 	assert.Equal(t, "example.com:5432", target.Address)

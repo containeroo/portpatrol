@@ -119,6 +119,11 @@ func TestParseFlagsLogFormat(t *testing.T) {
 		t.Parallel()
 
 		_, err := ParseFlags([]string{"--log-format=xml"}, "1.0.0")
-		assertInvalidFlagValueError(t, err, "--log-format", "xml", "json", "text")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "invalid value for flag --log-format")
+		assert.ErrorContains(t, err, `"xml"`)
+		assert.ErrorContains(t, err, "must be one of")
+		assert.ErrorContains(t, err, "json")
+		assert.ErrorContains(t, err, "text")
 	})
 }

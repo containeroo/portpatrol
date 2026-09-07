@@ -7,7 +7,6 @@ import (
 	"github.com/containeroo/never/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestValidateNonNegativeInt verifies non-negative integer validation.
@@ -18,17 +17,17 @@ func TestValidateNonNegativeInt(t *testing.T) {
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validate(0))
+		assert.NoError(t, validate(0))
 	})
 
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validate(3))
+		assert.NoError(t, validate(3))
 	})
 
 	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validate(-1), "must be non-negative")
+		assert.EqualError(t, validate(-1), "must be non-negative")
 	})
 }
 
@@ -40,17 +39,17 @@ func TestValidatePositiveDuration(t *testing.T) {
 
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateTimeout(time.Nanosecond))
+		assert.NoError(t, validateTimeout(time.Nanosecond))
 	})
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateTimeout(0), "must be positive")
+		assert.EqualError(t, validateTimeout(0), "must be positive")
 	})
 
 	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateTimeout(-time.Second), "must be positive")
+		assert.EqualError(t, validateTimeout(-time.Second), "must be positive")
 	})
 }
 
@@ -62,38 +61,18 @@ func TestValidateNonNegativeDuration(t *testing.T) {
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateInterval(0))
+		assert.NoError(t, validateInterval(0))
 	})
 
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateInterval(time.Second))
+		assert.NoError(t, validateInterval(time.Second))
 	})
 
 	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateInterval(-time.Second), "must be non-negative")
+		assert.EqualError(t, validateInterval(-time.Second), "must be non-negative")
 	})
-}
-
-// assertNoValidationError verifies a validator accepted the value.
-func assertNoValidationError(t *testing.T, err error) {
-	t.Helper()
-	require.NoError(t, err)
-}
-
-// assertExactValidationError verifies a validator returned the exact expected error.
-func assertExactValidationError(t *testing.T, err error, want string) {
-	t.Helper()
-	require.Error(t, err)
-	assert.EqualError(t, err, want)
-}
-
-// assertValidationErrorContains verifies a validator returned an error containing the expected text.
-func assertValidationErrorContains(t *testing.T, err error, want string) {
-	t.Helper()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), want)
 }
 
 // TestValidateHTTPAddress verifies HTTP address validation accepts supported inputs.
@@ -102,32 +81,32 @@ func TestValidateHTTPAddress(t *testing.T) {
 
 	t.Run("http URL", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateHTTPAddress("http://example.com"))
+		assert.NoError(t, validateHTTPAddress("http://example.com"))
 	})
 
 	t.Run("https URL", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateHTTPAddress("https://example.com/ready"))
+		assert.NoError(t, validateHTTPAddress("https://example.com/ready"))
 	})
 
 	t.Run("resolver reference", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateHTTPAddress("env:TARGET_URL"))
+		assert.NoError(t, validateHTTPAddress("env:TARGET_URL"))
 	})
 
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateHTTPAddress(""), "invalid HTTP URL")
+		assert.EqualError(t, validateHTTPAddress(""), "invalid HTTP URL")
 	})
 
 	t.Run("missing host", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateHTTPAddress("http://"), "invalid HTTP URL")
+		assert.EqualError(t, validateHTTPAddress("http://"), "invalid HTTP URL")
 	})
 
 	t.Run("unsupported scheme", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateHTTPAddress("ftp://example.com"), `unsupported scheme: "ftp"`)
+		assert.EqualError(t, validateHTTPAddress("ftp://example.com"), `unsupported scheme: "ftp"`)
 	})
 }
 
@@ -135,32 +114,31 @@ func TestValidateHTTPAddress(t *testing.T) {
 func TestValidateICMPAddress(t *testing.T) {
 	t.Parallel()
 
-	for _, address := range []string{testutils.LocalhostIPv4, "2001:db8::1", "example.com", "localhost", "env:TARGET_HOST"} {
-		address := address
-		t.Run(address, func(t *testing.T) {
-			t.Parallel()
-			assertNoValidationError(t, validateICMPAddress(address))
-		})
-	}
+	t.Run("valid", func(t *testing.T) {
+		t.Parallel()
+		for _, address := range []string{testutils.LocalhostIPv4, "2001:db8::1", "example.com", "localhost", "env:TARGET_HOST"} {
+			assert.NoError(t, validateICMPAddress(address))
+		}
+	})
 
 	t.Run("scheme", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateICMPAddress("icmp://example.com"), "ICMP check cannot have a scheme")
+		assert.EqualError(t, validateICMPAddress("icmp://example.com"), "ICMP check cannot have a scheme")
 	})
 
 	t.Run("path", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateICMPAddress("example.com/ready"), "ICMP address must be a hostname or IP without path or port")
+		assert.EqualError(t, validateICMPAddress("example.com/ready"), "ICMP address must be a hostname or IP without path or port")
 	})
 
 	t.Run("port", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateICMPAddress("example.com:80"), "ICMP address must be a hostname or IP without path or port")
+		assert.EqualError(t, validateICMPAddress("example.com:80"), "ICMP address must be a hostname or IP without path or port")
 	})
 
 	t.Run("invalid hostname", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateICMPAddress("exa_mple.com"), `invalid hostname: "exa_mple.com"`)
+		assert.EqualError(t, validateICMPAddress("exa_mple.com"), `invalid hostname: "exa_mple.com"`)
 	})
 }
 
@@ -168,22 +146,21 @@ func TestValidateICMPAddress(t *testing.T) {
 func TestValidateTCPAddress(t *testing.T) {
 	t.Parallel()
 
-	for _, address := range []string{testutils.LocalhostAddr("80"), "example.com:443", "[2001:db8::1]:443", "env:TARGET_ADDRESS"} {
-		address := address
-		t.Run(address, func(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		for _, address := range []string{testutils.LocalhostAddr("80"), "example.com:443", "[2001:db8::1]:443", "env:TARGET_ADDRESS"} {
 			t.Parallel()
-			assertNoValidationError(t, validateTCPAddress(address))
-		})
-	}
+			assert.NoError(t, validateTCPAddress(address))
+		}
+	})
 
 	t.Run("missing port", func(t *testing.T) {
 		t.Parallel()
-		assertValidationErrorContains(t, validateTCPAddress("example.com"), "TCP address must be host:port")
+		assert.ErrorContains(t, validateTCPAddress("example.com"), "TCP address must be host:port")
 	})
 
 	t.Run("scheme", func(t *testing.T) {
 		t.Parallel()
-		assertValidationErrorContains(t, validateTCPAddress("tcp://example.com:80"), "TCP address must be host:port")
+		assert.ErrorContains(t, validateTCPAddress("tcp://example.com:80"), "TCP address must be host:port")
 	})
 }
 
