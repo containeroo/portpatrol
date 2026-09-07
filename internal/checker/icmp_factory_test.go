@@ -66,7 +66,7 @@ func TestNewProtocol(t *testing.T) {
 		_, err := newProtocol("invalid.domain")
 
 		require.Error(t, err)
-		assert.EqualError(t, err, "invalid or unresolvable address: invalid.domain")
+		assert.EqualError(t, err, "invalid IP address: invalid.domain")
 	})
 
 	t.Run("Unsupported IP Address", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestNewProtocol(t *testing.T) {
 		_, err := newProtocol("300.300.300.300")
 
 		require.Error(t, err)
-		assert.EqualError(t, err, "invalid or unresolvable address: 300.300.300.300")
+		assert.EqualError(t, err, "invalid IP address: 300.300.300.300")
 	})
 }
 

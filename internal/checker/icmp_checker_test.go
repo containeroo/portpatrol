@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -34,9 +35,8 @@ func TestNewICMPCheckerValidIPv4(t *testing.T) {
 func TestNewICMPCheckerInvalidAddress(t *testing.T) {
 	t.Parallel()
 
-	_, err := newICMPChecker("InvalidAddress", "invalid-address")
-	require.Error(t, err)
-	assert.Equal(t, err.Error(), "failed to create ICMP protocol: invalid or unresolvable address: invalid-address")
+	_, err := newICMPChecker("UnresolvedAddress", "not-yet-ready.invalid")
+	require.NoError(t, err)
 }
 
 // TestICMPCheckerCheckSuccess tests successful ICMP checking.
@@ -372,13 +372,20 @@ func TestICMPCheckerValidateReplyError(t *testing.T) {
 			return []byte{}, nil
 		},
 		ValidateReplyFunc: func(reply []byte, id, seq uint16) error {
-			return fmt.Errorf("mock validation error")
+			return fmt.Errorf("unrelated reply")
 		},
 		NetworkFunc: func() string {
 			return icmpv4Network
 		},
 		ListenPacketFunc: func(ctx context.Context, network, address string) (net.PacketConn, error) {
-			return &testutils.MockPacketConn{}, nil
+			reads := 0
+			return &testutils.MockPacketConn{ReadFromFunc: func(b []byte) (int, net.Addr, error) {
+				reads++
+				if reads > 1 {
+					return 0, nil, errors.New("read deadline reached")
+				}
+				return 0, &net.IPAddr{IP: net.ParseIP("127.0.0.1")}, nil
+			}}, nil
 		},
 	}
 
@@ -394,5 +401,77 @@ func TestICMPCheckerValidateReplyError(t *testing.T) {
 
 	err := checker.Check(ctx)
 	require.Error(t, err)
-	assert.EqualError(t, err, "failed to validate ICMP reply: mock validation error")
+	assert.EqualError(t, err, "failed to read ICMP reply: read deadline reached")
+}
+
+func TestICMPDNSIsRetried(t *testing.T) {
+	c, err := newICMPChecker("dns", "eventually-ready.invalid")
+	require.NoError(t, err)
+	calls := 0
+	c.lookupIP = func(ctx context.Context, network, host string) ([]net.IP, error) {
+		calls++
+		if calls == 1 {
+			return nil, &net.DNSError{Name: host, IsNotFound: true}
+		}
+		return []net.IP{net.ParseIP("127.0.0.1")}, nil
+	}
+	c.protocol = &testutils.MockProtocol{ListenPacketFunc: func(context.Context, string, string) (net.PacketConn, error) { return &testutils.MockPacketConn{}, nil }}
+	require.Error(t, c.Check(context.Background()))
+	require.NoError(t, c.Check(context.Background()))
+	require.Equal(t, 2, calls)
+}
+
+func TestICMPDNSHonorsDeadline(t *testing.T) {
+	c, err := newICMPChecker("dns", "slow.invalid", WithICMPTimeout(10*time.Millisecond))
+	require.NoError(t, err)
+	c.lookupIP = func(ctx context.Context, _, _ string) ([]net.IP, error) { <-ctx.Done(); return nil, ctx.Err() }
+	require.ErrorIs(t, c.Check(context.Background()), context.DeadlineExceeded)
+}
+
+func TestICMPReadHonorsCancellation(t *testing.T) {
+	c, err := newICMPChecker("cancel", "127.0.0.1")
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	closed := make(chan struct{})
+	var once sync.Once
+	c.protocol = &testutils.MockProtocol{ListenPacketFunc: func(context.Context, string, string) (net.PacketConn, error) {
+		return &testutils.MockPacketConn{
+			ReadFromFunc: func([]byte) (int, net.Addr, error) { cancel(); <-closed; return 0, nil, net.ErrClosed },
+			CloseFunc:    func() error { once.Do(func() { close(closed) }); return nil },
+		}, nil
+	}}
+	require.ErrorIs(t, c.Check(ctx), context.Canceled)
+}
+
+func TestICMPIgnoresUnrelatedPackets(t *testing.T) {
+	c, err := newICMPChecker("matching", "127.0.0.1")
+	require.NoError(t, err)
+	reads, validations := 0, 0
+	c.protocol = &testutils.MockProtocol{
+		ListenPacketFunc: func(context.Context, string, string) (net.PacketConn, error) {
+			return &testutils.MockPacketConn{
+				ReadFromFunc: func([]byte) (int, net.Addr, error) {
+					reads++
+					if reads > 3 {
+						return 0, nil, errors.New("no matching reply")
+					}
+					ip := "127.0.0.1"
+					if reads == 1 {
+						ip = "127.0.0.2"
+					}
+					return 0, &net.IPAddr{IP: net.ParseIP(ip)}, nil
+				},
+			}, nil
+		},
+		ValidateReplyFunc: func([]byte, uint16, uint16) error {
+			validations++
+			if validations == 1 {
+				return errors.New("other sequence")
+			}
+			return nil
+		},
+	}
+	require.NoError(t, c.Check(context.Background()))
+	require.Equal(t, 3, reads)
 }

@@ -37,12 +37,7 @@ type Protocol interface {
 func newProtocol(address string) (Protocol, error) {
 	ip := net.ParseIP(address)
 	if ip == nil {
-		// If the address is not an IP, try resolving it as a domain name
-		ips, err := net.LookupIP(address)
-		if err != nil || len(ips) == 0 {
-			return nil, fmt.Errorf("invalid or unresolvable address: %s", address)
-		}
-		ip = ips[0] // Use the first resolved IP address
+		return nil, fmt.Errorf("invalid IP address: %s", address)
 	}
 
 	if ip.To16() != nil && ip.To4() == nil {
@@ -53,9 +48,7 @@ func newProtocol(address string) (Protocol, error) {
 }
 
 // ICMPv4 implements the Protocol interface for IPv4 ICMP.
-type ICMPv4 struct {
-	conn net.PacketConn
-}
+type ICMPv4 struct{}
 
 // MakeRequest creates an ICMP echo request message.
 func (p *ICMPv4) MakeRequest(identifier, sequence uint16) ([]byte, error) {
@@ -102,14 +95,11 @@ func (p *ICMPv4) ListenPacket(ctx context.Context, network, address string) (net
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
-	p.conn = conn
 	return conn, nil
 }
 
 // ICMPv6 implements the Protocol interface for IPv6 ICMP.
-type ICMPv6 struct {
-	conn net.PacketConn
-}
+type ICMPv6 struct{}
 
 // MakeRequest creates an ICMP echo request message.
 func (p *ICMPv6) MakeRequest(identifier, sequence uint16) ([]byte, error) {
@@ -156,6 +146,5 @@ func (p *ICMPv6) ListenPacket(ctx context.Context, network, address string) (net
 	if err != nil {
 		return nil, fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
-	p.conn = conn
-	return p.conn, nil
+	return conn, nil
 }

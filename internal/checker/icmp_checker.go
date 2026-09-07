@@ -3,6 +3,7 @@ package checker
 import (
 	"context"
 	"fmt"
+	"github.com/containeroo/never/internal/utils"
 	"net"
 	"os"
 	"sync/atomic"
@@ -23,6 +24,7 @@ type ICMPChecker struct {
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 	protocol     Protocol
+	lookupIP     func(context.Context, string, string) ([]net.IP, error)
 }
 
 // Address returns the checker address.
@@ -35,22 +37,49 @@ func (c *ICMPChecker) Name() string { return c.name }
 func (c *ICMPChecker) Type() string { return ICMP.String() }
 
 // Check performs the checker operation.
-func (c *ICMPChecker) Check(ctx context.Context) error {
-	dst, err := net.ResolveIPAddr(c.protocol.Network(), c.address)
+func (c *ICMPChecker) Check(ctx context.Context) (result error) {
+	// Bound DNS and I/O together; the phase-specific deadlines can be shorter.
+	ctx, cancel := context.WithTimeout(ctx, c.readTimeout+c.writeTimeout)
+	defer cancel()
+	defer func() {
+		if ctx.Err() != nil {
+			result = ctx.Err()
+		}
+	}()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	lookup := c.lookupIP
+	if lookup == nil {
+		lookup = net.DefaultResolver.LookupIP
+	}
+	ips, err := lookup(ctx, "ip", c.address)
 	if err != nil {
 		return fmt.Errorf("failed to resolve IP address '%s': %w", c.address, err)
 	}
-
-	conn, err := c.protocol.ListenPacket(ctx, c.protocol.Network(), "")
+	if len(ips) == 0 {
+		return fmt.Errorf("no IP addresses for %s", c.address)
+	}
+	dst := &net.IPAddr{IP: ips[0]}
+	protocol := c.protocol
+	if protocol == nil {
+		protocol, err = newProtocol(dst.IP.String())
+		if err != nil {
+			return err
+		}
+	}
+	conn, err := protocol.ListenPacket(ctx, protocol.Network(), "")
 	if err != nil {
 		return fmt.Errorf("failed to listen for ICMP packets: %w", err)
 	}
 	defer conn.Close() // nolint:errcheck
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stop()
 
 	id := uint16(os.Getpid() & 0xffff)                    // Process-scoped identifier
 	seq := uint16(atomic.AddUint32(&icmpSeq, 1) & 0xffff) // Monotonic sequence number
 
-	msg, err := c.protocol.MakeRequest(id, seq)
+	msg, err := protocol.MakeRequest(id, seq)
 	if err != nil {
 		return fmt.Errorf("failed to create ICMP request: %w", err)
 	}
@@ -68,20 +97,31 @@ func (c *ICMPChecker) Check(ctx context.Context) error {
 	}
 
 	reply := make([]byte, 1500)
-	n, _, err := conn.ReadFrom(reply)
-	if err != nil {
-		return fmt.Errorf("failed to read ICMP reply: %w", err)
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		n, peer, err := conn.ReadFrom(reply)
+		if err != nil {
+			return fmt.Errorf("failed to read ICMP reply: %w", err)
+		}
+		source, ok := peer.(*net.IPAddr)
+		if !ok || !source.IP.Equal(dst.IP) {
+			continue
+		}
+		if err := protocol.ValidateReply(reply[:n], id, seq); err != nil {
+			continue
+		}
+		return nil
 	}
 
-	if err := c.protocol.ValidateReply(reply[:n], id, seq); err != nil {
-		return fmt.Errorf("failed to validate ICMP reply: %w", err)
-	}
-
-	return nil
 }
 
 // newICMPChecker initializes a new ICMPChecker with functional options.
 func newICMPChecker(name, address string, opts ...Option) (*ICMPChecker, error) {
+	if net.ParseIP(address) == nil && !utils.IsHostnameLike(address) {
+		return nil, fmt.Errorf("invalid ICMP address")
+	}
 	checker := &ICMPChecker{
 		name:         name,
 		address:      address,
@@ -92,12 +132,6 @@ func newICMPChecker(name, address string, opts ...Option) (*ICMPChecker, error) 
 	for _, opt := range opts {
 		opt.apply(checker)
 	}
-
-	protocol, err := newProtocol(checker.address)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ICMP protocol: %w", err)
-	}
-	checker.protocol = protocol
 
 	return checker, nil
 }

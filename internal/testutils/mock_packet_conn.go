@@ -95,7 +95,7 @@ func (m *MockPacketConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	if m.ReadFromFunc != nil {
 		return m.ReadFromFunc(b)
 	}
-	return 0, nil, nil
+	return 0, &net.IPAddr{IP: net.ParseIP("127.0.0.1")}, nil
 }
 
 // Close is a mock implementation of the net.PacketConn.
