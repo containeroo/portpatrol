@@ -40,6 +40,7 @@ func TestBuildCheckers(t *testing.T) {
 					MaxRedirects:        4,
 					SkipTLSVerify:       true,
 					Timeout:             33 * time.Second,
+					AddressDetail:       checker.HTTPAddressOrigin,
 				},
 			},
 		}, 9*time.Second, -1)

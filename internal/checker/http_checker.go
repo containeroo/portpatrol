@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	defaultHTTPTimeout         time.Duration = 2 * time.Second
-	defaultHTTPMethod          string        = http.MethodGet
 	defaultHTTPFollowRedirects bool          = true
 	defaultHTTPMaxRedirects    int           = 10
+	defaultHTTPMethod          string        = http.MethodGet
+	defaultHTTPSTatusCode      int           = 200
+	defaultHTTPTimeout         time.Duration = 2 * time.Second
 )
 
 // HTTPChecker implements the Checker interface for HTTP checks.
@@ -37,7 +38,7 @@ type HTTPChecker struct {
 // NewChecker constructs an HTTP checker from the config.
 func (c HTTPConfig) NewChecker(name, address string) (Checker, error) {
 	requestURL := strings.TrimSpace(address)
-	displayAddress, err := httpDisplayAddress(requestURL, c.ShowPath)
+	displayAddress, err := httpDisplayAddress(requestURL, c.AddressDetail)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +87,7 @@ func (c HTTPConfig) NewChecker(name, address string) (Checker, error) {
 	return checker, nil
 }
 
-// Address returns the safe HTTP address used in logs.
+// Address returns the configured HTTP address representation used in logs.
 func (c *HTTPChecker) Address() string { return c.displayAddress }
 
 // Name returns the checker name.
@@ -134,7 +135,7 @@ type HTTPConfig struct {
 	SkipTLSVerify       bool
 	Timeout             time.Duration
 	UserAgent           string
-	ShowPath            bool
+	AddressDetail       HTTPAddressDetail
 }
 
 // DefaultHTTPConfig returns an independent configuration with the application defaults.
@@ -142,29 +143,57 @@ func DefaultHTTPConfig() HTTPConfig {
 	return HTTPConfig{
 		Method:              defaultHTTPMethod,
 		Headers:             make(http.Header),
-		ExpectedStatusCodes: []int{200},
+		ExpectedStatusCodes: []int{defaultHTTPSTatusCode},
 		FollowRedirects:     defaultHTTPFollowRedirects,
 		MaxRedirects:        defaultHTTPMaxRedirects,
 		Timeout:             defaultHTTPTimeout,
+		AddressDetail:       HTTPAddressOrigin,
 	}
 }
 
-// httpDisplayAddress returns the safe HTTP address exposed through Checker.Address.
-// User credentials, queries, and fragments are never logged; paths are opt-in.
-func httpDisplayAddress(address string, showPath bool) (string, error) {
+// HTTPAddressDetail controls how much of an HTTP target address is exposed through Checker.Address.
+type HTTPAddressDetail string
+
+const (
+	HTTPAddressOrigin HTTPAddressDetail = "origin"
+	HTTPAddressPath   HTTPAddressDetail = "path"
+	HTTPAddressQuery  HTTPAddressDetail = "query"
+	HTTPAddressFull   HTTPAddressDetail = "full"
+)
+
+// String returns the configured HTTP address detail.
+func (d HTTPAddressDetail) String() string { return string(d) }
+
+// httpDisplayAddress returns the HTTP address exposed through Checker.Address.
+func httpDisplayAddress(address string, detail HTTPAddressDetail) (string, error) {
 	u, err := url.Parse(address)
 	if err != nil {
 		return "", fmt.Errorf("invalid HTTP URL: %w", err)
 	}
 
-	u.User = nil
-	u.RawQuery = ""
-	u.ForceQuery = false
-	u.Fragment = ""
-	u.RawFragment = ""
-	if !showPath {
+	switch detail {
+	case HTTPAddressOrigin:
+		u.User = nil
 		u.Path = ""
 		u.RawPath = ""
+		u.RawQuery = ""
+		u.ForceQuery = false
+		u.Fragment = ""
+		u.RawFragment = ""
+	case HTTPAddressPath:
+		u.User = nil
+		u.RawQuery = ""
+		u.ForceQuery = false
+		u.Fragment = ""
+		u.RawFragment = ""
+	case HTTPAddressQuery:
+		u.User = nil
+		u.Fragment = ""
+		u.RawFragment = ""
+	case HTTPAddressFull:
+		// Preserve the complete URL.
+	default:
+		return "", fmt.Errorf("invalid HTTP address detail: %q", detail)
 	}
 
 	return u.String(), nil

@@ -257,24 +257,37 @@ func TestHTTPCheckerDisplayAddress(t *testing.T) {
 	const address = "https://user:password@example.com/private?q=secret#fragment"
 
 	for _, tt := range []struct {
-		name     string
-		showPath bool
-		want     string
+		name   string
+		detail HTTPAddressDetail
+		want   string
 	}{
-		{name: "hidden", want: "https://example.com"},
-		{name: "path visible", showPath: true, want: "https://example.com/private"},
+		{name: "origin", detail: HTTPAddressOrigin, want: "https://example.com"},
+		{name: "path", detail: HTTPAddressPath, want: "https://example.com/private"},
+		{name: "query", detail: HTTPAddressQuery, want: "https://example.com/private?q=secret"},
+		{name: "full", detail: HTTPAddressFull, want: address},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			cfg := DefaultHTTPConfig()
-			cfg.ShowPath = tt.showPath
+			cfg.AddressDetail = tt.detail
 			check, err := cfg.NewChecker("example", address)
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, check.Address())
 		})
 	}
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := DefaultHTTPConfig()
+		cfg.AddressDetail = "invalid"
+		_, err := cfg.NewChecker("example", address)
+
+		require.Error(t, err)
+		assert.EqualError(t, err, `invalid HTTP address detail: "invalid"`)
+	})
 }
 
 func TestHTTPCheckerUsesFullRequestURL(t *testing.T) {

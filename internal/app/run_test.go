@@ -173,18 +173,39 @@ func TestRunCanceledIsNotReady(t *testing.T) {
 func TestURLPrivacy(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
 	defer server.Close()
+
+	address := strings.Replace(server.URL, "http://", "http://user:password@", 1) + "/private?token=secret#fragment"
 	for _, format := range []string{"json", "text"} {
-		for _, show := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%s/%v", format, show), func(t *testing.T) {
-				args := []string{"--http.test.address=" + server.URL + "/private?token=secret", "--http.test.timeout=10ms", "--max-attempts=1", "--log-format=" + format}
-				if show {
-					args = append(args, "--show-path")
+		for _, tt := range []struct {
+			detail       string
+			wantPath     bool
+			wantQuery    bool
+			wantUserInfo bool
+			wantFragment bool
+		}{
+			{detail: "origin"},
+			{detail: "path", wantPath: true},
+			{detail: "query", wantPath: true, wantQuery: true},
+			{detail: "full", wantPath: true, wantQuery: true, wantUserInfo: true, wantFragment: true},
+		} {
+			t.Run(fmt.Sprintf("%s/%s", format, tt.detail), func(t *testing.T) {
+				args := []string{
+					"--http.test.address=" + address,
+					"--http.test.timeout=10ms",
+					"--max-attempts=1",
+					"--log-format=" + format,
+					"--http-address-detail=" + tt.detail,
 				}
+
 				var out, stderr bytes.Buffer
 				require.Error(t, Run(context.Background(), version, args, &out, &stderr))
-				assert.Equal(t, show, strings.Contains(out.String(), "/private"), out.String())
-				assert.NotContains(t, out.String(), "token=secret")
-				assert.Contains(t, out.String(), server.URL)
+
+				logOutput := out.String()
+				assert.Equal(t, tt.wantPath, strings.Contains(logOutput, "/private"), logOutput)
+				assert.Equal(t, tt.wantQuery, strings.Contains(logOutput, "token=secret"), logOutput)
+				assert.Equal(t, tt.wantUserInfo, strings.Contains(logOutput, "user:password@"), logOutput)
+				assert.Equal(t, tt.wantFragment, strings.Contains(logOutput, "#fragment"), logOutput)
+				assert.Contains(t, logOutput, strings.TrimPrefix(server.URL, "http://"))
 			})
 		}
 	}

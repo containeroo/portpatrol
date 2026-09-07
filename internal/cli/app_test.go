@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/tinyflags"
 	"github.com/stretchr/testify/assert"
@@ -111,5 +112,37 @@ func TestParseFlagsLogFormat(t *testing.T) {
 
 		_, err := ParseFlags([]string{"--log-format=xml"}, "1.0.0")
 		assertInvalidFlagValueError(t, err, "--log-format", "xml", "json", "text")
+	})
+}
+
+// TestParseFlagsHTTPAddressDetail verifies HTTP address detail parsing and validation.
+func TestParseFlagsHTTPAddressDetail(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		args []string
+		want checker.HTTPAddressDetail
+	}{
+		{name: "default", want: checker.HTTPAddressOrigin},
+		{name: "origin", args: []string{"--http-address-detail=origin"}, want: checker.HTTPAddressOrigin},
+		{name: "path", args: []string{"--http-address-detail=path"}, want: checker.HTTPAddressPath},
+		{name: "query", args: []string{"--http-address-detail=query"}, want: checker.HTTPAddressQuery},
+		{name: "full", args: []string{"--http-address-detail=full"}, want: checker.HTTPAddressFull},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg, err := ParseFlags(tt.args, "1.0.0")
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, cfg.HTTPAddressDetail)
+		})
+	}
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{"--http-address-detail=invalid"}, "1.0.0")
+		assertInvalidFlagValueError(t, err, "--http-address-detail", "invalid", "origin", "path", "query", "full")
 	})
 }

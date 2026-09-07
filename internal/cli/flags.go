@@ -22,7 +22,7 @@ var (
 
 // Config holds the parsed command-line configuration.
 type Config struct {
-	ShowPath             bool
+	HTTPAddressDetail    checker.HTTPAddressDetail
 	ShowHelp             bool
 	ShowVersion          bool
 	Version              string
@@ -55,7 +55,7 @@ func ParseFlags(args []string, version string) (*Config, error) {
 		return nil, err
 	}
 
-	targets, err := parseTargetConfigs(tf.DynamicGroups(), version, cfg.ShowPath)
+	targets, err := parseTargetConfigs(tf.DynamicGroups(), version, cfg.HTTPAddressDetail)
 	if err != nil {
 		return nil, err
 	}

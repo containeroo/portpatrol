@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/containeroo/never/internal/backoff"
+	"github.com/containeroo/never/internal/checker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,6 +60,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 		"--http.web.backoff=exponential",
 		"--http.web.max-interval=30s",
 		"--http.web.max-attempts=3",
+		"--http-address-detail=query",
 	}
 
 	parsedFlags, err := ParseFlags(args, "1.0.0")
@@ -76,6 +78,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	assert.False(t, cfg.FollowRedirects)
 	assert.Equal(t, 3, cfg.MaxRedirects)
 	assert.Equal(t, "never/1.0.0", cfg.UserAgent)
+	assert.Equal(t, checker.HTTPAddressQuery, cfg.AddressDetail)
 	assert.Equal(t, 3, target.MaxAttempts)
 	assert.Equal(t, backoff.ModeExponential, target.Backoff)
 	assert.Equal(t, 30*time.Second, target.MaxInterval)
@@ -192,6 +195,8 @@ func TestParseFlagsHTTPPerTargetMaxAttempts(t *testing.T) {
 // TestParseFlagsHTTPInputParsing verifies HTTP-specific raw values are parsed at the CLI boundary.
 func TestParseFlagsHTTPInputParsing(t *testing.T) {
 	t.Run("invalid header", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.header=InvalidHeader",
@@ -201,6 +206,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 	})
 
 	t.Run("duplicate header", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.header=X-Test=one",
@@ -226,6 +233,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 	})
 
 	t.Run("header value containing comma", func(t *testing.T) {
+		t.Parallel()
+
 		cfg, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.header=Cache-Control=no-cache, no-store",
@@ -237,6 +246,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 	})
 
 	t.Run("header names are case insensitive", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.header=X-Test=one",
@@ -260,6 +271,8 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 	})
 
 	t.Run("invalid expected status codes", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.expected-status-codes=299-200",

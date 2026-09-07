@@ -1,13 +1,26 @@
 package cli
 
 import (
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/tinyflags"
 )
 
 // registerAppFlags registers core application flags and binds them to cfg.
 func registerAppFlags(tf *tinyflags.FlagSet, cfg *Config) {
-	tf.BoolVar(&cfg.ShowPath, "show-path", false, "Show URL paths in logs (may expose secrets).")
+	tinyflags.EnumVar(
+		tf,
+		&cfg.HTTPAddressDetail,
+		"http-address-detail",
+		checker.HTTPAddressOrigin,
+		"HTTP address detail shown in logs (full may expose secrets)",
+		checker.HTTPAddressOrigin,
+		checker.HTTPAddressPath,
+		checker.HTTPAddressQuery,
+		checker.HTTPAddressFull,
+	).
+		Value()
+
 	tf.DurationVar(&cfg.DefaultCheckInterval, "default-interval", defaultCheckInterval, "Default interval between checks. Can be overridden for each target.").
 		Validate(validateNonNegativeDuration("default-interval")).
 		Placeholder("DURATION").

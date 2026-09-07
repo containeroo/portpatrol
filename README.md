@@ -503,6 +503,12 @@ This project is licensed under the Apache License. See the [LICENSE](LICENSE) fi
 
 ### URL privacy
 
-HTTP checker addresses hide paths, queries, and fragments by default.
-Use `--show-path` (or `NEVER__SHOW_PATH=true`) to include only the path for troubleshooting. Queries, fragments, and user credentials are never logged.
-URL usernames and passwords are always hidden, and HTTP request errors do not echo the request URL.
+HTTP checker addresses default to `origin`, which logs only the scheme and host.
+Use `--http-address-detail` (or `NEVER__HTTP_ADDRESS_DETAIL`) to control how much of the configured URL is shown:
+
+- `origin`: scheme and host only (default)
+- `path`: include the URL path
+- `query`: include the path and query string
+- `full`: include the complete URL, including user credentials and fragment
+
+`query` and especially `full` may expose secrets. HTTP request errors do not echo the request URL.

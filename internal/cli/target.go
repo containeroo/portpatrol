@@ -14,19 +14,17 @@ import (
 	"github.com/containeroo/tinyflags"
 )
 
-const httpUserAgentPrefix = "never"
-
 // parseTargetConfigs converts parsed dynamic flag groups into typed target config.
 func parseTargetConfigs(
 	dynamicGroups []*tinyflags.DynamicGroup,
 	version string,
-	showPath bool,
+	httpAddressDetail checker.HTTPAddressDetail,
 ) ([]factory.TargetConfig, error) {
 	var targets []factory.TargetConfig
 
 	for _, group := range dynamicGroups {
 		for _, id := range group.Instances() {
-			checkerConfig, address, err := parseCheckerConfig(group, id, version, showPath)
+			checkerConfig, address, err := parseCheckerConfig(group, id, version, httpAddressDetail)
 			if err != nil {
 				return nil, fmt.Errorf("%s target %q: %w", strings.ToUpper(group.Name()), id, err)
 			}
@@ -52,7 +50,7 @@ func parseCheckerConfig(
 	group *tinyflags.DynamicGroup,
 	id string,
 	version string,
-	showPath bool,
+	httpAddressDetail checker.HTTPAddressDetail,
 ) (checker.Config, string, error) {
 	rawAddress := tinyflags.GetOrDefaultDynamic[string](group, id, "address")
 
@@ -70,9 +68,8 @@ func parseCheckerConfig(
 		if err != nil {
 			return nil, "", fmt.Errorf("invalid HTTP header: %w", err)
 		}
-
 		if err := resolveHTTPHeaderValues(headers); err != nil {
-			return nil, "", err
+			return nil, "", fmt.Errorf("invalid HTTP header: %w", err)
 		}
 
 		return checker.HTTPConfig{
@@ -83,8 +80,8 @@ func parseCheckerConfig(
 			MaxRedirects:        tinyflags.GetOrDefaultDynamic[int](group, id, "max-redirects"),
 			SkipTLSVerify:       tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify"),
 			Timeout:             tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
-			UserAgent:           strings.TrimRight(httpUserAgentPrefix, "/") + "/" + version,
-			ShowPath:            showPath,
+			UserAgent:           strings.TrimSuffix(httpUserAgentPrefix, "/") + "/" + version,
+			AddressDetail:       httpAddressDetail,
 		}, address, nil
 	case "tcp":
 		address, err := resolveTargetAddress(rawAddress, validateResolvedTCPAddress)

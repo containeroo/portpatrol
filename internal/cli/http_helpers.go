@@ -7,6 +7,8 @@ import (
 	"github.com/containeroo/resolver"
 )
 
+const httpUserAgentPrefix string = "never"
+
 // resolveHTTPHeaderValues resolves configured variables in parsed HTTP header values.
 func resolveHTTPHeaderValues(headers http.Header) error {
 	for _, values := range headers {
