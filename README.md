@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/assets/logo.svg" alt="N.E.V.E.R." width="520">
+  <img src="./docs/assets/never.svg" alt="N.E.V.E.R." width="520">
 </p>
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/containeroo/never.svg)](https://pkg.go.dev/github.com/containeroo/never)

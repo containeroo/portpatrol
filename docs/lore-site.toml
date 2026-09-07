@@ -7,7 +7,7 @@ language = "en"
 mermaid = true
 
 # Branding paths are relative to this configuration file.
-logo = "assets/logo.svg"
+logo = "assets/never.svg"
 favicon = "content/assets/favicon.svg"
 favicon_ico = "content/favicon.ico"
 assets_dir = "assets"
