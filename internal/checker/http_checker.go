@@ -10,9 +10,11 @@ import (
 )
 
 const (
-	defaultHTTPTimeout       time.Duration = 2 * time.Second
-	defaultHTTPMethod        string        = http.MethodGet
-	defaultHTTPSkipTLSVerify bool          = false
+	defaultHTTPTimeout         time.Duration = 2 * time.Second
+	defaultHTTPMethod          string        = http.MethodGet
+	defaultHTTPFollowRedirects bool          = true
+	defaultHTTPMaxRedirects    int           = 10
+	defaultHTTPSkipTLSVerify   bool          = false
 )
 
 var defaultHTTPExpectedStatusCodes = []int{200}
@@ -24,6 +26,8 @@ type HTTPChecker struct {
 	method              string
 	headers             http.Header
 	expectedStatusCodes []int
+	followRedirects     bool
+	maxRedirects        int
 	skipTLSVerify       bool
 	timeout             time.Duration
 	client              *http.Client
@@ -72,6 +76,8 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 		method:              defaultHTTPMethod,
 		headers:             make(http.Header),
 		expectedStatusCodes: defaultHTTPExpectedStatusCodes,
+		followRedirects:     defaultHTTPFollowRedirects,
+		maxRedirects:        defaultHTTPMaxRedirects,
 		skipTLSVerify:       defaultHTTPSkipTLSVerify,
 		timeout:             defaultHTTPTimeout,
 	}
@@ -82,6 +88,16 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 
 	checker.client = &http.Client{
 		Timeout: checker.timeout,
+		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
+			if !checker.followRedirects || checker.maxRedirects == 0 {
+				return http.ErrUseLastResponse
+			}
+			if len(via) > checker.maxRedirects {
+				return fmt.Errorf("stopped after %d redirects", checker.maxRedirects)
+			}
+
+			return nil
+		},
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{
@@ -91,6 +107,24 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 	}
 
 	return checker, nil
+}
+
+// WithHTTPFollowRedirects sets whether the HTTPChecker follows redirects.
+func WithHTTPFollowRedirects(followRedirects bool) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			httpChecker.followRedirects = followRedirects
+		}
+	})
+}
+
+// WithHTTPMaxRedirects sets the maximum number of redirects the HTTPChecker follows.
+func WithHTTPMaxRedirects(maxRedirects int) Option {
+	return OptionFunc(func(c Checker) {
+		if httpChecker, ok := c.(*HTTPChecker); ok {
+			httpChecker.maxRedirects = maxRedirects
+		}
+	})
 }
 
 // WithHTTPMethod sets the HTTP method for the HTTPChecker.

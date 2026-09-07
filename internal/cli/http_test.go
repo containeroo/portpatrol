@@ -53,6 +53,8 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 		"--http.web.method=POST",
 		"--http.web.header=Authorization=Bearer token",
 		"--http.web.expected-status-codes=200,204",
+		"--http.web.follow-redirects=false",
+		"--http.web.max-redirects=3",
 		"--http.web.backoff=exponential",
 		"--http.web.max-interval=30s",
 		"--http.web.max-attempts=3",
@@ -69,9 +71,74 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	assert.Equal(t, http.MethodPost, target.HTTPMethod)
 	assert.Equal(t, []string{"Authorization=Bearer token"}, target.HTTPHeaders)
 	assert.Equal(t, []string{"200", "204"}, target.HTTPExpectedStatusCodes)
+	assert.False(t, target.HTTPFollowRedirects)
+	assert.Equal(t, 3, target.HTTPMaxRedirects)
 	assert.Equal(t, 3, target.MaxAttempts)
 	assert.Equal(t, backoff.ModeExponential, target.Backoff)
 	assert.Equal(t, 30*time.Second, target.MaxInterval)
+}
+
+// TestParseFlagsHTTPMaxRedirects verifies redirect limit parsing and validation.
+func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.Equal(t, defaultHTTPMaxRedirects, parsedFlags.Targets[0].HTTPMaxRedirects)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.max-redirects=0",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.Zero(t, parsedFlags.Targets[0].HTTPMaxRedirects)
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.max-redirects=-1",
+		}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "max-redirects must be non-negative")
+	})
+}
+
+// TestParseFlagsHTTPFollowRedirects verifies redirect following defaults to enabled and can be disabled.
+func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.True(t, parsedFlags.Targets[0].HTTPFollowRedirects)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.follow-redirects=false",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.False(t, parsedFlags.Targets[0].HTTPFollowRedirects)
+	})
 }
 
 // TestParseFlagsHTTPBackoff verifies HTTP backoff values use enum validation.

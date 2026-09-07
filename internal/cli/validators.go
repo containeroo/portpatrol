@@ -123,3 +123,14 @@ func validateNonNegativeDuration(name string) func(time.Duration) error {
 		return nil
 	}
 }
+
+// validateNonNegativeInt returns a validator that rejects negative integers.
+func validateNonNegativeInt(name string) func(int) error {
+	return func(v int) error {
+		if v < 0 {
+			return fmt.Errorf("%s must be non-negative", name)
+		}
+
+		return nil
+	}
+}

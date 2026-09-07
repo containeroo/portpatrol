@@ -11,6 +11,8 @@ import (
 const (
 	defaultCheckInterval             time.Duration = 2 * time.Second
 	defaultHTTPAllowDuplicateHeaders bool          = false
+	defaultHTTPFollowRedirects       bool          = true
+	defaultHTTPMaxRedirects          int           = 10
 	defaultHTTPSkipTLSVerify         bool          = false
 )
 

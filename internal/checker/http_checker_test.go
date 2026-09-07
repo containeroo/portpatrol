@@ -177,3 +177,66 @@ func TestHTTPChecker(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+// TestHTTPCheckerRedirects verifies redirects can be disabled or limited.
+func TestHTTPCheckerRedirects(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/start":
+			http.Redirect(w, r, "/middle", http.StatusMovedPermanently)
+		case "/middle":
+			http.Redirect(w, r, "/ready", http.StatusTemporaryRedirect)
+		case "/ready":
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	t.Run("follows up to configured limit", func(t *testing.T) {
+		checker, err := newHTTPChecker("example", server.URL+"/start", WithHTTPMaxRedirects(2))
+		require.NoError(t, err)
+
+		err = checker.Check(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("rejects redirect beyond configured limit", func(t *testing.T) {
+		checker, err := newHTTPChecker("example", server.URL+"/start", WithHTTPMaxRedirects(1))
+		require.NoError(t, err)
+
+		err = checker.Check(context.Background())
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "stopped after 1 redirects")
+	})
+
+	t.Run("zero validates first redirect response", func(t *testing.T) {
+		checker, err := newHTTPChecker(
+			"example",
+			server.URL+"/start",
+			WithHTTPMaxRedirects(0),
+			WithExpectedStatusCodes([]int{http.StatusMovedPermanently}),
+		)
+		require.NoError(t, err)
+
+		err = checker.Check(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("following disabled validates first redirect response", func(t *testing.T) {
+		checker, err := newHTTPChecker(
+			"example",
+			server.URL+"/start",
+			WithHTTPFollowRedirects(false),
+			WithHTTPMaxRedirects(2),
+			WithExpectedStatusCodes([]int{http.StatusMovedPermanently}),
+		)
+		require.NoError(t, err)
+
+		err = checker.Check(context.Background())
+		require.NoError(t, err)
+	})
+}

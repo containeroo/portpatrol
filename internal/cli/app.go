@@ -16,13 +16,8 @@ func registerAppFlags(tf *tinyflags.FlagSet, cfg *Config) {
 		Placeholder("N").
 		Value()
 
-	tinyflags.EnumVar(
-		tf,
-		&cfg.LogFormat,
-		"log-format",
-		logging.LogFormatJSON,
-		"Log format",
-		logging.LogFormatJSON,
-		logging.LogFormatText,
-	).Value()
+	tinyflags.EnumVar(tf, &cfg.LogFormat, "log-format", logging.LogFormatJSON, "Log format",
+		logging.LogFormatJSON, logging.LogFormatText,
+	).
+		Value()
 }

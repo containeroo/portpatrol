@@ -44,6 +44,10 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	).
 		Validate(validateHTTPStatusCodes).
 		Placeholder("CODES...")
+	httpGroup.Bool("follow-redirects", defaultHTTPFollowRedirects, "Follow HTTP redirects").Strict()
+	httpGroup.Int("max-redirects", defaultHTTPMaxRedirects, "Maximum number of redirects to follow. Set to 0 to disable redirects.").
+		Validate(validateNonNegativeInt("max-redirects")).
+		Placeholder("N")
 
 	httpGroup.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
 	httpGroup.Duration("timeout", 2*time.Second, "Request timeout").

@@ -127,11 +127,14 @@ NEVER__ICMP_HOST_ADDRESS=example.com
 | `--http.<IDENTIFIER>.header`                  | string list | empty          | HTTP header in `KEY=VALUE` format. Can be passed multiple times as a flag. Header values can be resolved. \* |
 | `--http.<IDENTIFIER>.allow-duplicate-headers` | bool        | `false`        | Allow duplicate HTTP headers.                                                                                |
 | `--http.<IDENTIFIER>.expected-status-codes`   | string list | `200`          | Expected HTTP status codes. Supports comma-separated codes and ranges, for example `200,204,301-302`.        |
+| `--http.<IDENTIFIER>.follow-redirects`        | bool        | `true`         | Follow HTTP redirects. When `false`, validate the first redirect response instead.                           |
+| `--http.<IDENTIFIER>.max-redirects`           | int         | `10`           | Maximum redirects to follow. Set to `0` to validate the first redirect response instead.                     |
 | `--http.<IDENTIFIER>.skip-tls-verify`         | bool        | `false`        | Skip TLS certificate verification.                                                                           |
 | `--http.<IDENTIFIER>.timeout`                 | duration    | `2s`           | HTTP request timeout.                                                                                        |
 
 Environment variables use `NEVER__HTTP_<IDENTIFIER>_<PROPERTY>`.
 Example: `--http.web.address` becomes `NEVER__HTTP_WEB_ADDRESS`.
+Redirects are not followed when `follow-redirects` is `false` or `max-redirects` is `0`.
 
 #### ICMP Flags
 
@@ -199,6 +202,8 @@ never \
   --http.web.address=http://example.com:80 \
   --http.web.method=GET \
   --http.web.expected-status-codes=200,204 \
+  --http.web.follow-redirects=true \
+  --http.web.max-redirects=10 \
   --http.web.header="Authorization=Bearer token" \
   --http.web.header="Content-Type=application/json" \
   --http.web.skip-tls-verify=false \
@@ -212,6 +217,8 @@ NEVER__DEFAULT_INTERVAL=5s \
 NEVER__HTTP_WEB_ADDRESS=http://example.com:80 \
 NEVER__HTTP_WEB_METHOD=GET \
 NEVER__HTTP_WEB_EXPECTED_STATUS_CODES=200,204 \
+NEVER__HTTP_WEB_FOLLOW_REDIRECTS=true \
+NEVER__HTTP_WEB_MAX_REDIRECTS=10 \
 NEVER__HTTP_WEB_HEADER="Authorization=Bearer token" \
 NEVER__HTTP_WEB_SKIP_TLS_VERIFY=false \
 never

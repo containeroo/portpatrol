@@ -38,6 +38,8 @@ func TestBuildCheckers(t *testing.T) {
 				HTTPHeaders:               []string{"Content-Type=application/json"},
 				HTTPAllowDuplicateHeaders: true,
 				HTTPExpectedStatusCodes:   []string{"200"},
+				HTTPFollowRedirects:       true,
+				HTTPMaxRedirects:          4,
 				HTTPSkipTLSVerify:         true,
 				HTTPTimeout:               33 * time.Second,
 			},

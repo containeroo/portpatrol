@@ -55,6 +55,8 @@ func applyTargetTypeConfig(target *factory.TargetConfig, group *tinyflags.Dynami
 		target.HTTPHeaders = tinyflags.GetOrDefaultDynamic[[]string](group, id, "header")
 		target.HTTPAllowDuplicateHeaders = tinyflags.GetOrDefaultDynamic[bool](group, id, "allow-duplicate-headers")
 		target.HTTPExpectedStatusCodes = tinyflags.GetOrDefaultDynamic[[]string](group, id, "expected-status-codes")
+		target.HTTPFollowRedirects = tinyflags.GetOrDefaultDynamic[bool](group, id, "follow-redirects")
+		target.HTTPMaxRedirects = tinyflags.GetOrDefaultDynamic[int](group, id, "max-redirects")
 		target.HTTPSkipTLSVerify = tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify")
 		target.HTTPTimeout = tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout")
 

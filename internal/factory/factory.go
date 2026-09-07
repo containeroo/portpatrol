@@ -34,6 +34,8 @@ type TargetConfig struct {
 	HTTPHeaders               []string
 	HTTPAllowDuplicateHeaders bool
 	HTTPExpectedStatusCodes   []string
+	HTTPFollowRedirects       bool
+	HTTPMaxRedirects          int
 	HTTPSkipTLSVerify         bool
 	HTTPTimeout               time.Duration
 
@@ -94,6 +96,8 @@ func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration, versio
 			}
 
 			opts = append(opts, checker.WithHTTPSkipTLSVerify(target.HTTPSkipTLSVerify))
+			opts = append(opts, checker.WithHTTPFollowRedirects(target.HTTPFollowRedirects))
+			opts = append(opts, checker.WithHTTPMaxRedirects(target.HTTPMaxRedirects))
 
 			if target.HTTPTimeout > 0 {
 				opts = append(opts, checker.WithHTTPTimeout(target.HTTPTimeout))
