@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="208 205 1036 744" role="img" aria-labelledby="title desc">
+  <title id="title">never</title>
+  <desc id="desc">Never logo with a slate infinity mark, green inner arcs, and lowercase wordmark.</desc>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .slate-top { stop-color: #7890ad; }
+      .slate-bottom { stop-color: #536b88; }
+      .green-top { stop-color: #39ef95; }
+      .green-bottom { stop-color: #20d77a; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="slate" x1="0" y1="0" x2="0" y2="1">
+      <stop class="slate-top" offset="0" stop-color="#5b708d"/>
+      <stop class="slate-bottom" offset="1" stop-color="#33465f"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+      <stop class="green-top" offset="0" stop-color="#2ee889"/>
+      <stop class="green-bottom" offset="1" stop-color="#19cc71"/>
+    </linearGradient>
+  </defs>
+  <path d="M 653 718 L 738 915 H 790 L 880 718 H 825 L 767 851 H 763 L 707 718 Z
+    M 1214 716 H 1174 C 1126 716 1100 747 1100 795 V 915 H 1153 V 801 C 1153 777 1161 766 1178 766 H 1214 Z
+    M 556 715 C 496 715 451 760 451 817 C 451 875 497 920 556 920 C 602 920 640 893 657 850 H 606 C 594 867 577 877 558 877 C 531 877 510 860 502 834 H 661 V 813 C 661 758 617 715 556 715 Z
+    M 505 795 C 513 772 533 757 556 757 C 580 757 601 772 609 795 Z
+    M 974 715 C 914 715 869 760 869 817 C 869 875 915 920 974 920 C 1020 920 1058 893 1075 850 H 1024 C 1012 867 995 877 976 877 C 949 877 928 860 920 834 H 1079 V 813 C 1079 758 1035 715 974 715 Z
+    M 923 795 C 931 772 951 757 974 757 C 998 757 1019 772 1027 795 Z
+    M 236 915 H 288 V 808 C 288 783 308 764 335 764 C 362 764 383 783 383 808 V 915 H 434 V 808 C 434 754 392 714 335 714 C 278 714 236 754 236 808 Z
+    M 1087 638 V 414 C 1087 314 1000 233 892 233 C 834 233 786 256 744 299 L 786 345 C 815 321 850 308 885 308 C 949 308 1000 355 1000 422 V 479 C 1000 520 973 550 940 550 C 916 550 906.26 548 884 523 L 681 295 C 645.39 255 603 236 547 236 C 448 236 368 312 368 411 V 638 H 595 C 647 638 694 618 732 582 L 699 543 C 670 570 635 584 595 584 C 521 584 464 535 464 470 V 412 C 464 367 501 334 544 334 C 564 334 580.81 341 594 356 L 791 580 C 826.18 620 861 638 909 638 Z" fill="url(#slate)" fill-rule="evenodd"/>
+  <path d="M 493.936 394.127 A 115 115 0 0 0 680.462 525.950 L 648.506 497.177 A 72 72 0 0 1 525.453 430.365 Z
+    M 798.209 355.963 L 822.985 390.208 A 72 72 0 0 1 943.155 458.196 L 977.938 486.543 A 114 114 0 0 0 798.209 355.963 Z" fill="url(#green)" fill-rule="evenodd"/>
+</svg>

@@ -1,0 +1,13 @@
+site_name = "N.E.V.E.R."
+site_url = "https://containeroo.github.io/never/"
+source_dir = "docs/content"
+output_dir = "docs/site"
+theme = "Light"
+language = "en"
+mermaid = true
+
+# Branding paths are relative to this configuration file.
+logo = "assets/logo.svg"
+favicon = "content/assets/favicon.svg"
+favicon_ico = "content/favicon.ico"
+assets_dir = "assets"

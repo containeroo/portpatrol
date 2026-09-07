@@ -9,11 +9,23 @@ $(LOCALBIN):
 ## Tool Binaries
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
+## Container Tools
+DOCKER ?= docker
+LORE_IMAGE ?= ghcr.io/gi8lino/lore:v0.1.2@sha256:9775c555ac5bde9a3c05881636518de7cc662df95330d9b223acdffacd9e579a
+LORE_USER ?= $(shell id -u):$(shell id -g)
+
 ## Tool Versions
 # renovate: datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION ?= v2.1.2
 
-.PHONY: test cover clean update patch minor major tag
+## Site Configuration
+SITE_CONFIG ?= docs/lore-site.toml
+SITE_OUTPUT ?= docs/site
+SITE_PORT ?= 8081
+SITE_LOGO ?= docs/assets/logo.svg
+SITE_FAVICON_SVG ?= docs/content/assets/favicon.svg
+SITE_FAVICON_ICO ?= docs/content/favicon.ico
+MAGICK ?= magick
 
 ##@ General
 
@@ -59,6 +71,36 @@ lint: golangci-lint ## Run golangci-lint linter.
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes.
 	$(GOLANGCI_LINT) run --fix
+
+.PHONY: site-favicon
+site-favicon: ## Generate the documentation SVG favicon and multi-size ICO (requires ImageMagick).
+	@command -v "$(MAGICK)" >/dev/null 2>&1 || { echo "ImageMagick is required; install it and set MAGICK if needed." >&2; exit 1; }
+	@test -f "$(SITE_LOGO)" || { echo "SVG logo not found: $(SITE_LOGO)" >&2; exit 1; }
+	mkdir -p "$(dir $(SITE_FAVICON_SVG))" "$(dir $(SITE_FAVICON_ICO))"
+	"$(MAGICK)" -background none -density 384 "$(SITE_LOGO)" \
+		-resize 256x256 -gravity center -extent 256x256 \
+		-define icon:auto-resize=256,128,64,48,32,16 "$(SITE_FAVICON_ICO)"
+	cp "$(SITE_LOGO)" "$(SITE_FAVICON_SVG)"
+
+.PHONY: site
+site: ## Build the static documentation site with Lore.
+	$(DOCKER) run --rm \
+		--user "$(LORE_USER)" \
+		--volume "$(CURDIR):/workspace" \
+		--workdir /workspace \
+		"$(LORE_IMAGE)" build --config "$(SITE_CONFIG)"
+
+.PHONY: site-serve
+site-serve: ## Build and serve the documentation site locally.
+	$(DOCKER) run --rm \
+		--user "$(LORE_USER)" \
+		--volume "$(CURDIR):/workspace" \
+		--workdir /workspace \
+		"$(LORE_IMAGE)" build \
+			--config "$(SITE_CONFIG)" \
+			--site-url "http://127.0.0.1:$(SITE_PORT)/"
+	@echo "Serving Lore documentation at http://127.0.0.1:$(SITE_PORT)"
+	python3 -m http.server $(SITE_PORT) --bind 127.0.0.1 --directory "$(SITE_OUTPUT)"
 
 ##@ Tagging
 
@@ -112,4 +154,3 @@ mv $(1) $(1)-$(3) ;\
 } ;\
 ln -sf $(1)-$(3) $(1)
 endef
-
