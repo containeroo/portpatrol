@@ -194,7 +194,7 @@ func TestURLPrivacy(t *testing.T) {
 					"--http.test.timeout=10ms",
 					"--max-attempts=1",
 					"--log-format=" + format,
-					"--http-address-detail=" + tt.detail,
+					"--http.test.address-detail=" + tt.detail,
 				}
 
 				var out, stderr bytes.Buffer

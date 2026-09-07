@@ -18,13 +18,12 @@ import (
 func parseTargetConfigs(
 	dynamicGroups []*tinyflags.DynamicGroup,
 	version string,
-	httpAddressDetail checker.HTTPAddressDetail,
 ) ([]factory.TargetConfig, error) {
 	var targets []factory.TargetConfig
 
 	for _, group := range dynamicGroups {
 		for _, id := range group.Instances() {
-			checkerConfig, address, err := parseCheckerConfig(group, id, version, httpAddressDetail)
+			checkerConfig, address, err := parseCheckerConfig(group, id, version)
 			if err != nil {
 				return nil, fmt.Errorf("%s target %q: %w", strings.ToUpper(group.Name()), id, err)
 			}
@@ -50,7 +49,6 @@ func parseCheckerConfig(
 	group *tinyflags.DynamicGroup,
 	id string,
 	version string,
-	httpAddressDetail checker.HTTPAddressDetail,
 ) (checker.Config, string, error) {
 	rawAddress := tinyflags.GetOrDefaultDynamic[string](group, id, "address")
 
@@ -80,8 +78,8 @@ func parseCheckerConfig(
 			MaxRedirects:        tinyflags.GetOrDefaultDynamic[int](group, id, "max-redirects"),
 			SkipTLSVerify:       tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify"),
 			Timeout:             tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
-			UserAgent:           strings.TrimSuffix(httpUserAgentPrefix, "/") + "/" + version,
-			AddressDetail:       httpAddressDetail,
+			UserAgent:           httpUserAgentPrefix + version,
+			AddressDetail:       tinyflags.GetOrDefaultDynamic[checker.HTTPAddressDetail](group, id, "address-detail"),
 		}, address, nil
 	case "tcp":
 		address, err := resolveTargetAddress(rawAddress, validateResolvedTCPAddress)

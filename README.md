@@ -54,6 +54,7 @@ Examples:
 | `--max-attempts`                   | `NEVER__MAX_ATTEMPTS`                   |
 | `--log-format`                     | `NEVER__LOG_FORMAT`                     |
 | `--http.web.address`               | `NEVER__HTTP_WEB_ADDRESS`               |
+| `--http.web.address-detail`        | `NEVER__HTTP_WEB_ADDRESS_DETAIL`        |
 | `--http.web.expected-status-codes` | `NEVER__HTTP_WEB_EXPECTED_STATUS_CODES` |
 | `--tcp.db.timeout`                 | `NEVER__TCP_DB_TIMEOUT`                 |
 | `--icmp.host.timeout`              | `NEVER__ICMP_HOST_TIMEOUT`              |
@@ -115,25 +116,46 @@ NEVER__ICMP_HOST_ADDRESS=example.com
 
 #### HTTP Flags
 
-| Flag                                          | Type        | Default        | Description                                                                                                                         |
-| --------------------------------------------- | ----------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `--http.<IDENTIFIER>.name`                    | string      | `<IDENTIFIER>` | Name of the HTTP checker.                                                                                                           |
-| `--http.<IDENTIFIER>.address`                 | string      | required       | HTTP target URL. \*                                                                                                                 |
-| `--http.<IDENTIFIER>.interval`                | duration    | `0`            | Time between HTTP requests. Uses `--default-interval` when unset or `0`.                                                            |
-| `--http.<IDENTIFIER>.max-attempts`            | int         | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.                                                         |
-| `--http.<IDENTIFIER>.backoff`                 | enum        | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                                                                        |
-| `--http.<IDENTIFIER>.max-interval`            | duration    | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                                                |
-| `--http.<IDENTIFIER>.method`                  | enum        | `GET`          | HTTP method. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`.                        |
-| `--http.<IDENTIFIER>.header`                  | string list | empty          | HTTP header in `KEY=VALUE` format. Repeat the flag for multiple headers; commas in values are preserved. Values can be resolved. \* |
-| `--http.<IDENTIFIER>.allow-duplicate-headers` | bool        | `false`        | Allow duplicate HTTP headers.                                                                                                       |
-| `--http.<IDENTIFIER>.expected-status-codes`   | string list | `200`          | Expected HTTP status codes. Supports comma-separated codes and ranges, for example `200,204,301-302`.                               |
-| `--http.<IDENTIFIER>.follow-redirects`        | bool        | `true`         | Follow HTTP redirects. When `false`, validate the first redirect response instead.                                                  |
-| `--http.<IDENTIFIER>.max-redirects`           | int         | `10`           | Maximum redirects to follow. Set to `0` to validate the first redirect response instead.                                            |
-| `--http.<IDENTIFIER>.skip-tls-verify`         | bool        | `false`        | Skip TLS certificate verification.                                                                                                  |
-| `--http.<IDENTIFIER>.timeout`                 | duration    | `2s`           | HTTP request timeout.                                                                                                               |
+| Flag                                          | Type            | Default        | Description                                                                                                                         |
+| --------------------------------------------- | --------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `--http.<IDENTIFIER>.name`                    | string          | `<IDENTIFIER>` | Name of the HTTP checker.                                                                                                           |
+| `--http.<IDENTIFIER>.address`                 | string          | required       | HTTP target URL. \*                                                                                                                 |
+| `--http.<IDENTIFIER>.address-detail`          | enum            | `origin`       | Address detail shown in logs: `origin`, `path`, `query`, or `full`. `query` and `full` may expose secrets.                          |
+| `--http.<IDENTIFIER>.interval`                | duration        | `0`            | Time between HTTP requests. Uses `--default-interval` when unset or `0`.                                                            |
+| `--http.<IDENTIFIER>.max-attempts`            | int             | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.                                                         |
+| `--http.<IDENTIFIER>.backoff`                 | enum            | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                                                                        |
+| `--http.<IDENTIFIER>.max-interval`            | duration        | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                                                |
+| `--http.<IDENTIFIER>.method`                  | enum            | `GET`          | HTTP method. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`.                        |
+| `--http.<IDENTIFIER>.header`                  | string list     | empty          | HTTP header in `KEY=VALUE` format. Repeat the flag for multiple headers; commas in values are preserved. Values can be resolved. \* |
+| `--http.<IDENTIFIER>.allow-duplicate-headers` | bool            | `false`        | Allow duplicate HTTP headers.                                                                                                       |
+| `--http.<IDENTIFIER>.expected-status-codes`   | int list/ranges | `200`          | Expected HTTP status codes. Supports comma-separated codes and ranges, for example `200,204,301-302`.                               |
+| `--http.<IDENTIFIER>.follow-redirects`        | bool            | `true`         | Follow HTTP redirects. When `false`, validate the first redirect response instead.                                                  |
+| `--http.<IDENTIFIER>.max-redirects`           | int             | `10`           | Maximum redirects to follow. Set to `0` to validate the first redirect response instead.                                            |
+| `--http.<IDENTIFIER>.skip-tls-verify`         | bool            | `false`        | Skip TLS certificate verification.                                                                                                  |
+| `--http.<IDENTIFIER>.timeout`                 | duration        | `2s`           | HTTP request timeout.                                                                                                               |
 
 Environment variables use `NEVER__HTTP_<IDENTIFIER>_<PROPERTY>`.
 Example: `--http.web.address` becomes `NEVER__HTTP_WEB_ADDRESS`.
+
+Multiple headers passed through a single environment variable are separated by newlines:
+
+```sh
+NEVER__HTTP_WEB_HEADER=$'Accept=text/html, application/json\nCache-Control=no-cache, no-store'
+```
+
+#### HTTP address visibility
+
+HTTP checker addresses default to `origin`, which logs only the scheme and host. Use the per-target
+`--http.<IDENTIFIER>.address-detail` flag to control how much of the configured URL is shown:
+
+- `origin`: scheme and host only (default)
+- `path`: include the URL path
+- `query`: include the path and query string
+- `full`: include the complete URL, including user credentials and fragment
+
+For example, `--http.web.address-detail=path` becomes `NEVER__HTTP_WEB_ADDRESS_DETAIL=path`.
+`query` and especially `full` may expose secrets. HTTP request errors do not echo the request URL.
+
 Redirects are not followed when `follow-redirects` is `false` or `max-redirects` is `0`.
 
 #### ICMP Flags
@@ -500,15 +522,3 @@ initContainers:
 ## License
 
 This project is licensed under the Apache License. See the [LICENSE](LICENSE) file for details.
-
-### URL privacy
-
-HTTP checker addresses default to `origin`, which logs only the scheme and host.
-Use `--http-address-detail` (or `NEVER__HTTP_ADDRESS_DETAIL`) to control how much of the configured URL is shown:
-
-- `origin`: scheme and host only (default)
-- `path`: include the URL path
-- `query`: include the path and query string
-- `full`: include the complete URL, including user credentials and fragment
-
-`query` and especially `full` may expose secrets. HTTP request errors do not echo the request URL.

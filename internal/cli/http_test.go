@@ -16,6 +16,64 @@ const (
 	httpWebAddressFlag = "--http.web.address=" + httpExampleURL
 )
 
+// TestParseFlagsHTTPAddressDetail verifies address-detail is configured per HTTP target.
+func TestParseFlagsHTTPAddressDetail(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		flag string
+		want checker.HTTPAddressDetail
+	}{
+		{name: "default", want: checker.HTTPAddressOrigin},
+		{name: "origin", flag: "--http.web.address-detail=origin", want: checker.HTTPAddressOrigin},
+		{name: "path", flag: "--http.web.address-detail=path", want: checker.HTTPAddressPath},
+		{name: "query", flag: "--http.web.address-detail=query", want: checker.HTTPAddressQuery},
+		{name: "full", flag: "--http.web.address-detail=full", want: checker.HTTPAddressFull},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			args := []string{httpWebAddressFlag}
+			if tt.flag != "" {
+				args = append(args, tt.flag)
+			}
+
+			cfg, err := ParseFlags(args, "1.0.0")
+			require.NoError(t, err)
+			require.Len(t, cfg.Targets, 1)
+			httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+			assert.Equal(t, tt.want, httpConfig.AddressDetail)
+		})
+	}
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.address-detail=invalid",
+		}, "1.0.0")
+		assertInvalidFlagValueError(t, err, "--http.web.address-detail", "invalid", "origin", "path", "query", "full")
+	})
+
+	t.Run("per target", func(t *testing.T) {
+		t.Parallel()
+
+		cfg, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.address-detail=path",
+			"--http.api.address=https://api.example.com",
+			"--http.api.address-detail=full",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, cfg.Targets, 2)
+
+		assert.Equal(t, checker.HTTPAddressPath, requireHTTPConfig(t, cfg.Targets[0]).AddressDetail)
+		assert.Equal(t, checker.HTTPAddressFull, requireHTTPConfig(t, cfg.Targets[1]).AddressDetail)
+	})
+}
+
 // TestParseFlagsHTTPMethod verifies HTTP method parsing uses enum validation.
 func TestParseFlagsHTTPMethod(t *testing.T) {
 	t.Parallel()
@@ -60,7 +118,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 		"--http.web.backoff=exponential",
 		"--http.web.max-interval=30s",
 		"--http.web.max-attempts=3",
-		"--http-address-detail=query",
+		"--http.web.address-detail=query",
 	}
 
 	parsedFlags, err := ParseFlags(args, "1.0.0")
@@ -280,6 +338,22 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "invalid status range: 299-200")
 	})
+}
+
+// TestResolveHTTPHeaderValues verifies configured variables are resolved in HTTP header values.
+func TestResolveHTTPHeaderValues(t *testing.T) {
+	t.Setenv("NEVER_TEST_HEADER", "secret")
+
+	headers := http.Header{
+		"Authorization": {"env:NEVER_TEST_HEADER"},
+		"X-Test":        {"plain", "env:NEVER_TEST_HEADER"},
+	}
+
+	err := resolveHTTPHeaderValues(headers)
+
+	require.NoError(t, err)
+	assert.Equal(t, "secret", headers.Get("Authorization"))
+	assert.Equal(t, []string{"plain", "secret"}, headers.Values("X-Test"))
 }
 
 // TestParseFlagsHTTPRetryValidation verifies retry input is rejected before reaching the factory.
