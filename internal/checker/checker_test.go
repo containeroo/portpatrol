@@ -14,7 +14,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid HTTP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(HTTP, "example", "http://example.com")
+		check, err := NewHTTPChecker("example", "http://example.com", DefaultHTTPConfig())
 
 		require.NoError(t, err)
 		assert.Equal(t, check.Name(), "example")
@@ -24,7 +24,7 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid TCP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(TCP, "example", "example.com:80")
+		check, err := NewTCPChecker("example", "example.com:80", DefaultTCPConfig())
 
 		require.NoError(t, err)
 		assert.Equal(t, check.Name(), "example")
@@ -34,21 +34,13 @@ func TestNewChecker(t *testing.T) {
 	t.Run("Valid ICMP checker", func(t *testing.T) {
 		t.Parallel()
 
-		check, err := NewChecker(ICMP, "example", "example.com")
+		check, err := NewICMPChecker("example", "example.com", DefaultICMPConfig())
 
 		require.NoError(t, err)
 		assert.Equal(t, check.Name(), "example")
 		assert.Equal(t, check.Type(), "ICMP")
 	})
 
-	t.Run("Invalid checker type", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := NewChecker("", "example", "example.com")
-
-		require.Error(t, err)
-		assert.EqualError(t, err, "unsupported check type: ")
-	})
 }
 
 // TestParseCheckType verifies the expected behavior.

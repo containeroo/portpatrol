@@ -29,7 +29,7 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	}))
 	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, httpServerName, server.URL)
+	checker, err := checker.NewHTTPChecker(httpServerName, server.URL, checker.DefaultHTTPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	}))
 	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, httpServerName, server.URL)
+	checker, err := checker.NewHTTPChecker(httpServerName, server.URL, checker.DefaultHTTPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	checker, err := checker.NewChecker(checker.HTTP, httpServerName, server.URL)
+	checker, err := checker.NewHTTPChecker(httpServerName, server.URL, checker.DefaultHTTPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create HTTPChecker: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	listener := testutils.ListenLocalTCP(t)
 	defer listener.Close() // nolint:errcheck
 
-	checker, err := checker.NewChecker(checker.TCP, tcpServerName, listener.Addr().String())
+	checker, err := checker.NewTCPChecker(tcpServerName, listener.Addr().String(), checker.DefaultTCPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 		_ = result.listener.Close()
 	}()
 
-	checker, err := checker.NewChecker(checker.TCP, tcpServerName, addr)
+	checker, err := checker.NewTCPChecker(tcpServerName, addr, checker.DefaultTCPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checker.NewChecker(checker.TCP, tcpServerName, testutils.LocalTCPAddr(t))
+	checker, err := checker.NewTCPChecker(tcpServerName, testutils.LocalTCPAddr(t), checker.DefaultTCPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -242,7 +242,7 @@ func TestNewStoppedTimer(t *testing.T) {
 func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	t.Parallel()
 
-	checker, err := checker.NewChecker(checker.TCP, tcpServerName, testutils.LocalTCPAddr(t))
+	checker, err := checker.NewTCPChecker(tcpServerName, testutils.LocalTCPAddr(t), checker.DefaultTCPConfig())
 	if err != nil {
 		t.Fatalf("Failed to create TCPChecker: %v", err)
 	}
@@ -297,7 +297,9 @@ func (c staticErrorChecker) Address() string { return testutils.LocalhostAddr("1
 func TestRequestTimeoutRetries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
 	defer server.Close()
-	c, err := checker.NewChecker(checker.HTTP, "slow", server.URL, checker.WithHTTPTimeout(20*time.Millisecond))
+	protocolConfig := checker.DefaultHTTPConfig()
+	protocolConfig.Timeout = 20 * time.Millisecond
+	c, err := checker.NewHTTPChecker("slow", server.URL, protocolConfig)
 	if err != nil {
 		t.Fatal(err)
 	}

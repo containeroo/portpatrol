@@ -20,19 +20,6 @@ func (c CheckType) String() string {
 	return string(c)
 }
 
-// Option defines a functional option for configuring a Checker.
-type Option interface {
-	apply(Checker)
-}
-
-// OptionFunc is a function that applies an Option to a Checker.
-type OptionFunc func(Checker)
-
-// apply calls the OptionFunc with the given Checker.
-func (f OptionFunc) apply(c Checker) {
-	f(c)
-}
-
 // Checker defines an interface for performing various types of checks, such as TCP, HTTP, or ICMP.
 // It provides methods for executing the check and obtaining a string representation of the checker.
 type Checker interface {
@@ -53,20 +40,5 @@ func ParseCheckType(typeStr string) (CheckType, error) {
 		return ICMP, nil
 	default:
 		return "", fmt.Errorf("unsupported check type: %s", typeStr)
-	}
-}
-
-// NewChecker creates a new Checker based on the specified CheckType, name, address, and options.
-func NewChecker(checkType CheckType, name, address string, opts ...Option) (Checker, error) {
-	// Create the appropriate checker based on the type.
-	switch checkType {
-	case HTTP:
-		return newHTTPChecker(name, address, opts...)
-	case TCP:
-		return newTCPChecker(name, address, opts...)
-	case ICMP:
-		return newICMPChecker(name, address, opts...)
-	default:
-		return nil, fmt.Errorf("unsupported check type: %s", checkType)
 	}
 }

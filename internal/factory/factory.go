@@ -70,62 +70,55 @@ func BuildCheckers(targets []TargetConfig, defaultInterval time.Duration, versio
 		backoffMode := utils.DefaultIfZero(target.Backoff, backoff.ModeLinear)
 		name := utils.DefaultIfZero(target.Name, target.ID)
 
-		var opts []checker.Option
-
+		var instance checker.Checker
 		switch target.Type {
 		case checker.HTTP:
+			cfg := checker.DefaultHTTPConfig()
 			if target.HTTPMethod != "" {
-				opts = append(opts, checker.WithHTTPMethod(target.HTTPMethod))
+				cfg.Method = target.HTTPMethod
 			}
-
-			headersMap, err := createHTTPHeadersMap(target.HTTPHeaders, target.HTTPAllowDuplicateHeaders)
-			if err != nil {
-				return nil, fmt.Errorf("invalid \"--%s.%s.header\": %w", strings.ToLower(target.Type.String()), target.ID, err)
+			headers, headerErr := createHTTPHeadersMap(target.HTTPHeaders, target.HTTPAllowDuplicateHeaders)
+			if headerErr != nil {
+				return nil, fmt.Errorf("invalid \"--%s.%s.header\": %w", strings.ToLower(target.Type.String()), target.ID, headerErr)
 			}
-			setDefaultUserAgent(headersMap, version)
-			opts = append(opts, checker.WithHTTPHeaders(headersMap))
-
+			setDefaultUserAgent(headers, version)
+			cfg.Headers = headers
 			if len(target.HTTPExpectedStatusCodes) > 0 {
-				// Status codes can be passed multiple times and contain ranges.
-				// Get all status codes as a slice. Can produce something like []string{"200-299", "300", "301"}.
-				codes, err := httputils.ParseStatusCodes(strings.Join(target.HTTPExpectedStatusCodes, ","))
+				cfg.ExpectedStatusCodes, err = httputils.ParseStatusCodes(strings.Join(target.HTTPExpectedStatusCodes, ","))
 				if err != nil {
 					return nil, fmt.Errorf("invalid --%s.%s.expected-status-codes: %w", strings.ToLower(target.Type.String()), target.ID, err)
 				}
-				opts = append(opts, checker.WithExpectedStatusCodes(codes))
 			}
-
-			opts = append(opts, checker.WithHTTPSkipTLSVerify(target.HTTPSkipTLSVerify))
-			opts = append(opts, checker.WithHTTPFollowRedirects(target.HTTPFollowRedirects))
-			opts = append(opts, checker.WithHTTPMaxRedirects(target.HTTPMaxRedirects))
-
+			cfg.SkipTLSVerify = target.HTTPSkipTLSVerify
+			cfg.FollowRedirects = target.HTTPFollowRedirects
+			cfg.MaxRedirects = target.HTTPMaxRedirects
 			if target.HTTPTimeout > 0 {
-				opts = append(opts, checker.WithHTTPTimeout(target.HTTPTimeout))
+				cfg.Timeout = target.HTTPTimeout
 			}
-
+			instance, err = checker.NewHTTPChecker(name, resolvedAddr, cfg)
 		case checker.TCP:
+			cfg := checker.DefaultTCPConfig()
 			if target.TCPTimeout > 0 {
-				opts = append(opts, checker.WithTCPTimeout(target.TCPTimeout))
+				cfg.Timeout = target.TCPTimeout
 			}
-
+			instance, err = checker.NewTCPChecker(name, resolvedAddr, cfg)
 		case checker.ICMP:
+			cfg := checker.DefaultICMPConfig()
 			if target.ICMPTimeout > 0 {
-				opts = append(opts, checker.WithICMPTimeout(target.ICMPTimeout))
+				cfg.ReadTimeout = target.ICMPTimeout
+				cfg.WriteTimeout = target.ICMPTimeout
 			}
-
 			if target.ICMPReadTimeout > 0 {
-				opts = append(opts, checker.WithICMPReadTimeout(target.ICMPReadTimeout))
+				cfg.ReadTimeout = target.ICMPReadTimeout
 			}
-
 			if target.ICMPWriteTimeout > 0 {
-				opts = append(opts, checker.WithICMPWriteTimeout(target.ICMPWriteTimeout))
+				cfg.WriteTimeout = target.ICMPWriteTimeout
 			}
-
+			instance, err = checker.NewICMPChecker(name, resolvedAddr, cfg)
 		default:
 			return nil, fmt.Errorf("unsupported check type: %s", target.Type)
 		}
 
-		instance, err := checker.NewChecker(target.Type, name, resolvedAddr, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create %s checker: %w", target.Type, err)
 		}

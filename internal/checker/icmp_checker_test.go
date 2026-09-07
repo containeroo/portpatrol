@@ -22,9 +22,10 @@ import (
 func TestNewICMPCheckerValidIPv4(t *testing.T) {
 	t.Parallel()
 
-	r := WithICMPReadTimeout(2 * time.Second)
-	w := WithICMPWriteTimeout(2 * time.Second)
-	checker, err := newICMPChecker("ValidIPv4", testutils.LocalhostIPv4, r, w)
+	protocolConfig := DefaultICMPConfig()
+	protocolConfig.ReadTimeout = 2 * time.Second
+	protocolConfig.WriteTimeout = 2 * time.Second
+	checker, err := NewICMPChecker("ValidIPv4", testutils.LocalhostIPv4, protocolConfig)
 
 	require.NoError(t, err)
 	assert.Equal(t, checker.Name(), "ValidIPv4")
@@ -35,7 +36,7 @@ func TestNewICMPCheckerValidIPv4(t *testing.T) {
 func TestNewICMPCheckerInvalidAddress(t *testing.T) {
 	t.Parallel()
 
-	_, err := newICMPChecker("UnresolvedAddress", "not-yet-ready.invalid")
+	_, err := NewICMPChecker("UnresolvedAddress", "not-yet-ready.invalid", DefaultICMPConfig())
 	require.NoError(t, err)
 }
 
@@ -405,7 +406,7 @@ func TestICMPCheckerValidateReplyError(t *testing.T) {
 }
 
 func TestICMPDNSIsRetried(t *testing.T) {
-	c, err := newICMPChecker("dns", "eventually-ready.invalid")
+	c, err := NewICMPChecker("dns", "eventually-ready.invalid", DefaultICMPConfig())
 	require.NoError(t, err)
 	calls := 0
 	c.lookupIP = func(ctx context.Context, network, host string) ([]net.IP, error) {
@@ -422,14 +423,17 @@ func TestICMPDNSIsRetried(t *testing.T) {
 }
 
 func TestICMPDNSHonorsDeadline(t *testing.T) {
-	c, err := newICMPChecker("dns", "slow.invalid", WithICMPTimeout(10*time.Millisecond))
+	protocolConfig := DefaultICMPConfig()
+	protocolConfig.ReadTimeout = 10 * time.Millisecond
+	protocolConfig.WriteTimeout = 10 * time.Millisecond
+	c, err := NewICMPChecker("dns", "slow.invalid", protocolConfig)
 	require.NoError(t, err)
 	c.lookupIP = func(ctx context.Context, _, _ string) ([]net.IP, error) { <-ctx.Done(); return nil, ctx.Err() }
 	require.ErrorIs(t, c.Check(context.Background()), context.DeadlineExceeded)
 }
 
 func TestICMPReadHonorsCancellation(t *testing.T) {
-	c, err := newICMPChecker("cancel", "127.0.0.1")
+	c, err := NewICMPChecker("cancel", "127.0.0.1", DefaultICMPConfig())
 	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -445,7 +449,7 @@ func TestICMPReadHonorsCancellation(t *testing.T) {
 }
 
 func TestICMPIgnoresUnrelatedPackets(t *testing.T) {
-	c, err := newICMPChecker("matching", "127.0.0.1")
+	c, err := NewICMPChecker("matching", "127.0.0.1", DefaultICMPConfig())
 	require.NoError(t, err)
 	reads, validations := 0, 0
 	c.protocol = &testutils.MockProtocol{

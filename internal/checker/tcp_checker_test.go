@@ -19,7 +19,9 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 	listener := testutils.ListenLocalTCP(t)
 	defer listener.Close() // nolint:errcheck
 
-	checker, err := newTCPChecker("example", listener.Addr().String(), WithTCPTimeout(1*time.Second))
+	protocolConfig := DefaultTCPConfig()
+	protocolConfig.Timeout = 1 * time.Second
+	checker, err := NewTCPChecker("example", listener.Addr().String(), protocolConfig)
 	require.NoError(t, err)
 
 	assert.Equal(t, checker.Name(), "example")
@@ -34,7 +36,9 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 	listener := testutils.ListenLocalTCP(t)
 	defer listener.Close() // nolint:errcheck
 
-	checker, err := newTCPChecker("example", listener.Addr().String(), WithTCPTimeout(1*time.Second))
+	protocolConfig := DefaultTCPConfig()
+	protocolConfig.Timeout = 1 * time.Second
+	checker, err := NewTCPChecker("example", listener.Addr().String(), protocolConfig)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -46,7 +50,9 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 func TestTCPChecker_FailedConnection(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newTCPChecker("example", testutils.LocalTCPAddr(t), WithTCPTimeout(1*time.Second))
+	protocolConfig := DefaultTCPConfig()
+	protocolConfig.Timeout = 1 * time.Second
+	checker, err := NewTCPChecker("example", testutils.LocalTCPAddr(t), protocolConfig)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -60,7 +66,9 @@ func TestTCPChecker_FailedConnection(t *testing.T) {
 func TestTCPChecker_InvalidAddress(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newTCPChecker("example", "invalid-address", WithTCPTimeout(1*time.Second))
+	protocolConfig := DefaultTCPConfig()
+	protocolConfig.Timeout = 1 * time.Second
+	checker, err := NewTCPChecker("example", "invalid-address", protocolConfig)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -74,7 +82,9 @@ func TestTCPChecker_InvalidAddress(t *testing.T) {
 func TestTCPChecker_Timeout(t *testing.T) {
 	t.Parallel()
 
-	checker, err := newTCPChecker("example", testutils.LocalTCPAddr(t), WithTCPTimeout(1*time.Second))
+	protocolConfig := DefaultTCPConfig()
+	protocolConfig.Timeout = 1 * time.Second
+	checker, err := NewTCPChecker("example", testutils.LocalTCPAddr(t), protocolConfig)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)

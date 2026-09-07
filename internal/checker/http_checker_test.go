@@ -25,7 +25,7 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL)
+		checker, err := NewHTTPChecker("example", server.URL, DefaultHTTPConfig())
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -49,9 +49,11 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL, WithHTTPHeaders(http.Header{
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.Headers = http.Header{
 			"Authorization": []string{"Bearer token"},
-		}))
+		}
+		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -70,7 +72,7 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL)
+		checker, err := NewHTTPChecker("example", server.URL, DefaultHTTPConfig())
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -84,7 +86,7 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Invalid URL for HTTP check", func(t *testing.T) {
 		t.Parallel()
 
-		checker, err := newHTTPChecker("example", "://invalid-url")
+		checker, err := NewHTTPChecker("example", "://invalid-url", DefaultHTTPConfig())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -104,7 +106,9 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL, WithHTTPTimeout(1*time.Second))
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.Timeout = 1 * time.Second
+		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -125,7 +129,9 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL, WithExpectedStatusCodes([]int{202}))
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.ExpectedStatusCodes = []int{202}
+		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -148,7 +154,9 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL, WithHTTPMethod(http.MethodPost))
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.Method = http.MethodPost
+		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -167,7 +175,9 @@ func TestHTTPChecker(t *testing.T) {
 		}))
 		defer server.Close()
 
-		checker, err := newHTTPChecker("example", server.URL, WithHTTPSkipTLSVerify(true))
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.SkipTLSVerify = true
+		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -197,7 +207,9 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 	defer server.Close()
 
 	t.Run("follows up to configured limit", func(t *testing.T) {
-		checker, err := newHTTPChecker("example", server.URL+"/start", WithHTTPMaxRedirects(2))
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.MaxRedirects = 2
+		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -205,7 +217,9 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 	})
 
 	t.Run("rejects redirect beyond configured limit", func(t *testing.T) {
-		checker, err := newHTTPChecker("example", server.URL+"/start", WithHTTPMaxRedirects(1))
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.MaxRedirects = 1
+		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -214,12 +228,10 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 	})
 
 	t.Run("zero validates first redirect response", func(t *testing.T) {
-		checker, err := newHTTPChecker(
-			"example",
-			server.URL+"/start",
-			WithHTTPMaxRedirects(0),
-			WithExpectedStatusCodes([]int{http.StatusMovedPermanently}),
-		)
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.MaxRedirects = 0
+		protocolConfig.ExpectedStatusCodes = []int{http.StatusMovedPermanently}
+		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -227,16 +239,25 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 	})
 
 	t.Run("following disabled validates first redirect response", func(t *testing.T) {
-		checker, err := newHTTPChecker(
-			"example",
-			server.URL+"/start",
-			WithHTTPFollowRedirects(false),
-			WithHTTPMaxRedirects(2),
-			WithExpectedStatusCodes([]int{http.StatusMovedPermanently}),
-		)
+		protocolConfig := DefaultHTTPConfig()
+		protocolConfig.FollowRedirects = false
+		protocolConfig.MaxRedirects = 2
+		protocolConfig.ExpectedStatusCodes = []int{http.StatusMovedPermanently}
+		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
 		require.NoError(t, err)
 	})
+}
+
+func TestHTTPConfigIsCopied(t *testing.T) {
+	cfg := DefaultHTTPConfig()
+	cfg.Headers.Set("X-Test", "original")
+	c, err := NewHTTPChecker("copy", "http://localhost", cfg)
+	require.NoError(t, err)
+	cfg.Headers.Set("X-Test", "changed")
+	cfg.ExpectedStatusCodes[0] = 503
+	assert.Equal(t, "original", c.headers.Get("X-Test"))
+	assert.Equal(t, []int{200}, c.expectedStatusCodes)
 }

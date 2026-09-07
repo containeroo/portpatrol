@@ -117,52 +117,17 @@ func (c *ICMPChecker) Check(ctx context.Context) (result error) {
 
 }
 
-// newICMPChecker initializes a new ICMPChecker with functional options.
-func newICMPChecker(name, address string, opts ...Option) (*ICMPChecker, error) {
+// ICMPConfig contains ICMP phase timeouts.
+type ICMPConfig struct{ ReadTimeout, WriteTimeout time.Duration }
+
+func DefaultICMPConfig() ICMPConfig {
+	return ICMPConfig{ReadTimeout: defaultICMPReadTimeout, WriteTimeout: defaultICMPWriteTimeout}
+}
+
+// NewICMPChecker constructs an ICMP checker without resolving its address.
+func NewICMPChecker(name, address string, cfg ICMPConfig) (*ICMPChecker, error) {
 	if net.ParseIP(address) == nil && !utils.IsHostnameLike(address) {
 		return nil, fmt.Errorf("invalid ICMP address")
 	}
-	checker := &ICMPChecker{
-		name:         name,
-		address:      address,
-		readTimeout:  defaultICMPReadTimeout,
-		writeTimeout: defaultICMPWriteTimeout,
-	}
-
-	for _, opt := range opts {
-		opt.apply(checker)
-	}
-
-	return checker, nil
-}
-
-// WithICMPTimeout sets the read and write timeout for the ICMPChecker.
-func WithICMPTimeout(timeout time.Duration) Option {
-	return OptionFunc(func(c Checker) {
-		if timeout <= 0 {
-			return
-		}
-		if icmpChecker, ok := c.(*ICMPChecker); ok {
-			icmpChecker.readTimeout = timeout
-			icmpChecker.writeTimeout = timeout
-		}
-	})
-}
-
-// WithICMPReadTimeout sets the read timeout for the ICMPChecker.
-func WithICMPReadTimeout(timeout time.Duration) Option {
-	return OptionFunc(func(c Checker) {
-		if icmpChecker, ok := c.(*ICMPChecker); ok {
-			icmpChecker.readTimeout = timeout
-		}
-	})
-}
-
-// WithICMPWriteTimeout sets the write timeout for the ICMPChecker.
-func WithICMPWriteTimeout(timeout time.Duration) Option {
-	return OptionFunc(func(c Checker) {
-		if icmpChecker, ok := c.(*ICMPChecker); ok {
-			icmpChecker.writeTimeout = timeout
-		}
-	})
+	return &ICMPChecker{name: name, address: address, readTimeout: cfg.ReadTimeout, writeTimeout: cfg.WriteTimeout}, nil
 }

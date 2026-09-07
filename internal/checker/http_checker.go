@@ -14,10 +14,7 @@ const (
 	defaultHTTPMethod          string        = http.MethodGet
 	defaultHTTPFollowRedirects bool          = true
 	defaultHTTPMaxRedirects    int           = 10
-	defaultHTTPSkipTLSVerify   bool          = false
 )
-
-var defaultHTTPExpectedStatusCodes = []int{200}
 
 // HTTPChecker implements the Checker interface for HTTP checks.
 type HTTPChecker struct {
@@ -68,23 +65,25 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 	return fmt.Errorf("unexpected status code: got %d, expected one of %v", resp.StatusCode, c.expectedStatusCodes)
 }
 
-// newHTTPChecker creates a new HTTPChecker with functional options.
-func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) { // nolint:unparam
-	checker := &HTTPChecker{
-		name:                name,
-		address:             address,
-		method:              defaultHTTPMethod,
-		headers:             make(http.Header),
-		expectedStatusCodes: defaultHTTPExpectedStatusCodes,
-		followRedirects:     defaultHTTPFollowRedirects,
-		maxRedirects:        defaultHTTPMaxRedirects,
-		skipTLSVerify:       defaultHTTPSkipTLSVerify,
-		timeout:             defaultHTTPTimeout,
-	}
+// HTTPConfig contains only HTTP-specific settings.
+type HTTPConfig struct {
+	Method              string
+	Headers             http.Header
+	ExpectedStatusCodes []int
+	FollowRedirects     bool
+	MaxRedirects        int
+	SkipTLSVerify       bool
+	Timeout             time.Duration
+}
 
-	for _, opt := range opts {
-		opt.apply(checker)
-	}
+// DefaultHTTPConfig returns an independent configuration with the application defaults.
+func DefaultHTTPConfig() HTTPConfig {
+	return HTTPConfig{Method: defaultHTTPMethod, Headers: make(http.Header), ExpectedStatusCodes: []int{200}, FollowRedirects: defaultHTTPFollowRedirects, MaxRedirects: defaultHTTPMaxRedirects, Timeout: defaultHTTPTimeout}
+}
+
+// NewHTTPChecker constructs an HTTP checker from explicit protocol settings.
+func NewHTTPChecker(name, address string, cfg HTTPConfig) (*HTTPChecker, error) {
+	checker := &HTTPChecker{name: name, address: address, method: cfg.Method, headers: cfg.Headers.Clone(), expectedStatusCodes: slices.Clone(cfg.ExpectedStatusCodes), followRedirects: cfg.FollowRedirects, maxRedirects: cfg.MaxRedirects, skipTLSVerify: cfg.SkipTLSVerify, timeout: cfg.Timeout}
 
 	checker.client = &http.Client{
 		Timeout: checker.timeout,
@@ -107,67 +106,4 @@ func newHTTPChecker(name, address string, opts ...Option) (*HTTPChecker, error) 
 	}
 
 	return checker, nil
-}
-
-// WithHTTPFollowRedirects sets whether the HTTPChecker follows redirects.
-func WithHTTPFollowRedirects(followRedirects bool) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.followRedirects = followRedirects
-		}
-	})
-}
-
-// WithHTTPMaxRedirects sets the maximum number of redirects the HTTPChecker follows.
-func WithHTTPMaxRedirects(maxRedirects int) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.maxRedirects = maxRedirects
-		}
-	})
-}
-
-// WithHTTPMethod sets the HTTP method for the HTTPChecker.
-func WithHTTPMethod(method string) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.method = method
-		}
-	})
-}
-
-// WithHTTPHeaders sets the HTTP headers for the HTTPChecker.
-func WithHTTPHeaders(headers http.Header) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.headers = headers
-		}
-	})
-}
-
-// WithExpectedStatusCodes sets the expected status codes for the HTTPChecker.
-func WithExpectedStatusCodes(codes []int) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.expectedStatusCodes = codes
-		}
-	})
-}
-
-// WithHTTPSkipTLSVerify sets the TLS verification flag for the HTTPChecker.
-func WithHTTPSkipTLSVerify(skip bool) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.skipTLSVerify = skip
-		}
-	})
-}
-
-// WithHTTPTimeout sets the timeout for the HTTPChecker.
-func WithHTTPTimeout(timeout time.Duration) Option {
-	return OptionFunc(func(c Checker) {
-		if httpChecker, ok := c.(*HTTPChecker); ok {
-			httpChecker.timeout = timeout
-		}
-	})
 }

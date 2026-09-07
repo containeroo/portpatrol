@@ -34,28 +34,12 @@ func (c *TCPChecker) Check(ctx context.Context) error {
 	return nil
 }
 
-// newTCPChecker creates a new TCPChecker with functional options.
-func newTCPChecker(name, address string, opts ...Option) (*TCPChecker, error) { // nolint:unparam
-	checker := &TCPChecker{
-		name:    name,
-		address: address,
-		dialer: &net.Dialer{
-			Timeout: defaultTCPTimeout,
-		},
-	}
+// TCPConfig contains TCP connection settings.
+type TCPConfig struct{ Timeout time.Duration }
 
-	for _, opt := range opts {
-		opt.apply(checker)
-	}
+func DefaultTCPConfig() TCPConfig { return TCPConfig{Timeout: defaultTCPTimeout} }
 
-	return checker, nil
-}
-
-// WithTCPTimeout sets the timeout for the TCPChecker.
-func WithTCPTimeout(timeout time.Duration) Option {
-	return OptionFunc(func(c Checker) {
-		if tcpChecker, ok := c.(*TCPChecker); ok {
-			tcpChecker.dialer.Timeout = timeout
-		}
-	})
+// NewTCPChecker constructs a TCP checker from explicit protocol settings.
+func NewTCPChecker(name, address string, cfg TCPConfig) (*TCPChecker, error) {
+	return &TCPChecker{name: name, address: address, dialer: &net.Dialer{Timeout: cfg.Timeout}}, nil
 }
