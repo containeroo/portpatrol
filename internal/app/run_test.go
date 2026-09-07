@@ -138,7 +138,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, `HTTP target "invalidheaders": invalid HTTP header: invalid header format: "InvalidHeader"`)
+	assert.EqualError(t, err, `HTTP target "invalidheaders": invalid HTTP header: invalid header format: InvalidHeader`)
 }
 
 // TestRunParseError verifies the expected behavior.

@@ -6,12 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containeroo/httputils"
 	"github.com/containeroo/never/internal/backoff"
 	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/never/internal/factory"
 	"github.com/containeroo/resolver"
 	"github.com/containeroo/tinyflags"
 )
+
+const httpUserAgentPrefix = "never"
 
 // parseTargetConfigs converts parsed dynamic flag groups into typed target config.
 func parseTargetConfigs(
@@ -59,8 +62,30 @@ func parseCheckerConfig(
 		if err != nil {
 			return nil, "", err
 		}
-		cfg, err := parseHTTPConfig(group, id, version, showPath)
-		return cfg, address, err
+
+		headers, err := httputils.ParseHeaders(
+			tinyflags.GetOrDefaultDynamic[[]string](group, id, "header"),
+			tinyflags.GetOrDefaultDynamic[bool](group, id, "allow-duplicate-headers"),
+		)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid HTTP header: %w", err)
+		}
+
+		if err := resolveHTTPHeaderValues(headers); err != nil {
+			return nil, "", err
+		}
+
+		return checker.HTTPConfig{
+			Method:              tinyflags.GetOrDefaultDynamic[string](group, id, "method"),
+			Headers:             headers,
+			ExpectedStatusCodes: tinyflags.GetOrDefaultDynamic[[]int](group, id, "expected-status-codes"),
+			FollowRedirects:     tinyflags.GetOrDefaultDynamic[bool](group, id, "follow-redirects"),
+			MaxRedirects:        tinyflags.GetOrDefaultDynamic[int](group, id, "max-redirects"),
+			SkipTLSVerify:       tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify"),
+			Timeout:             tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
+			UserAgent:           strings.TrimRight(httpUserAgentPrefix, "/") + "/" + version,
+			ShowPath:            showPath,
+		}, address, nil
 	case "tcp":
 		address, err := resolveTargetAddress(rawAddress, validateResolvedTCPAddress)
 		if err != nil {

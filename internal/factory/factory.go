@@ -49,8 +49,8 @@ func BuildCheckers(
 		}
 
 		checkers = append(checkers, CheckerWithInterval{
-			Interval:    cmp.Or(target.Interval, defaultInterval),
 			Checker:     instance,
+			Interval:    cmp.Or(target.Interval, defaultInterval),
 			MaxAttempts: cmp.Or(target.MaxAttempts, maxAttempts),
 			Backoff:     cmp.Or(target.Backoff, backoff.ModeLinear),
 			MaxInterval: target.MaxInterval,

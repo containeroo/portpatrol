@@ -53,7 +53,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 		httpWebAddressFlag,
 		"--http.web.method=POST",
 		"--http.web.header=Authorization=Bearer token",
-		"--http.web.expected-status-codes=200,204",
+		"--http.web.expected-status-codes=200-202,204",
 		"--http.web.follow-redirects=false",
 		"--http.web.max-redirects=3",
 		"--http.web.backoff=exponential",
@@ -72,7 +72,7 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	cfg := requireHTTPConfig(t, target)
 	assert.Equal(t, http.MethodPost, cfg.Method)
 	assert.Equal(t, http.Header{"Authorization": {"Bearer token"}}, cfg.Headers)
-	assert.Equal(t, []int{http.StatusOK, http.StatusNoContent}, cfg.ExpectedStatusCodes)
+	assert.Equal(t, []int{200, 201, 202, 204}, cfg.ExpectedStatusCodes)
 	assert.False(t, cfg.FollowRedirects)
 	assert.Equal(t, 3, cfg.MaxRedirects)
 	assert.Equal(t, "never/1.0.0", cfg.UserAgent)
@@ -191,29 +191,23 @@ func TestParseFlagsHTTPPerTargetMaxAttempts(t *testing.T) {
 
 // TestParseFlagsHTTPInputParsing verifies HTTP-specific raw values are parsed at the CLI boundary.
 func TestParseFlagsHTTPInputParsing(t *testing.T) {
-	t.Parallel()
-
 	t.Run("invalid header", func(t *testing.T) {
-		t.Parallel()
-
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.header=InvalidHeader",
 		}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, `invalid HTTP header: invalid header format: "InvalidHeader"`)
+		assert.ErrorContains(t, err, "invalid HTTP header: invalid header format: InvalidHeader")
 	})
 
 	t.Run("duplicate header", func(t *testing.T) {
-		t.Parallel()
-
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.header=X-Test=one",
 			"--http.web.header=X-Test=two",
 		}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, `duplicate header: "X-Test=two"`)
+		assert.ErrorContains(t, err, "duplicate header key found: X-Test")
 	})
 
 	t.Run("duplicate header allowed", func(t *testing.T) {
@@ -231,15 +225,47 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 		assert.Equal(t, []string{"one", "two"}, httpConfig.Headers.Values("X-Test"))
 	})
 
-	t.Run("invalid expected status codes", func(t *testing.T) {
-		t.Parallel()
+	t.Run("header value containing comma", func(t *testing.T) {
+		cfg, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.header=Cache-Control=no-cache, no-store",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, cfg.Targets, 1)
+		httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+		assert.Equal(t, []string{"no-cache, no-store"}, httpConfig.Headers.Values("Cache-Control"))
+	})
 
+	t.Run("header names are case insensitive", func(t *testing.T) {
+		_, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.header=X-Test=one",
+			"--http.web.header=x-test=two",
+		}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "duplicate header key found: X-Test")
+	})
+
+	t.Run("resolves header values", func(t *testing.T) {
+		t.Setenv("NEVER_TEST_HEADER", "secret")
+
+		cfg, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.header=Authorization=env:NEVER_TEST_HEADER",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, cfg.Targets, 1)
+		httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+		assert.Equal(t, "secret", httpConfig.Headers.Get("Authorization"))
+	})
+
+	t.Run("invalid expected status codes", func(t *testing.T) {
 		_, err := ParseFlags([]string{
 			httpWebAddressFlag,
 			"--http.web.expected-status-codes=299-200",
 		}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "invalid expected status codes")
+		assert.ErrorContains(t, err, "invalid status range: 299-200")
 	})
 }
 

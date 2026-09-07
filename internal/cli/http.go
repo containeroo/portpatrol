@@ -2,13 +2,16 @@ package cli
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/containeroo/never/internal/checker"
+
+	"github.com/containeroo/httputils"
 	"github.com/containeroo/tinyflags"
 )
 
-// registerHTTPFlags registers HTTP-related flags and binds them to cfg.
+// registerHTTPFlags registers HTTP-related flags.
 func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	httpGroup := tf.DynamicGroup("http").Title("HTTP")
 	httpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
@@ -36,12 +39,16 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 		Placeholder("N")
 	registerRetryFlags(httpGroup)
 	httpGroup.StringSlice("header", []string{}, "HTTP headers to send").
-		Placeholder("KEY=VALUE)")
+		Delimiter("\n").
+		Placeholder("KEY=VALUE")
 	httpGroup.Bool("allow-duplicate-headers", defaultHTTPAllowDuplicateHeaders, "Allow duplicate HTTP headers")
-	httpGroup.StringSlice(
+	tinyflags.DynamicSlice(
+		httpGroup,
 		"expected-status-codes",
-		[]string{"200"},
+		[]int{http.StatusOK},
 		"Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")",
+		httputils.ParseStatusCodes,
+		strconv.Itoa,
 	).
 		Placeholder("CODES...")
 	httpGroup.Bool("follow-redirects", defaultHTTPFollowRedirects, "Follow HTTP redirects").Strict()
