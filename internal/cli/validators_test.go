@@ -147,8 +147,8 @@ func TestValidateTCPAddress(t *testing.T) {
 	t.Parallel()
 
 	t.Run("valid", func(t *testing.T) {
+		t.Parallel()
 		for _, address := range []string{testutils.LocalhostAddr("80"), "example.com:443", "[2001:db8::1]:443", "env:TARGET_ADDRESS"} {
-			t.Parallel()
 			assert.NoError(t, validateTCPAddress(address))
 		}
 	})
