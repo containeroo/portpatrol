@@ -78,11 +78,8 @@ func BuildCheckers(
 	version string,
 	showPath bool,
 ) ([]CheckerWithInterval, error) {
-	if defaultInterval < 0 {
-		return nil, fmt.Errorf("default interval must be non-negative")
-	}
-	if maxAttempts == 0 || maxAttempts < -1 {
-		return nil, fmt.Errorf("max attempts must be -1 or positive")
+	if err := validateDefaultRetrySettings(defaultInterval, maxAttempts); err != nil {
+		return nil, err
 	}
 
 	checkers := make([]CheckerWithInterval, 0, len(targets))
@@ -91,11 +88,8 @@ func BuildCheckers(
 		if err != nil {
 			return nil, err
 		}
-		if target.Interval < 0 || target.MaxInterval < 0 || target.MaxAttempts < -1 {
-			return nil, fmt.Errorf("invalid retry settings for %s", target.ID)
-		}
-		if target.Backoff != "" && target.Backoff != backoff.ModeLinear && target.Backoff != backoff.ModeExponential {
-			return nil, fmt.Errorf("invalid backoff for %s", target.ID)
+		if err := target.validateRetrySettings(); err != nil {
+			return nil, err
 		}
 
 		address := strings.TrimSpace(target.Address)
@@ -115,6 +109,51 @@ func BuildCheckers(
 	}
 
 	return checkers, nil
+}
+
+// validateDefaultRetrySettings validates retry settings shared by all targets.
+func validateDefaultRetrySettings(defaultInterval time.Duration, maxAttempts int) error {
+	if defaultInterval < 0 {
+		return fmt.Errorf("default interval must be non-negative")
+	}
+	if !isValidMaxAttempts(maxAttempts) {
+		return fmt.Errorf("max attempts must be -1 or positive")
+	}
+
+	return nil
+}
+
+// isValidMaxAttempts reports whether maxAttempts is endless or a positive limit.
+func isValidMaxAttempts(maxAttempts int) bool {
+	return maxAttempts == -1 || maxAttempts > 0
+}
+
+// validateRetrySettings validates retry overrides for one target.
+func (t TargetConfig) validateRetrySettings() error {
+	if t.Interval < 0 {
+		return fmt.Errorf("invalid retry settings for %s", t.ID)
+	}
+	if t.MaxInterval < 0 {
+		return fmt.Errorf("invalid retry settings for %s", t.ID)
+	}
+	if t.MaxAttempts < -1 {
+		return fmt.Errorf("invalid retry settings for %s", t.ID)
+	}
+	if !isValidBackoff(t.Backoff) {
+		return fmt.Errorf("invalid backoff for %s", t.ID)
+	}
+
+	return nil
+}
+
+// isValidBackoff reports whether mode is unset or one of the supported retry modes.
+func isValidBackoff(mode backoff.Mode) bool {
+	switch mode {
+	case "", backoff.ModeLinear, backoff.ModeExponential:
+		return true
+	default:
+		return false
+	}
 }
 
 // checkType returns the configured checker type and rejects ambiguous target configuration.
