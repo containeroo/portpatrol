@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -171,5 +172,24 @@ func TestRunCanceledIsNotReady(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "is ready") {
 		t.Fatal(out.String())
+	}
+}
+
+func TestURLPrivacy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
+	defer server.Close()
+	for _, format := range []string{"json", "text"} {
+		for _, show := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/%v", format, show), func(t *testing.T) {
+				args := []string{"--http.test.address=" + server.URL + "/private?token=secret", "--http.test.timeout=10ms", "--max-attempts=1", "--log-format=" + format}
+				if show {
+					args = append(args, "--show-path")
+				}
+				var out, stderr bytes.Buffer
+				require.Error(t, Run(context.Background(), version, args, &out, &stderr))
+				assert.Equal(t, show, strings.Contains(out.String(), "/private?token=secret"), out.String())
+				assert.Contains(t, out.String(), server.URL)
+			})
+		}
 	}
 }

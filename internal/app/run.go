@@ -23,12 +23,12 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 			_, _ = fmt.Fprint(stdOut, err)
 			return nil
 		}
-		_, _ = fmt.Fprintln(stdErr, err)
+		_, _ = fmt.Fprintln(stdErr, logging.RedactURLs(err.Error(), false))
 		return err
 	}
 
 	// Setup logger immediately so startup errors are correctly logged.
-	logger := logging.SetupLogger(cfg.LogFormat, stdOut)
+	logger := logging.SetupLogger(cfg.LogFormat, stdOut, cfg.ShowPath)
 
 	// Initialize target checkers
 	checkers, err := factory.BuildCheckers(cfg.Targets, cfg.DefaultCheckInterval, version)

@@ -18,6 +18,7 @@ const (
 
 // Config holds the parsed command-line configuration.
 type Config struct {
+	ShowPath             bool
 	ShowHelp             bool
 	ShowVersion          bool
 	Version              string
