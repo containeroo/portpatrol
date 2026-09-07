@@ -35,8 +35,8 @@ func TestParseFlagsVersion(t *testing.T) {
 	_, err := ParseFlags([]string{"--version"}, "1.0.0")
 	require.Error(t, err)
 
-	var versionErr *tinyflags.VersionRequested
-	assert.True(t, errors.As(err, &versionErr), "expected VersionRequested error")
+	_, ok := errors.AsType[*tinyflags.VersionRequested](err)
+	assert.True(t, ok, "expected VersionRequested error")
 	assert.EqualError(t, err, "1.0.0")
 }
 
