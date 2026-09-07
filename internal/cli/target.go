@@ -18,6 +18,7 @@ import (
 func parseTargetConfigs(
 	dynamicGroups []*tinyflags.DynamicGroup,
 	version string,
+	defaultMaxAttempts int,
 ) ([]factory.TargetConfig, error) {
 	var targets []factory.TargetConfig
 
@@ -28,12 +29,17 @@ func parseTargetConfigs(
 				return nil, fmt.Errorf("%s target %q: %w", strings.ToUpper(group.Name()), id, err)
 			}
 
+			maxAttempts := defaultMaxAttempts
+			if value, err := tinyflags.GetDynamic[int](group, id, "max-attempts"); err == nil {
+				maxAttempts = value
+			}
+
 			targets = append(targets, factory.TargetConfig{
 				ID:          id,
 				Name:        tinyflags.GetOrDefaultDynamic[string](group, id, "name"),
 				Address:     address,
 				Interval:    getDynamicDuration(group, id, "interval"),
-				MaxAttempts: getDynamicInt(group, id, "max-attempts"),
+				MaxAttempts: maxAttempts,
 				Backoff:     getDynamicBackoffMode(group, id, "backoff"),
 				MaxInterval: getDynamicDuration(group, id, "max-interval"),
 				Config:      checkerConfig,
@@ -78,7 +84,7 @@ func parseCheckerConfig(
 			MaxRedirects:        tinyflags.GetOrDefaultDynamic[int](group, id, "max-redirects"),
 			SkipTLSVerify:       tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify"),
 			Timeout:             tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
-			UserAgent:           httpUserAgentPrefix + version,
+			UserAgent:           strings.TrimSuffix(httpUserAgentPrefix, "/") + "/" + version,
 			AddressDetail:       tinyflags.GetOrDefaultDynamic[checker.HTTPAddressDetail](group, id, "address-detail"),
 		}, address, nil
 	case "tcp":
@@ -126,12 +132,6 @@ func resolveTargetAddress(value string, validate func(string) error) (string, er
 // getDynamicDuration returns a dynamic duration flag value or zero when unset.
 func getDynamicDuration(group *tinyflags.DynamicGroup, id, name string) time.Duration {
 	v, _ := tinyflags.GetDynamic[time.Duration](group, id, name)
-	return v
-}
-
-// getDynamicInt returns a dynamic int flag value or zero when unset.
-func getDynamicInt(group *tinyflags.DynamicGroup, id, name string) int {
-	v, _ := tinyflags.GetDynamic[int](group, id, name)
 	return v
 }
 

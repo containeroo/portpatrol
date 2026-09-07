@@ -39,7 +39,7 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, -1, c, logger))
+	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, 0, c, logger))
 	assert.Contains(t, output.String(), "HTTPServer is ready ✓")
 }
 
@@ -62,7 +62,7 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, -1, c, logger))
+	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, 0, c, logger))
 	assert.Contains(t, output.String(), "HTTPServer is ready ✓")
 }
 
@@ -85,7 +85,7 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 50*time.Millisecond, -1, c, logger)
+	err = WaitUntilReady(ctx, 50*time.Millisecond, 0, c, logger)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Contains(t, output.String(), "Waiting for HTTPServer to become ready...")
 }
@@ -106,7 +106,7 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, -1, c, logger))
+	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, 0, c, logger))
 	assert.Contains(t, output.String(), "TCPServer is ready ✓")
 }
 
@@ -142,7 +142,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, -1, c, logger))
+	require.NoError(t, WaitUntilReady(ctx, 100*time.Millisecond, 0, c, logger))
 	assert.Contains(t, output.String(), "TCPServer is ready ✓")
 }
 
@@ -159,7 +159,7 @@ func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	err = WaitUntilReady(ctx, 50*time.Millisecond, -1, c, logger)
+	err = WaitUntilReady(ctx, 50*time.Millisecond, 0, c, logger)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Contains(t, output.String(), "Waiting for TCPServer to become ready...")
 }
@@ -209,7 +209,7 @@ func TestWaitUntilReady_ContextCanceledDuringCheckStopsGracefully(t *testing.T) 
 	var output strings.Builder
 	logger := slog.New(slog.NewTextHandler(&output, nil))
 
-	err := WaitUntilReady(context.Background(), 10*time.Millisecond, -1, staticErrorChecker{err: context.Canceled}, logger)
+	err := WaitUntilReady(context.Background(), 10*time.Millisecond, 0, staticErrorChecker{err: context.Canceled}, logger)
 	require.ErrorIs(t, err, context.Canceled)
 	assert.NotContains(t, output.String(), "is not ready")
 }

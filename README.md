@@ -70,7 +70,7 @@ Command-line flags take precedence over environment variables.
 | Flag                 | Env var                   | Type     | Default | Description                                                         |
 | -------------------- | ------------------------- | -------- | ------- | ------------------------------------------------------------------- |
 | `--default-interval` | `NEVER__DEFAULT_INTERVAL` | duration | `2s`    | Default interval between checks. Can be overridden for each target. |
-| `--max-attempts`     | `NEVER__MAX_ATTEMPTS`     | int      | `-1`    | Maximum attempts before giving up. Use `-1` to retry endlessly.     |
+| `--max-attempts`     | `NEVER__MAX_ATTEMPTS`     | int      | `0`     | Maximum attempts before giving up. Use `0` to retry endlessly.      |
 | `--log-format`       | `NEVER__LOG_FORMAT`       | enum     | `json`  | Log output format: `json` or `text`.                                |
 | `--version`          |                           | bool     | `false` | Show version and exit.                                              |
 | `--help`, `-h`       |                           | bool     | `false` | Show help.                                                          |
@@ -116,23 +116,23 @@ NEVER__ICMP_HOST_ADDRESS=example.com
 
 #### HTTP Flags
 
-| Flag                                          | Type            | Default        | Description                                                                                                                         |
-| --------------------------------------------- | --------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `--http.<IDENTIFIER>.name`                    | string          | `<IDENTIFIER>` | Name of the HTTP checker.                                                                                                           |
-| `--http.<IDENTIFIER>.address`                 | string          | required       | HTTP target URL. \*                                                                                                                 |
-| `--http.<IDENTIFIER>.address-detail`          | enum            | `origin`       | Address detail shown in logs: `origin`, `path`, `query`, or `full`. `query` and `full` may expose secrets.                          |
-| `--http.<IDENTIFIER>.interval`                | duration        | `0`            | Time between HTTP requests. Uses `--default-interval` when unset or `0`.                                                            |
-| `--http.<IDENTIFIER>.max-attempts`            | int             | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.                                                         |
-| `--http.<IDENTIFIER>.backoff`                 | enum            | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                                                                        |
-| `--http.<IDENTIFIER>.max-interval`            | duration        | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                                                |
-| `--http.<IDENTIFIER>.method`                  | enum            | `GET`          | HTTP method. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`.                        |
-| `--http.<IDENTIFIER>.header`                  | string list     | empty          | HTTP header in `KEY=VALUE` format. Repeat the flag for multiple headers; commas in values are preserved. Values can be resolved. \* |
-| `--http.<IDENTIFIER>.allow-duplicate-headers` | bool            | `false`        | Allow duplicate HTTP headers.                                                                                                       |
-| `--http.<IDENTIFIER>.expected-status-codes`   | int list/ranges | `200`          | Expected HTTP status codes. Supports comma-separated codes and ranges, for example `200,204,301-302`.                               |
-| `--http.<IDENTIFIER>.follow-redirects`        | bool            | `true`         | Follow HTTP redirects. When `false`, validate the first redirect response instead.                                                  |
-| `--http.<IDENTIFIER>.max-redirects`           | int             | `10`           | Maximum redirects to follow. Set to `0` to validate the first redirect response instead.                                            |
-| `--http.<IDENTIFIER>.skip-tls-verify`         | bool            | `false`        | Skip TLS certificate verification.                                                                                                  |
-| `--http.<IDENTIFIER>.timeout`                 | duration        | `2s`           | HTTP request timeout.                                                                                                               |
+| Flag                                          | Type            | Default          | Description                                                                                                                         |
+| --------------------------------------------- | --------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `--http.<IDENTIFIER>.name`                    | string          | `<IDENTIFIER>`   | Name of the HTTP checker.                                                                                                           |
+| `--http.<IDENTIFIER>.address`                 | string          | required         | HTTP target URL. \*                                                                                                                 |
+| `--http.<IDENTIFIER>.address-detail`          | enum            | `origin`         | Address detail shown in logs: `origin`, `path`, `query`, or `full`. `query` and `full` may expose secrets.                          |
+| `--http.<IDENTIFIER>.interval`                | duration        | `0`              | Time between HTTP requests. Uses `--default-interval` when unset or `0`.                                                            |
+| `--http.<IDENTIFIER>.max-attempts`            | int             | `--max-attempts` | Maximum attempts before giving up. Inherits `--max-attempts` when unset; `0` retries endlessly.                                     |
+| `--http.<IDENTIFIER>.backoff`                 | enum            | `linear`         | Retry backoff mode. Allowed values: `linear`, `exponential`.                                                                        |
+| `--http.<IDENTIFIER>.max-interval`            | duration        | `0`              | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                                                |
+| `--http.<IDENTIFIER>.method`                  | enum            | `GET`            | HTTP method. Allowed values: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS`, `TRACE`.                        |
+| `--http.<IDENTIFIER>.header`                  | string list     | empty            | HTTP header in `KEY=VALUE` format. Repeat the flag for multiple headers; commas in values are preserved. Values can be resolved. \* |
+| `--http.<IDENTIFIER>.allow-duplicate-headers` | bool            | `false`          | Allow duplicate HTTP headers.                                                                                                       |
+| `--http.<IDENTIFIER>.expected-status-codes`   | int list/ranges | `200`            | Expected HTTP status codes. Supports comma-separated codes and ranges, for example `200,204,301-302`.                               |
+| `--http.<IDENTIFIER>.follow-redirects`        | bool            | `true`           | Follow HTTP redirects. When `false`, validate the first redirect response instead.                                                  |
+| `--http.<IDENTIFIER>.max-redirects`           | int             | `10`             | Maximum redirects to follow. Set to `0` to validate the first redirect response instead.                                            |
+| `--http.<IDENTIFIER>.skip-tls-verify`         | bool            | `false`          | Skip TLS certificate verification.                                                                                                  |
+| `--http.<IDENTIFIER>.timeout`                 | duration        | `2s`             | HTTP request timeout.                                                                                                               |
 
 Environment variables use `NEVER__HTTP_<IDENTIFIER>_<PROPERTY>`.
 Example: `--http.web.address` becomes `NEVER__HTTP_WEB_ADDRESS`.
@@ -160,32 +160,32 @@ Redirects are not followed when `follow-redirects` is `false` or `max-redirects`
 
 #### ICMP Flags
 
-| Flag                                | Type     | Default        | Description                                                                                         |
-| ----------------------------------- | -------- | -------------- | --------------------------------------------------------------------------------------------------- |
-| `--icmp.<IDENTIFIER>.name`          | string   | `<IDENTIFIER>` | Name of the ICMP checker.                                                                           |
-| `--icmp.<IDENTIFIER>.address`       | string   | required       | ICMP target hostname or IP address. \*                                                              |
-| `--icmp.<IDENTIFIER>.interval`      | duration | `0`            | Time between ICMP requests. Uses `--default-interval` when unset or `0`.                            |
-| `--icmp.<IDENTIFIER>.max-attempts`  | int      | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.                         |
-| `--icmp.<IDENTIFIER>.backoff`       | enum     | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                                        |
-| `--icmp.<IDENTIFIER>.max-interval`  | duration | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                |
-| `--icmp.<IDENTIFIER>.timeout`       | duration | `2s`           | Timeout for ICMP read and write operations.                                                         |
-| `--icmp.<IDENTIFIER>.read-timeout`  | duration | `0`            | Advanced override for the ICMP read timeout. Uses `--icmp.<IDENTIFIER>.timeout` when unset or `0`.  |
-| `--icmp.<IDENTIFIER>.write-timeout` | duration | `0`            | Advanced override for the ICMP write timeout. Uses `--icmp.<IDENTIFIER>.timeout` when unset or `0`. |
+| Flag                                | Type     | Default          | Description                                                                                         |
+| ----------------------------------- | -------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| `--icmp.<IDENTIFIER>.name`          | string   | `<IDENTIFIER>`   | Name of the ICMP checker.                                                                           |
+| `--icmp.<IDENTIFIER>.address`       | string   | required         | ICMP target hostname or IP address. \*                                                              |
+| `--icmp.<IDENTIFIER>.interval`      | duration | `0`              | Time between ICMP requests. Uses `--default-interval` when unset or `0`.                            |
+| `--icmp.<IDENTIFIER>.max-attempts`  | int      | `--max-attempts` | Maximum attempts before giving up. Inherits `--max-attempts` when unset; `0` retries endlessly.     |
+| `--icmp.<IDENTIFIER>.backoff`       | enum     | `linear`         | Retry backoff mode. Allowed values: `linear`, `exponential`.                                        |
+| `--icmp.<IDENTIFIER>.max-interval`  | duration | `0`              | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.                |
+| `--icmp.<IDENTIFIER>.timeout`       | duration | `2s`             | Timeout for ICMP read and write operations.                                                         |
+| `--icmp.<IDENTIFIER>.read-timeout`  | duration | `0`              | Advanced override for the ICMP read timeout. Uses `--icmp.<IDENTIFIER>.timeout` when unset or `0`.  |
+| `--icmp.<IDENTIFIER>.write-timeout` | duration | `0`              | Advanced override for the ICMP write timeout. Uses `--icmp.<IDENTIFIER>.timeout` when unset or `0`. |
 
 Environment variables use `NEVER__ICMP_<IDENTIFIER>_<PROPERTY>`.
 Example: `--icmp.host.address` becomes `NEVER__ICMP_HOST_ADDRESS`.
 
 #### TCP Flags
 
-| Flag                              | Type     | Default        | Description                                                                          |
-| --------------------------------- | -------- | -------------- | ------------------------------------------------------------------------------------ |
-| `--tcp.<IDENTIFIER>.name`         | string   | `<IDENTIFIER>` | Name of the TCP checker.                                                             |
-| `--tcp.<IDENTIFIER>.address`      | string   | required       | TCP target address in `host:port` format. \*                                         |
-| `--tcp.<IDENTIFIER>.timeout`      | duration | `2s`           | TCP connection timeout.                                                              |
-| `--tcp.<IDENTIFIER>.interval`     | duration | `0`            | Time between TCP requests. Uses `--default-interval` when unset or `0`.              |
-| `--tcp.<IDENTIFIER>.max-attempts` | int      | `0`            | Maximum attempts before giving up. Uses `--max-attempts` when unset or `0`.          |
-| `--tcp.<IDENTIFIER>.backoff`      | enum     | `linear`       | Retry backoff mode. Allowed values: `linear`, `exponential`.                         |
-| `--tcp.<IDENTIFIER>.max-interval` | duration | `0`            | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`. |
+| Flag                              | Type     | Default          | Description                                                                                     |
+| --------------------------------- | -------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `--tcp.<IDENTIFIER>.name`         | string   | `<IDENTIFIER>`   | Name of the TCP checker.                                                                        |
+| `--tcp.<IDENTIFIER>.address`      | string   | required         | TCP target address in `host:port` format. \*                                                    |
+| `--tcp.<IDENTIFIER>.timeout`      | duration | `2s`             | TCP connection timeout.                                                                         |
+| `--tcp.<IDENTIFIER>.interval`     | duration | `0`              | Time between TCP requests. Uses `--default-interval` when unset or `0`.                         |
+| `--tcp.<IDENTIFIER>.max-attempts` | int      | `--max-attempts` | Maximum attempts before giving up. Inherits `--max-attempts` when unset; `0` retries endlessly. |
+| `--tcp.<IDENTIFIER>.backoff`      | enum     | `linear`         | Retry backoff mode. Allowed values: `linear`, `exponential`.                                    |
+| `--tcp.<IDENTIFIER>.max-interval` | duration | `0`              | Maximum retry interval when backoff increases the delay. Uncapped when unset or `0`.            |
 
 Environment variables use `NEVER__TCP_<IDENTIFIER>_<PROPERTY>`.
 Example: `--tcp.db.address` becomes `NEVER__TCP_DB_ADDRESS`.

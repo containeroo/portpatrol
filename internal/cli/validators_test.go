@@ -10,53 +10,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestValidateMaxAttempts verifies global max-attempts validation.
-func TestValidateMaxAttempts(t *testing.T) {
+// TestValidateNonNegativeInt verifies non-negative integer validation.
+func TestValidateNonNegativeInt(t *testing.T) {
 	t.Parallel()
 
-	t.Run("endless", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateMaxAttempts(-1))
-	})
-
-	t.Run("positive", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateMaxAttempts(1))
-	})
+	validate := validateNonNegativeInt("max-attempts")
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateMaxAttempts(0), "max-attempts must be -1 or positive")
-	})
-
-	t.Run("below endless", func(t *testing.T) {
-		t.Parallel()
-		assertExactValidationError(t, validateMaxAttempts(-2), "max-attempts must be -1 or positive")
-	})
-}
-
-// TestValidateOptionalMaxAttempts verifies per-target max-attempts validation.
-func TestValidateOptionalMaxAttempts(t *testing.T) {
-	t.Parallel()
-
-	t.Run("inherits global", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateOptionalMaxAttempts(0))
-	})
-
-	t.Run("endless", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateOptionalMaxAttempts(-1))
+		assertNoValidationError(t, validate(0))
 	})
 
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()
-		assertNoValidationError(t, validateOptionalMaxAttempts(3))
+		assertNoValidationError(t, validate(3))
 	})
 
-	t.Run("below endless", func(t *testing.T) {
+	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateOptionalMaxAttempts(-2), "max-attempts must be -1 or positive")
+		assertExactValidationError(t, validate(-1), "max-attempts must be non-negative")
 	})
 }
 

@@ -20,8 +20,8 @@ func registerTCPFlags(tf *tinyflags.FlagSet) {
 	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).
 		Placeholder("DURATION")
-	tcp.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
-		Validate(validateOptionalMaxAttempts).
+	tcp.Int("max-attempts", 0, "Maximum attempts before giving up. Inherits --max-attempts when unset; 0 means endless retries.").
+		Validate(validateNonNegativeInt("max-attempts")).
 		Placeholder("N")
 	registerRetryFlags(tcp)
 }

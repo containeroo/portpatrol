@@ -17,8 +17,8 @@ func registerICMPFlags(tf *tinyflags.FlagSet) {
 	icmp.Duration("interval", 0*time.Second, "Time between ICMP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).
 		Placeholder("DURATION")
-	icmp.Int("max-attempts", 0, "Maximum attempts before giving up. Defaults to --max-attempts when unset or 0.").
-		Validate(validateOptionalMaxAttempts).
+	icmp.Int("max-attempts", 0, "Maximum attempts before giving up. Inherits --max-attempts when unset; 0 means endless retries.").
+		Validate(validateNonNegativeInt("max-attempts")).
 		Placeholder("N")
 	registerRetryFlags(icmp)
 	icmp.Duration("timeout", checker.DefaultICMPConfig().ReadTimeout, "Timeout for ICMP read and write").

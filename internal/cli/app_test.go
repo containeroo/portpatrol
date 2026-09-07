@@ -62,6 +62,14 @@ func TestParseFlagsInvalidDuration(t *testing.T) {
 func TestParseFlagsMaxAttempts(t *testing.T) {
 	t.Parallel()
 
+	t.Run("default is endless", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags(nil, "1.0.0")
+		require.NoError(t, err)
+		assert.Zero(t, parsedFlags.MaxAttempts)
+	})
+
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()
 
@@ -70,19 +78,20 @@ func TestParseFlagsMaxAttempts(t *testing.T) {
 		assert.Equal(t, 3, parsedFlags.MaxAttempts)
 	})
 
-	t.Run("endless", func(t *testing.T) {
+	t.Run("zero is endless", func(t *testing.T) {
 		t.Parallel()
 
-		parsedFlags, err := ParseFlags([]string{"--max-attempts=-1"}, "1.0.0")
+		parsedFlags, err := ParseFlags([]string{"--max-attempts=0"}, "1.0.0")
 		require.NoError(t, err)
-		assert.Equal(t, -1, parsedFlags.MaxAttempts)
+		assert.Zero(t, parsedFlags.MaxAttempts)
 	})
 
-	t.Run("zero", func(t *testing.T) {
+	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := ParseFlags([]string{"--max-attempts=0"}, "1.0.0")
+		_, err := ParseFlags([]string{"--max-attempts=-1"}, "1.0.0")
 		require.Error(t, err)
+		assert.ErrorContains(t, err, "max-attempts must be non-negative")
 	})
 }
 

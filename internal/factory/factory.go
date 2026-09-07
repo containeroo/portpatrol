@@ -23,9 +23,10 @@ type TargetConfig struct {
 
 // CheckerWithInterval represents a checker with its retry settings.
 type CheckerWithInterval struct {
-	Interval    time.Duration
-	Checker     checker.Checker
-	MaxAttempts int // MaxAttempts is fully resolved; -1 means endless retries.
+	Interval time.Duration
+	Checker  checker.Checker
+	// MaxAttempts is fully resolved; 0 means endless retries.
+	MaxAttempts int
 	Backoff     backoff.Mode
 	MaxInterval time.Duration
 }
@@ -34,7 +35,6 @@ type CheckerWithInterval struct {
 func BuildCheckers(
 	targets []TargetConfig,
 	defaultInterval time.Duration,
-	maxAttempts int,
 ) ([]CheckerWithInterval, error) {
 	checkers := make([]CheckerWithInterval, 0, len(targets))
 	for _, target := range targets {
@@ -49,9 +49,9 @@ func BuildCheckers(
 		}
 
 		checkers = append(checkers, CheckerWithInterval{
-			Checker:     instance,
 			Interval:    cmp.Or(target.Interval, defaultInterval),
-			MaxAttempts: cmp.Or(target.MaxAttempts, maxAttempts),
+			Checker:     instance,
+			MaxAttempts: target.MaxAttempts,
 			Backoff:     cmp.Or(target.Backoff, backoff.ModeLinear),
 			MaxInterval: target.MaxInterval,
 		})

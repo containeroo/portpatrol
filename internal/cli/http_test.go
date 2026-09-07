@@ -235,19 +235,47 @@ func TestParseFlagsHTTPBackoff(t *testing.T) {
 	})
 }
 
-// TestParseFlagsHTTPPerTargetMaxAttempts verifies HTTP target max-attempts override parsing.
+// TestParseFlagsHTTPPerTargetMaxAttempts verifies per-target values override or inherit the global limit.
 func TestParseFlagsHTTPPerTargetMaxAttempts(t *testing.T) {
 	t.Parallel()
 
-	parsedFlags, err := ParseFlags([]string{
-		"--max-attempts=5",
-		httpWebAddressFlag,
-		"--http.web.max-attempts=2",
-	}, "1.0.0")
-	require.NoError(t, err)
-	require.Len(t, parsedFlags.Targets, 1)
-	assert.Equal(t, 5, parsedFlags.MaxAttempts)
-	assert.Equal(t, 2, parsedFlags.Targets[0].MaxAttempts)
+	t.Run("inherits global when unset", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{
+			"--max-attempts=5",
+			httpWebAddressFlag,
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.Equal(t, 5, parsedFlags.Targets[0].MaxAttempts)
+	})
+
+	t.Run("zero disables target limit", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{
+			"--max-attempts=5",
+			httpWebAddressFlag,
+			"--http.web.max-attempts=0",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.Zero(t, parsedFlags.Targets[0].MaxAttempts)
+	})
+
+	t.Run("positive overrides global", func(t *testing.T) {
+		t.Parallel()
+
+		parsedFlags, err := ParseFlags([]string{
+			"--max-attempts=5",
+			httpWebAddressFlag,
+			"--http.web.max-attempts=2",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, parsedFlags.Targets, 1)
+		assert.Equal(t, 2, parsedFlags.Targets[0].MaxAttempts)
+	})
 }
 
 // TestParseFlagsHTTPInputParsing verifies HTTP-specific raw values are parsed at the CLI boundary.
@@ -367,7 +395,7 @@ func TestParseFlagsHTTPRetryValidation(t *testing.T) {
 	}{
 		{name: "negative interval", flag: "--http.web.interval=-1s", want: "interval must be non-negative"},
 		{name: "negative max interval", flag: "--http.web.max-interval=-1s", want: "max-interval must be non-negative"},
-		{name: "invalid max attempts", flag: "--http.web.max-attempts=-2", want: "max-attempts must be -1 or positive"},
+		{name: "invalid max attempts", flag: "--http.web.max-attempts=-1", want: "max-attempts must be non-negative"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()

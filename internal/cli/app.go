@@ -12,8 +12,8 @@ func registerAppFlags(tf *tinyflags.FlagSet, cfg *Config) {
 		Placeholder("DURATION").
 		Value()
 
-	tf.IntVar(&cfg.MaxAttempts, "max-attempts", -1, "Maximum attempts before giving up (-1 for endless).").
-		Validate(validateMaxAttempts).
+	tf.IntVar(&cfg.MaxAttempts, "max-attempts", 0, "Maximum attempts before giving up. Set to 0 for endless retries.").
+		Validate(validateNonNegativeInt("max-attempts")).
 		Placeholder("N").
 		Value()
 

@@ -43,7 +43,7 @@ func TestBuildCheckers(t *testing.T) {
 					AddressDetail:       checker.HTTPAddressOrigin,
 				},
 			},
-		}, 9*time.Second, -1)
+		}, 9*time.Second)
 
 		require.NoError(t, err)
 		require.Len(t, checkers, 1)
@@ -57,7 +57,7 @@ func TestBuildCheckers(t *testing.T) {
 
 		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
 			{ID: targetID, Address: testHTTPAddress},
-		}, 2*time.Second, -1)
+		}, 2*time.Second)
 
 		assert.Nil(t, checkers)
 		assert.EqualError(t, err, `target "mygroup" has no checker config`)
@@ -74,7 +74,7 @@ func TestBuildCheckers(t *testing.T) {
 				MaxInterval: 30 * time.Second,
 				Config:      checker.DefaultHTTPConfig(),
 			},
-		}, 2*time.Second, -1)
+		}, 2*time.Second)
 
 		require.NoError(t, err)
 		require.Len(t, checkers, 1)
@@ -92,7 +92,7 @@ func TestBuildCheckers(t *testing.T) {
 				Address: address,
 				Config:  checker.TCPConfig{Timeout: 3 * time.Second},
 			},
-		}, 2*time.Second, -1)
+		}, 2*time.Second)
 
 		require.NoError(t, err)
 		require.Len(t, checkers, 1)
@@ -111,7 +111,7 @@ func TestBuildCheckers(t *testing.T) {
 					WriteTimeout: 2 * time.Second,
 				},
 			},
-		}, 2*time.Second, -1)
+		}, 2*time.Second)
 
 		require.NoError(t, err)
 		require.Len(t, checkers, 1)

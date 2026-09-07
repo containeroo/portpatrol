@@ -137,24 +137,6 @@ func isAlphaNum(ch byte) bool {
 	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9')
 }
 
-// validateMaxAttempts validates the global max-attempts flag.
-func validateMaxAttempts(v int) error {
-	if v == -1 || v > 0 {
-		return nil
-	}
-
-	return errors.New("max-attempts must be -1 or positive")
-}
-
-// validateOptionalMaxAttempts validates per-target max-attempts where zero means inherit global.
-func validateOptionalMaxAttempts(v int) error {
-	if v == 0 {
-		return nil
-	}
-
-	return validateMaxAttempts(v)
-}
-
 // validateTimeoutDuration validates a timeout flag.
 func validateTimeoutDuration() func(time.Duration) error {
 	return func(d time.Duration) error {

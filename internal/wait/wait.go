@@ -42,6 +42,7 @@ func WithMaxInterval(maxInterval time.Duration) Option {
 }
 
 // WaitUntilReady continuously attempts to connect to the specified target until it becomes available or the context is canceled.
+// A maxAttempts value of 0 retries without an attempt limit.
 func WaitUntilReady(
 	ctx context.Context,
 	interval time.Duration,
