@@ -12,6 +12,6 @@ func registerRetryFlags(group *tinyflags.DynamicGroup) {
 	tinyflags.DynamicEnum(group, "backoff", backoff.ModeLinear, "Retry backoff mode.", backoff.ModeLinear, backoff.ModeExponential).
 		Placeholder("MODE")
 	group.Duration("max-interval", 0*time.Second, "Maximum retry interval when backoff increases the delay. Defaults to uncapped when unset or 0.").
-		Validate(validateNonNegativeDuration("max-interval")).
+		Validate(validateNonNegativeDuration()).
 		Placeholder("DURATION")
 }

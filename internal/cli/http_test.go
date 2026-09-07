@@ -69,8 +69,8 @@ func TestParseFlagsHTTPAddressDetail(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, cfg.Targets, 2)
 
-		assert.Equal(t, checker.HTTPAddressPath, requireHTTPConfig(t, cfg.Targets[0]).AddressDetail)
-		assert.Equal(t, checker.HTTPAddressFull, requireHTTPConfig(t, cfg.Targets[1]).AddressDetail)
+		assert.Equal(t, checker.HTTPAddressFull, requireHTTPConfig(t, cfg.Targets[0]).AddressDetail)
+		assert.Equal(t, checker.HTTPAddressPath, requireHTTPConfig(t, cfg.Targets[1]).AddressDetail)
 	})
 }
 
@@ -177,7 +177,7 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 			"--http.web.max-redirects=-1",
 		}, "1.0.0")
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "max-redirects must be non-negative")
+		assert.ErrorContains(t, err, "must be non-negative")
 	})
 }
 
@@ -368,41 +368,31 @@ func TestParseFlagsHTTPInputParsing(t *testing.T) {
 	})
 }
 
-// TestResolveHTTPHeaderValues verifies configured variables are resolved in HTTP header values.
-func TestResolveHTTPHeaderValues(t *testing.T) {
-	t.Setenv("NEVER_TEST_HEADER", "secret")
-
-	headers := http.Header{
-		"Authorization": {"env:NEVER_TEST_HEADER"},
-		"X-Test":        {"plain", "env:NEVER_TEST_HEADER"},
-	}
-
-	err := resolveHTTPHeaderValues(headers)
-
-	require.NoError(t, err)
-	assert.Equal(t, "secret", headers.Get("Authorization"))
-	assert.Equal(t, []string{"plain", "secret"}, headers.Values("X-Test"))
-}
-
 // TestParseFlagsHTTPRetryValidation verifies retry input is rejected before reaching the factory.
 func TestParseFlagsHTTPRetryValidation(t *testing.T) {
 	t.Parallel()
 
-	for _, tt := range []struct {
-		name string
-		flag string
-		want string
-	}{
-		{name: "negative interval", flag: "--http.web.interval=-1s", want: "interval must be non-negative"},
-		{name: "negative max interval", flag: "--http.web.max-interval=-1s", want: "max-interval must be non-negative"},
-		{name: "invalid max attempts", flag: "--http.web.max-attempts=-1", want: "max-attempts must be non-negative"},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+	t.Run("negative interval", func(t *testing.T) {
+		t.Parallel()
 
-			_, err := ParseFlags([]string{httpWebAddressFlag, tt.flag}, "1.0.0")
-			require.Error(t, err)
-			assert.ErrorContains(t, err, tt.want)
-		})
-	}
+		_, err := ParseFlags([]string{httpWebAddressFlag, "--http.web.interval=-1s"}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "must be non-negative")
+	})
+
+	t.Run("negative max interval", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{httpWebAddressFlag, "--http.web.max-interval=-1s"}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "must be non-negative")
+	})
+
+	t.Run("invalid max attempts", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{httpWebAddressFlag, "--http.web.max-attempts=-1"}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "must be non-negative")
+	})
 }

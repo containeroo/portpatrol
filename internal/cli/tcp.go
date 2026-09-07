@@ -15,13 +15,13 @@ func registerTCPFlags(tf *tinyflags.FlagSet) {
 		Validate(validateTCPAddress).
 		Required()
 	tcp.Duration("timeout", checker.DefaultTCPConfig().Timeout, "Timeout for TCP connection").
-		Validate(validateTimeoutDuration()).
+		Validate(validatePositiveDuration()).
 		Placeholder("DURATION")
 	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").
-		Validate(validateNonNegativeDuration("interval")).
+		Validate(validateNonNegativeDuration()).
 		Placeholder("DURATION")
 	tcp.Int("max-attempts", 0, "Maximum attempts before giving up. Inherits --max-attempts when unset; 0 means endless retries.").
-		Validate(validateNonNegativeInt("max-attempts")).
+		Validate(validateNonNegativeInt()).
 		Placeholder("N")
 	registerRetryFlags(tcp)
 }

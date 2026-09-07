@@ -14,7 +14,7 @@ import (
 func TestValidateNonNegativeInt(t *testing.T) {
 	t.Parallel()
 
-	validate := validateNonNegativeInt("max-attempts")
+	validate := validateNonNegativeInt()
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
@@ -28,7 +28,7 @@ func TestValidateNonNegativeInt(t *testing.T) {
 
 	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validate(-1), "max-attempts must be non-negative")
+		assertExactValidationError(t, validate(-1), "must be non-negative")
 	})
 }
 
@@ -36,7 +36,7 @@ func TestValidateNonNegativeInt(t *testing.T) {
 func TestValidatePositiveDuration(t *testing.T) {
 	t.Parallel()
 
-	validateTimeout := validateTimeoutDuration()
+	validateTimeout := validatePositiveDuration()
 
 	t.Run("positive", func(t *testing.T) {
 		t.Parallel()
@@ -45,12 +45,12 @@ func TestValidatePositiveDuration(t *testing.T) {
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateTimeout(0), "timeout must be positive")
+		assertExactValidationError(t, validateTimeout(0), "must be positive")
 	})
 
 	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateTimeout(-time.Second), "timeout must be positive")
+		assertExactValidationError(t, validateTimeout(-time.Second), "must be positive")
 	})
 }
 
@@ -58,7 +58,7 @@ func TestValidatePositiveDuration(t *testing.T) {
 func TestValidateNonNegativeDuration(t *testing.T) {
 	t.Parallel()
 
-	validateInterval := validateNonNegativeDuration("interval")
+	validateInterval := validateNonNegativeDuration()
 
 	t.Run("zero", func(t *testing.T) {
 		t.Parallel()
@@ -72,7 +72,7 @@ func TestValidateNonNegativeDuration(t *testing.T) {
 
 	t.Run("negative", func(t *testing.T) {
 		t.Parallel()
-		assertExactValidationError(t, validateInterval(-time.Second), "interval must be non-negative")
+		assertExactValidationError(t, validateInterval(-time.Second), "must be non-negative")
 	})
 }
 
