@@ -9,14 +9,14 @@ $(LOCALBIN):
 ## Tool Binaries
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
-## Container Tools
-DOCKER ?= docker
-LORE_IMAGE ?= ghcr.io/gi8lino/lore:v0.1.2@sha256:9775c555ac5bde9a3c05881636518de7cc662df95330d9b223acdffacd9e579a
-LORE_USER ?= $(shell id -u):$(shell id -g)
+## Documentation Tools
+LORE ?= $(LOCALBIN)/lore
 
 ## Tool Versions
 # renovate: datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION ?= v2.1.2
+# renovate: datasource=github-releases depName=gi8lino/lore
+LORE_VERSION ?= v0.3.0
 
 ## Site Configuration
 SITE_CONFIG ?= docs/lore-site.toml
@@ -83,22 +83,13 @@ site-favicon: ## Generate the documentation SVG favicon and multi-size ICO (requ
 	cp "$(SITE_LOGO)" "$(SITE_FAVICON_SVG)"
 
 .PHONY: site
-site: ## Build the static documentation site with Lore.
-	$(DOCKER) run --rm \
-		--user "$(LORE_USER)" \
-		--volume "$(CURDIR):/workspace" \
-		--workdir /workspace \
-		"$(LORE_IMAGE)" build --config "$(SITE_CONFIG)"
+site: lore ## Build the static documentation site with Lore.
+	"$(LORE)" build --config "$(SITE_CONFIG)"
 
 .PHONY: site-serve
-site-serve: ## Build and serve the documentation site locally.
-	$(DOCKER) run --rm \
-		--user "$(LORE_USER)" \
-		--volume "$(CURDIR):/workspace" \
-		--workdir /workspace \
-		"$(LORE_IMAGE)" build \
-			--config "$(SITE_CONFIG)" \
-			--site-url "http://127.0.0.1:$(SITE_PORT)/"
+site-serve: lore ## Build and serve the documentation site locally.
+	"$(LORE)" build --config "$(SITE_CONFIG)" \
+		--site-url "http://127.0.0.1:$(SITE_PORT)/"
 	@echo "Serving Lore documentation at http://127.0.0.1:$(SITE_PORT)"
 	python3 -m http.server $(SITE_PORT) --bind 127.0.0.1 --directory "$(SITE_OUTPUT)"
 
@@ -133,6 +124,39 @@ push: ## Push tags to remote
 
 
 ##@ Dependencies
+
+.PHONY: lore
+lore: ## Download the pinned Lore binary into bin if necessary.
+ifeq ($(LORE),$(LOCALBIN)/lore)
+	@set -eu; \
+	case "$$(uname -s)" in Darwin) os=darwin ;; Linux) os=linux ;; *) echo "Unsupported Lore operating system" >&2; exit 1 ;; esac; \
+	case "$$(uname -m)" in arm64|aarch64) arch=arm64 ;; x86_64|amd64) arch=amd64 ;; *) echo "Unsupported Lore architecture" >&2; exit 1 ;; esac; \
+	version="$(LORE_VERSION)"; \
+	binary="lore-$${version}-$${os}-$${arch}"; \
+	mkdir -p "$(LOCALBIN)"; \
+	if [ ! -x "$(LOCALBIN)/$$binary" ]; then \
+		tmp=$$(mktemp -d "$(LOCALBIN)/.lore-download.XXXXXX"); \
+		trap 'rm -rf "$$tmp"' EXIT HUP INT TERM; \
+		archive="lore_$${version#v}_$${os}_$${arch}.tar.gz"; \
+		release="https://github.com/gi8lino/lore/releases/download/$$version"; \
+		echo "Downloading Lore $$version ($$os/$$arch)"; \
+		curl --fail --silent --show-error --location --retry 3 -o "$$tmp/$$archive" "$$release/$$archive"; \
+		curl --fail --silent --show-error --location --retry 3 -o "$$tmp/checksums.txt" "$$release/lore_$${version#v}_checksums.txt"; \
+		expected=$$(awk -v archive="$$archive" '$$2 == archive { print $$1; found = 1 } END { if (!found) exit 1 }' "$$tmp/checksums.txt"); \
+		if command -v sha256sum >/dev/null 2>&1; then \
+			actual=$$(sha256sum "$$tmp/$$archive" | awk '{print $$1}'); \
+		else \
+			actual=$$(shasum -a 256 "$$tmp/$$archive" | awk '{print $$1}'); \
+		fi; \
+		[ "$$actual" = "$$expected" ] || { echo "Lore checksum mismatch" >&2; exit 1; }; \
+		tar -xzf "$$tmp/$$archive" -C "$$tmp" lore; \
+		chmod +x "$$tmp/lore"; \
+		mv "$$tmp/lore" "$(LOCALBIN)/$$binary"; \
+	fi; \
+	ln -sfn "$$binary" "$(LORE)"
+else
+	@command -v "$(LORE)" >/dev/null 2>&1 || { echo "Lore binary not found: $(LORE)" >&2; exit 1; }
+endif
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.

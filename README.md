@@ -58,7 +58,7 @@ Read the complete configuration and deployment guide at **[containeroo.github.io
 
 The documentation favicon comes from `docs/assets/logo.svg`. After changing the logo, run `make site-favicon` (requires ImageMagick's `magick` command). This copies the SVG to `docs/content/assets/favicon.svg` and generates `docs/content/favicon.ico` with 16, 32, 48, 64, 128, and 256 pixel sizes. To use another SVG, run `make site-favicon SITE_LOGO=path/to/logo.svg`.
 
-Keep both generated icons in the documentation source and commit them so CI can copy them into the site without ImageMagick. Run `make site` to build, or `make site-serve` to preview locally. The branding settings in `docs/lore-site.toml` select the header logo, browser icons, and extra assets. These settings require a Lore build that supports configurable branding.
+Keep both generated icons in the documentation source and commit them so CI can copy them into the site without ImageMagick. Run `make site` to build or `make site-serve` to preview locally (also requires Python 3). Both targets automatically download the pinned Lore release for your platform into `bin/`, verify its SHA-256 checksum, and reuse it on subsequent builds. Run `make lore` to download it separately. Downloads require `curl`, `tar`, and either `sha256sum` or `shasum`; macOS and Linux on AMD64 and ARM64 are supported. To use an existing binary elsewhere, pass `LORE=/path/to/lore`. CI uses the same Makefile installation. The branding settings in `docs/lore-site.toml` select the header logo, browser icons, and extra assets. These settings require a Lore build that supports configurable branding.
 
 ## License
 
