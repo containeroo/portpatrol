@@ -82,8 +82,8 @@ func WaitUntilReady(
 		if errors.Is(err, context.Canceled) {
 			return nil // Treat cancellation during a check as expected shutdown.
 		}
-		if errors.Is(err, context.DeadlineExceeded) {
-			return err
+		if ctx.Err() == context.DeadlineExceeded {
+			return ctx.Err()
 		}
 
 		waitInterval := backoff.NextInterval(cfg.backoffMode, interval, attempt, cfg.maxInterval)

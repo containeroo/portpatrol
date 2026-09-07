@@ -289,3 +289,17 @@ func (c staticErrorChecker) Type() string { return "TCP" }
 
 // Address returns the checker address.
 func (c staticErrorChecker) Address() string { return testutils.LocalhostAddr("1") }
+
+func TestRequestTimeoutRetries(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
+	defer server.Close()
+	c, err := checker.NewChecker(checker.HTTP, "slow", server.URL, checker.WithHTTPTimeout(20*time.Millisecond))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var output strings.Builder
+	err = WaitUntilReady(context.Background(), time.Millisecond, 3, c, slog.New(slog.NewTextHandler(&output, nil)))
+	if !errors.Is(err, ErrMaxAttemptsExceeded) || !strings.Contains(output.String(), "attempt=3") {
+		t.Fatalf("expected three attempts: %v %s", err, output.String())
+	}
+}
