@@ -24,8 +24,8 @@ dockers_v2:
       - never
     labels:
       org.opencontainers.image.created: "{{ .Date }}"
-      org.opencontainers.image.description: "Small HTTP check-in monitor with JSON status, bearer-token auth, and webhook/email notifications."
-      org.opencontainers.image.licenses: "GPL-3.0-only"
+      org.opencontainers.image.description: "Wait for TCP, HTTP, and ICMP dependencies to become ready."
+      org.opencontainers.image.licenses: "Apache-2.0"
       org.opencontainers.image.revision: "{{ .FullCommit }}"
       org.opencontainers.image.source: "https://github.com/containeroo/never"
       org.opencontainers.image.title: "{{ .ProjectName }}"
