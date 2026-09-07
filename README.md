@@ -1,8 +1,6 @@
 <p align="center">
-  <img src=".github/assets/never.svg" alt="N.E.V.E.R." width="520">
+  <img src="./docs/assets/logo.svg" alt="N.E.V.E.R." width="520">
 </p>
-
-# N.E.V.E.R.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/containeroo/never.svg)](https://pkg.go.dev/github.com/containeroo/never)
 [![Release](https://img.shields.io/github/release/containeroo/never.svg?style=flat-square)](https://github.com/containeroo/never/releases/latest)
