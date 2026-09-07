@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -158,4 +159,17 @@ func TestRunParseError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.EqualError(t, err, "unknown flag --invalid")
+}
+
+func TestRunCanceledIsNotReady(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var out, stderr bytes.Buffer
+	err := Run(ctx, version, []string{"--tcp.test.address=127.0.0.1:1"}, &out, &stderr)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected cancellation, got %v", err)
+	}
+	if strings.Contains(out.String(), "is ready") {
+		t.Fatal(out.String())
+	}
 }

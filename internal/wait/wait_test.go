@@ -266,8 +266,8 @@ func TestWaitUntilReady_ContextCanceledDuringCheckStopsGracefully(t *testing.T) 
 	logger := slog.New(slog.NewTextHandler(&output, nil))
 
 	err := WaitUntilReady(context.Background(), 10*time.Millisecond, -1, staticErrorChecker{err: context.Canceled}, logger)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Expected cancellation, got %v", err)
 	}
 	if strings.Contains(output.String(), "is not ready") {
 		t.Fatalf("Expected cancellation to avoid not-ready log, got %q", output.String())

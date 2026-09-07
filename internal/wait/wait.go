@@ -73,14 +73,20 @@ func WaitUntilReady(
 	attempt := 0
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		attempt++
 		err := checker.Check(ctx)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err == nil {
 			logger.Info(fmt.Sprintf("%s is ready ✓", checker.Name()), slog.Int("attempt", attempt))
 			return nil // Successfully connected to the target
 		}
 		if errors.Is(err, context.Canceled) {
-			return nil // Treat cancellation during a check as expected shutdown.
+			return err
 		}
 		if ctx.Err() == context.DeadlineExceeded {
 			return ctx.Err()
@@ -105,9 +111,6 @@ func WaitUntilReady(
 			// Wait until the timer expires
 			// Continue to the next connection attempt after the interval
 		case <-ctx.Done():
-			if ctx.Err() == context.Canceled {
-				return nil // Treat context cancellation as expected behavior
-			}
 			return ctx.Err()
 		}
 	}
