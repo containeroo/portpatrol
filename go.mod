@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/containeroo/httpgrace v0.2.0
-	github.com/containeroo/httputils v0.0.1
+	github.com/containeroo/httputils v0.0.2
 	github.com/containeroo/resolver v0.3.2
 	github.com/containeroo/tinyflags v0.0.81
 	github.com/stretchr/testify v1.12.1
