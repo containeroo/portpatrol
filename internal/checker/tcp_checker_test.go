@@ -11,8 +11,8 @@ import (
 	"github.com/containeroo/never/internal/testutils"
 )
 
-// TestNewTCPChecker_Valid verifies the expected behavior.
-func TestNewTCPChecker_Valid(t *testing.T) {
+// TestTCPConfigNewChecker verifies construction through TCPConfig.
+func TestTCPConfigNewChecker(t *testing.T) {
 	t.Parallel()
 
 	listener := testutils.ListenLocalTCP(t)
@@ -20,7 +20,7 @@ func TestNewTCPChecker_Valid(t *testing.T) {
 
 	protocolConfig := DefaultTCPConfig()
 	protocolConfig.Timeout = 1 * time.Second
-	checker, err := NewTCPChecker("example", listener.Addr().String(), protocolConfig)
+	checker, err := protocolConfig.NewChecker("example", listener.Addr().String())
 	require.NoError(t, err)
 
 	assert.Equal(t, checker.Name(), "example")
@@ -37,7 +37,7 @@ func TestTCPChecker_ValidConnection(t *testing.T) {
 
 	protocolConfig := DefaultTCPConfig()
 	protocolConfig.Timeout = 1 * time.Second
-	checker, err := NewTCPChecker("example", listener.Addr().String(), protocolConfig)
+	checker, err := protocolConfig.NewChecker("example", listener.Addr().String())
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -51,7 +51,7 @@ func TestTCPChecker_FailedConnection(t *testing.T) {
 
 	protocolConfig := DefaultTCPConfig()
 	protocolConfig.Timeout = 1 * time.Second
-	checker, err := NewTCPChecker("example", testutils.LocalTCPAddr(t), protocolConfig)
+	checker, err := protocolConfig.NewChecker("example", testutils.LocalTCPAddr(t))
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -67,7 +67,7 @@ func TestTCPChecker_Timeout(t *testing.T) {
 
 	protocolConfig := DefaultTCPConfig()
 	protocolConfig.Timeout = 1 * time.Second
-	checker, err := NewTCPChecker("example", testutils.LocalTCPAddr(t), protocolConfig)
+	checker, err := protocolConfig.NewChecker("example", testutils.LocalTCPAddr(t))
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)

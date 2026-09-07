@@ -20,6 +20,15 @@ func TestParseFlagsDefaultInterval(t *testing.T) {
 	assert.Equal(t, 5*time.Second, parsedFlags.DefaultCheckInterval)
 }
 
+// TestParseFlagsDefaultIntervalRejectsNegative verifies retry validation stays at the CLI boundary.
+func TestParseFlagsDefaultIntervalRejectsNegative(t *testing.T) {
+	t.Parallel()
+
+	_, err := ParseFlags([]string{"--default-interval=-1s"}, "1.0.0")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "default-interval must be non-negative")
+}
+
 // TestParseFlagsHelp verifies help requests are returned as tinyflags errors.
 func TestParseFlagsHelp(t *testing.T) {
 	t.Parallel()

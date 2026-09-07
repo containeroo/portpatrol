@@ -15,9 +15,7 @@ func TestParseFlagsICMPHostname(t *testing.T) {
 	parsedFlags, err := ParseFlags([]string{"--icmp.host.address=example.com"}, "1.0.0")
 	require.NoError(t, err)
 	require.Len(t, parsedFlags.Targets, 1)
-	require.NotNil(t, parsedFlags.Targets[0].ICMP)
-	assert.Nil(t, parsedFlags.Targets[0].HTTP)
-	assert.Nil(t, parsedFlags.Targets[0].TCP)
+	requireICMPConfig(t, parsedFlags.Targets[0])
 	assert.Equal(t, "example.com", parsedFlags.Targets[0].Address)
 }
 
@@ -33,8 +31,21 @@ func TestParseFlagsICMPTimeout(t *testing.T) {
 	}, "1.0.0")
 	require.NoError(t, err)
 	require.Len(t, parsedFlags.Targets, 1)
-	require.NotNil(t, parsedFlags.Targets[0].ICMP)
-	assert.Equal(t, 3*time.Second, parsedFlags.Targets[0].ICMP.Timeout)
-	assert.Equal(t, 4*time.Second, parsedFlags.Targets[0].ICMP.ReadTimeout)
-	assert.Equal(t, 5*time.Second, parsedFlags.Targets[0].ICMP.WriteTimeout)
+	cfg := requireICMPConfig(t, parsedFlags.Targets[0])
+	assert.Equal(t, 4*time.Second, cfg.ReadTimeout)
+	assert.Equal(t, 5*time.Second, cfg.WriteTimeout)
+}
+
+func TestParseFlagsICMPTimeoutFallback(t *testing.T) {
+	t.Parallel()
+
+	parsedFlags, err := ParseFlags([]string{
+		"--icmp.host.address=example.com",
+		"--icmp.host.timeout=3s",
+	}, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, parsedFlags.Targets, 1)
+	cfg := requireICMPConfig(t, parsedFlags.Targets[0])
+	assert.Equal(t, 3*time.Second, cfg.ReadTimeout)
+	assert.Equal(t, 3*time.Second, cfg.WriteTimeout)
 }

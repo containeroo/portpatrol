@@ -10,36 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestValidateHTTPStatusCodes verifies HTTP status code validation accepts supported expressions.
-func TestValidateHTTPStatusCodes(t *testing.T) {
-	t.Parallel()
-
-	t.Run("single code", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateHTTPStatusCodes("200"))
-	})
-
-	t.Run("comma list", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateHTTPStatusCodes("200,204,301"))
-	})
-
-	t.Run("range", func(t *testing.T) {
-		t.Parallel()
-		assertNoValidationError(t, validateHTTPStatusCodes("200-299"))
-	})
-
-	t.Run("descending range", func(t *testing.T) {
-		t.Parallel()
-		assertValidationErrorContains(t, validateHTTPStatusCodes("299-200"), "invalid status code")
-	})
-
-	t.Run("not numeric", func(t *testing.T) {
-		t.Parallel()
-		assertValidationErrorContains(t, validateHTTPStatusCodes("ok"), "invalid status code")
-	})
-}
-
 // TestValidateMaxAttempts verifies global max-attempts validation.
 func TestValidateMaxAttempts(t *testing.T) {
 	t.Parallel()

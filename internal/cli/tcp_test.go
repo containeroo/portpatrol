@@ -22,12 +22,10 @@ func TestParseFlagsTCPTarget(t *testing.T) {
 	require.Len(t, parsedFlags.Targets, 1)
 
 	target := parsedFlags.Targets[0]
-	require.NotNil(t, target.TCP)
-	assert.Nil(t, target.HTTP)
-	assert.Nil(t, target.ICMP)
+	cfg := requireTCPConfig(t, target)
 	assert.Equal(t, "db", target.ID)
 	assert.Equal(t, "Database", target.Name)
 	assert.Equal(t, "example.com:5432", target.Address)
-	assert.Equal(t, 3*time.Second, target.TCP.Timeout)
+	assert.Equal(t, 3*time.Second, cfg.Timeout)
 	assert.Equal(t, 4*time.Second, target.Interval)
 }

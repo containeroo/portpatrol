@@ -24,7 +24,7 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := NewHTTPChecker("example", server.URL, DefaultHTTPConfig())
+		checker, err := DefaultHTTPConfig().NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -52,7 +52,7 @@ func TestHTTPChecker(t *testing.T) {
 		protocolConfig.Headers = http.Header{
 			"Authorization": []string{"Bearer token"},
 		}
-		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -71,7 +71,7 @@ func TestHTTPChecker(t *testing.T) {
 		server := httptest.NewServer(handler)
 		defer server.Close()
 
-		checker, err := NewHTTPChecker("example", server.URL, DefaultHTTPConfig())
+		checker, err := DefaultHTTPConfig().NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -94,7 +94,7 @@ func TestHTTPChecker(t *testing.T) {
 
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.Timeout = 1 * time.Second
-		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -118,7 +118,7 @@ func TestHTTPChecker(t *testing.T) {
 
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.ExpectedStatusCodes = []int{202}
-		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -143,7 +143,7 @@ func TestHTTPChecker(t *testing.T) {
 
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.Method = http.MethodPost
-		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -164,7 +164,7 @@ func TestHTTPChecker(t *testing.T) {
 
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.SkipTLSVerify = true
-		checker, err := NewHTTPChecker("example", server.URL, protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -196,7 +196,7 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 	t.Run("follows up to configured limit", func(t *testing.T) {
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.MaxRedirects = 2
-		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL+"/start")
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -206,7 +206,7 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 	t.Run("rejects redirect beyond configured limit", func(t *testing.T) {
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.MaxRedirects = 1
-		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL+"/start")
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -218,7 +218,7 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 		protocolConfig := DefaultHTTPConfig()
 		protocolConfig.MaxRedirects = 0
 		protocolConfig.ExpectedStatusCodes = []int{http.StatusMovedPermanently}
-		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL+"/start")
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -230,7 +230,7 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 		protocolConfig.FollowRedirects = false
 		protocolConfig.MaxRedirects = 2
 		protocolConfig.ExpectedStatusCodes = []int{http.StatusMovedPermanently}
-		checker, err := NewHTTPChecker("example", server.URL+"/start", protocolConfig)
+		checker, err := protocolConfig.NewChecker("example", server.URL+"/start")
 		require.NoError(t, err)
 
 		err = checker.Check(context.Background())
@@ -241,10 +241,92 @@ func TestHTTPCheckerRedirects(t *testing.T) {
 func TestHTTPConfigIsCopied(t *testing.T) {
 	cfg := DefaultHTTPConfig()
 	cfg.Headers.Set("X-Test", "original")
-	c, err := NewHTTPChecker("copy", "http://localhost", cfg)
+	check, err := cfg.NewChecker("copy", "http://localhost")
 	require.NoError(t, err)
+	c, ok := check.(*HTTPChecker)
+	require.True(t, ok)
 	cfg.Headers.Set("X-Test", "changed")
 	cfg.ExpectedStatusCodes[0] = 503
 	assert.Equal(t, "original", c.headers.Get("X-Test"))
 	assert.Equal(t, []int{200}, c.expectedStatusCodes)
+}
+
+func TestHTTPCheckerDisplayAddress(t *testing.T) {
+	t.Parallel()
+
+	const address = "https://user:password@example.com/private?q=secret#fragment"
+
+	for _, tt := range []struct {
+		name     string
+		showPath bool
+		want     string
+	}{
+		{name: "hidden", want: "https://example.com"},
+		{name: "path visible", showPath: true, want: "https://example.com/private"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := DefaultHTTPConfig()
+			cfg.ShowPath = tt.showPath
+			check, err := cfg.NewChecker("example", address)
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, check.Address())
+		})
+	}
+}
+
+func TestHTTPCheckerUsesFullRequestURL(t *testing.T) {
+	t.Parallel()
+
+	got := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got <- r.URL.RequestURI()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	const requestURI = "/private/token/abc123?key=secret"
+	cfg := DefaultHTTPConfig()
+	check, err := cfg.NewChecker("example", server.URL+requestURI)
+	require.NoError(t, err)
+
+	require.NoError(t, check.Check(context.Background()))
+	assert.Equal(t, requestURI, <-got)
+	assert.Equal(t, server.URL, check.Address())
+}
+
+func TestHTTPCheckerUserAgent(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name     string
+		headers  http.Header
+		fallback string
+		want     string
+	}{
+		{name: "uses default", fallback: "never/1.2.3", want: "never/1.2.3"},
+		{name: "preserves explicit", headers: http.Header{"User-Agent": {"custom"}}, fallback: "never/1.2.3", want: "custom"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := make(chan string, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got <- r.Header.Get("User-Agent")
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			cfg := DefaultHTTPConfig()
+			cfg.Headers = tt.headers
+			cfg.UserAgent = tt.fallback
+			check, err := cfg.NewChecker("example", server.URL)
+			require.NoError(t, err)
+
+			require.NoError(t, check.Check(context.Background()))
+			assert.Equal(t, tt.want, <-got)
+		})
+	}
 }

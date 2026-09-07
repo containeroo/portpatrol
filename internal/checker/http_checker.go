@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -21,7 +22,8 @@ const (
 // HTTPChecker implements the Checker interface for HTTP checks.
 type HTTPChecker struct {
 	name                string
-	address             string
+	requestURL          string
+	displayAddress      string
 	method              string
 	headers             http.Header
 	expectedStatusCodes []int
@@ -32,19 +34,33 @@ type HTTPChecker struct {
 	client              *http.Client
 }
 
-// NewHTTPChecker constructs an HTTP checker from explicit protocol settings.
-func NewHTTPChecker(name, address string, cfg HTTPConfig) (*HTTPChecker, error) {
-	address = normalizeAddress(address)
+// NewChecker constructs an HTTP checker from the config.
+func (c HTTPConfig) NewChecker(name, address string) (Checker, error) {
+	requestURL := strings.TrimSpace(address)
+	displayAddress, err := httpDisplayAddress(requestURL, c.ShowPath)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := c.Headers.Clone()
+	if headers == nil {
+		headers = make(http.Header)
+	}
+	if c.UserAgent != "" && headers.Get("User-Agent") == "" {
+		headers.Set("User-Agent", c.UserAgent)
+	}
+
 	checker := &HTTPChecker{
 		name:                name,
-		address:             address,
-		method:              cfg.Method,
-		headers:             cfg.Headers.Clone(),
-		expectedStatusCodes: slices.Clone(cfg.ExpectedStatusCodes),
-		followRedirects:     cfg.FollowRedirects,
-		maxRedirects:        cfg.MaxRedirects,
-		skipTLSVerify:       cfg.SkipTLSVerify,
-		timeout:             cfg.Timeout,
+		requestURL:          requestURL,
+		displayAddress:      displayAddress,
+		method:              c.Method,
+		headers:             headers,
+		expectedStatusCodes: slices.Clone(c.ExpectedStatusCodes),
+		followRedirects:     c.FollowRedirects,
+		maxRedirects:        c.MaxRedirects,
+		skipTLSVerify:       c.SkipTLSVerify,
+		timeout:             c.Timeout,
 	}
 
 	checker.client = &http.Client{
@@ -70,8 +86,8 @@ func NewHTTPChecker(name, address string, cfg HTTPConfig) (*HTTPChecker, error) 
 	return checker, nil
 }
 
-// Address returns the checker address.
-func (c *HTTPChecker) Address() string { return c.address }
+// Address returns the safe HTTP address used in logs.
+func (c *HTTPChecker) Address() string { return c.displayAddress }
 
 // Name returns the checker name.
 func (c *HTTPChecker) Name() string { return c.name }
@@ -81,7 +97,7 @@ func (c *HTTPChecker) Type() string { return HTTP.String() }
 
 // Check performs the checker operation.
 func (c *HTTPChecker) Check(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, c.method, c.address, nil)
+	req, err := http.NewRequestWithContext(ctx, c.method, c.requestURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -117,6 +133,8 @@ type HTTPConfig struct {
 	MaxRedirects        int
 	SkipTLSVerify       bool
 	Timeout             time.Duration
+	UserAgent           string
+	ShowPath            bool
 }
 
 // DefaultHTTPConfig returns an independent configuration with the application defaults.
@@ -129,4 +147,25 @@ func DefaultHTTPConfig() HTTPConfig {
 		MaxRedirects:        defaultHTTPMaxRedirects,
 		Timeout:             defaultHTTPTimeout,
 	}
+}
+
+// httpDisplayAddress returns the safe HTTP address exposed through Checker.Address.
+// User credentials, queries, and fragments are never logged; paths are opt-in.
+func httpDisplayAddress(address string, showPath bool) (string, error) {
+	u, err := url.Parse(address)
+	if err != nil {
+		return "", fmt.Errorf("invalid HTTP URL: %w", err)
+	}
+
+	u.User = nil
+	u.RawQuery = ""
+	u.ForceQuery = false
+	u.Fragment = ""
+	u.RawFragment = ""
+	if !showPath {
+		u.Path = ""
+		u.RawPath = ""
+	}
+
+	return u.String(), nil
 }

@@ -138,7 +138,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, `target "invalidheaders": failed to create HTTP checker: invalid HTTP header: invalid header format: "InvalidHeader"`)
+	assert.EqualError(t, err, `HTTP target "invalidheaders": invalid HTTP header: invalid header format: "InvalidHeader"`)
 }
 
 // TestRunParseError verifies the expected behavior.
@@ -182,7 +182,8 @@ func TestURLPrivacy(t *testing.T) {
 				}
 				var out, stderr bytes.Buffer
 				require.Error(t, Run(context.Background(), version, args, &out, &stderr))
-				assert.Equal(t, show, strings.Contains(out.String(), "/private?token=secret"), out.String())
+				assert.Equal(t, show, strings.Contains(out.String(), "/private"), out.String())
+				assert.NotContains(t, out.String(), "token=secret")
 				assert.Contains(t, out.String(), server.URL)
 			})
 		}

@@ -30,7 +30,7 @@ func TestWaitUntilReady_ReadyHTTP(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := checker.NewHTTPChecker(httpServerName, server.URL, checker.DefaultHTTPConfig())
+	c, err := checker.DefaultHTTPConfig().NewChecker(httpServerName, server.URL)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -53,7 +53,7 @@ func TestWaitUntilReady_HTTPFailsInitially(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := checker.NewHTTPChecker(httpServerName, server.URL, checker.DefaultHTTPConfig())
+	c, err := checker.DefaultHTTPConfig().NewChecker(httpServerName, server.URL)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -76,7 +76,7 @@ func TestWaitUntilReady_HTTPContextCanceled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := checker.NewHTTPChecker(httpServerName, server.URL, checker.DefaultHTTPConfig())
+	c, err := checker.DefaultHTTPConfig().NewChecker(httpServerName, server.URL)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -97,7 +97,7 @@ func TestWaitUntilReady_ReadyTCP(t *testing.T) {
 	listener := testutils.ListenLocalTCP(t)
 	defer listener.Close() // nolint:errcheck
 
-	c, err := checker.NewTCPChecker(tcpServerName, listener.Addr().String(), checker.DefaultTCPConfig())
+	c, err := checker.DefaultTCPConfig().NewChecker(tcpServerName, listener.Addr().String())
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -133,7 +133,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 		}
 	})
 
-	c, err := checker.NewTCPChecker(tcpServerName, addr, checker.DefaultTCPConfig())
+	c, err := checker.DefaultTCPConfig().NewChecker(tcpServerName, addr)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -150,7 +150,7 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 func TestWaitUntilReady_TCPContextCanceled(t *testing.T) {
 	t.Parallel()
 
-	c, err := checker.NewTCPChecker(tcpServerName, testutils.LocalTCPAddr(t), checker.DefaultTCPConfig())
+	c, err := checker.DefaultTCPConfig().NewChecker(tcpServerName, testutils.LocalTCPAddr(t))
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -189,7 +189,7 @@ func TestNewStoppedTimer(t *testing.T) {
 func TestWaitUntilReady_MaxAttempts(t *testing.T) {
 	t.Parallel()
 
-	c, err := checker.NewTCPChecker(tcpServerName, testutils.LocalTCPAddr(t), checker.DefaultTCPConfig())
+	c, err := checker.DefaultTCPConfig().NewChecker(tcpServerName, testutils.LocalTCPAddr(t))
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -238,7 +238,7 @@ func TestRequestTimeoutRetries(t *testing.T) {
 
 	protocolConfig := checker.DefaultHTTPConfig()
 	protocolConfig.Timeout = 20 * time.Millisecond
-	c, err := checker.NewHTTPChecker("slow", server.URL, protocolConfig)
+	c, err := protocolConfig.NewChecker("slow", server.URL)
 	require.NoError(t, err)
 
 	var output strings.Builder

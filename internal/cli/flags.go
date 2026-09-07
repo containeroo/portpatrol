@@ -55,7 +55,7 @@ func ParseFlags(args []string, version string) (*Config, error) {
 		return nil, err
 	}
 
-	targets, err := parseTargetConfigs(tf.DynamicGroups())
+	targets, err := parseTargetConfigs(tf.DynamicGroups(), version, cfg.ShowPath)
 	if err != nil {
 		return nil, err
 	}

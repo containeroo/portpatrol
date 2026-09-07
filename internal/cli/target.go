@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cmp"
 	"fmt"
 	"strings"
 	"time"
@@ -13,25 +14,21 @@ import (
 )
 
 // parseTargetConfigs converts parsed dynamic flag groups into typed target config.
-func parseTargetConfigs(dynamicGroups []*tinyflags.DynamicGroup) ([]factory.TargetConfig, error) {
+func parseTargetConfigs(
+	dynamicGroups []*tinyflags.DynamicGroup,
+	version string,
+	showPath bool,
+) ([]factory.TargetConfig, error) {
 	var targets []factory.TargetConfig
 
 	for _, group := range dynamicGroups {
-		checkType, err := checker.ParseCheckType(group.Name())
-		if err != nil {
-			return nil, err
-		}
-
 		for _, id := range group.Instances() {
-			address, err := resolveTargetAddress(
-				tinyflags.GetOrDefaultDynamic[string](group, id, "address"),
-				checkType,
-			)
+			checkerConfig, address, err := parseCheckerConfig(group, id, version, showPath)
 			if err != nil {
-				return nil, fmt.Errorf("%s target %q: %w", checkType, id, err)
+				return nil, fmt.Errorf("%s target %q: %w", strings.ToUpper(group.Name()), id, err)
 			}
 
-			target := factory.TargetConfig{
+			targets = append(targets, factory.TargetConfig{
 				ID:          id,
 				Name:        tinyflags.GetOrDefaultDynamic[string](group, id, "name"),
 				Address:     address,
@@ -39,70 +36,71 @@ func parseTargetConfigs(dynamicGroups []*tinyflags.DynamicGroup) ([]factory.Targ
 				MaxAttempts: getDynamicInt(group, id, "max-attempts"),
 				Backoff:     getDynamicBackoffMode(group, id, "backoff"),
 				MaxInterval: getDynamicDuration(group, id, "max-interval"),
-			}
-
-			applyCheckerConfig(&target, group, id, checkType)
-			targets = append(targets, target)
+				Config:      checkerConfig,
+			})
 		}
 	}
 
 	return targets, nil
 }
 
-// resolveTargetAddress resolves a target address and validates the concrete value.
-func resolveTargetAddress(value string, checkType checker.CheckType) (string, error) {
-	address, err := resolver.ResolveVariable(strings.TrimSpace(value))
+// parseCheckerConfig converts one protocol's parsed flags into its checker config.
+func parseCheckerConfig(
+	group *tinyflags.DynamicGroup,
+	id string,
+	version string,
+	showPath bool,
+) (checker.Config, string, error) {
+	rawAddress := tinyflags.GetOrDefaultDynamic[string](group, id, "address")
+
+	switch group.Name() {
+	case "http":
+		address, err := resolveTargetAddress(rawAddress, validateResolvedHTTPAddress)
+		if err != nil {
+			return nil, "", err
+		}
+		cfg, err := parseHTTPConfig(group, id, version, showPath)
+		return cfg, address, err
+	case "tcp":
+		address, err := resolveTargetAddress(rawAddress, validateResolvedTCPAddress)
+		if err != nil {
+			return nil, "", err
+		}
+		return checker.TCPConfig{
+			Timeout: tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
+		}, address, nil
+	case "icmp":
+		address, err := resolveTargetAddress(rawAddress, validateResolvedICMPAddress)
+		if err != nil {
+			return nil, "", err
+		}
+		timeout := tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout")
+		return checker.ICMPConfig{
+			ReadTimeout:  cmp.Or(getDynamicDuration(group, id, "read-timeout"), timeout),
+			WriteTimeout: cmp.Or(getDynamicDuration(group, id, "write-timeout"), timeout),
+		}, address, nil
+	default:
+		return nil, "", fmt.Errorf("unsupported check type: %s", group.Name())
+	}
+}
+
+// resolveTargetAddress resolves target address references and validates their concrete value.
+// Literal addresses were already validated by the flag validator.
+func resolveTargetAddress(value string, validate func(string) error) (string, error) {
+	raw := strings.TrimSpace(value)
+	address, err := resolver.ResolveVariable(raw)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve address: %w", err)
 	}
 
 	address = strings.TrimSpace(address)
-	if err := validateResolvedTargetAddress(address, checkType); err != nil {
-		return "", err
+	if isResolvableValue(raw) {
+		if err := validate(address); err != nil {
+			return "", err
+		}
 	}
 
 	return address, nil
-}
-
-// validateResolvedTargetAddress dispatches concrete address validation by checker type.
-func validateResolvedTargetAddress(address string, checkType checker.CheckType) error {
-	switch checkType {
-	case checker.HTTP:
-		return validateResolvedHTTPAddress(address)
-	case checker.TCP:
-		return validateResolvedTCPAddress(address)
-	case checker.ICMP:
-		return validateResolvedICMPAddress(address)
-	default:
-		panic("unreachable checker type")
-	}
-}
-
-// applyCheckerConfig attaches the checker-specific settings for one target.
-func applyCheckerConfig(target *factory.TargetConfig, group *tinyflags.DynamicGroup, id string, checkType checker.CheckType) {
-	switch checkType {
-	case checker.HTTP:
-		target.HTTP = &factory.HTTPConfig{
-			Method:                tinyflags.GetOrDefaultDynamic[string](group, id, "method"),
-			Headers:               tinyflags.GetOrDefaultDynamic[[]string](group, id, "header"),
-			AllowDuplicateHeaders: tinyflags.GetOrDefaultDynamic[bool](group, id, "allow-duplicate-headers"),
-			ExpectedStatusCodes:   tinyflags.GetOrDefaultDynamic[[]string](group, id, "expected-status-codes"),
-			FollowRedirects:       tinyflags.GetOrDefaultDynamic[bool](group, id, "follow-redirects"),
-			MaxRedirects:          tinyflags.GetOrDefaultDynamic[int](group, id, "max-redirects"),
-			SkipTLSVerify:         tinyflags.GetOrDefaultDynamic[bool](group, id, "skip-tls-verify"),
-			Timeout:               tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
-		}
-	case checker.TCP:
-		target.TCP = &factory.TCPConfig{
-			Timeout: tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
-		}
-	case checker.ICMP:
-		target.ICMP = &factory.ICMPConfig{
-			Timeout:      tinyflags.GetOrDefaultDynamic[time.Duration](group, id, "timeout"),
-			ReadTimeout:  getDynamicDuration(group, id, "read-timeout"),
-			WriteTimeout: getDynamicDuration(group, id, "write-timeout"),
-		}
-	}
 }
 
 // getDynamicDuration returns a dynamic duration flag value or zero when unset.

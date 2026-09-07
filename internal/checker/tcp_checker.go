@@ -3,6 +3,7 @@ package checker
 import (
 	"context"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -13,16 +14,6 @@ type TCPChecker struct {
 	name    string
 	address string
 	dialer  *net.Dialer
-}
-
-// NewTCPChecker constructs a TCP checker from explicit protocol settings.
-func NewTCPChecker(name, address string, cfg TCPConfig) (*TCPChecker, error) {
-	address = normalizeAddress(address)
-	return &TCPChecker{
-		name:    name,
-		address: address,
-		dialer:  &net.Dialer{Timeout: cfg.Timeout},
-	}, nil
 }
 
 // Address returns the checker address.
@@ -46,5 +37,14 @@ func (c *TCPChecker) Check(ctx context.Context) error {
 
 // TCPConfig contains TCP connection settings.
 type TCPConfig struct{ Timeout time.Duration }
+
+// NewChecker constructs a TCP checker from the config.
+func (c TCPConfig) NewChecker(name, address string) (Checker, error) {
+	return &TCPChecker{
+		name:    name,
+		address: strings.TrimSpace(address),
+		dialer:  &net.Dialer{Timeout: c.Timeout},
+	}, nil
+}
 
 func DefaultTCPConfig() TCPConfig { return TCPConfig{Timeout: defaultTCPTimeout} }

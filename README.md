@@ -504,5 +504,7 @@ This project is licensed under the Apache License. See the [LICENSE](LICENSE) fi
 ### URL privacy
 
 HTTP checker addresses hide paths, queries, and fragments by default.
-Use `--show-path` (or `NEVER__SHOW_PATH=true`) to include them for troubleshooting; they may contain secrets.
+Use `--show-path` (or `NEVER__SHOW_PATH=true`) to include only the path for troubleshooting. Queries, fragments, and user credentials are never logged.
 URL usernames and passwords are always hidden, and HTTP request errors do not echo the request URL.
+
+

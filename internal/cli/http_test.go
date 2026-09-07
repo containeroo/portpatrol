@@ -28,8 +28,8 @@ func TestParseFlagsHTTPMethod(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		require.NotNil(t, parsedFlags.Targets[0].HTTP)
-		assert.Equal(t, http.MethodPost, parsedFlags.Targets[0].HTTP.Method)
+		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		assert.Equal(t, http.MethodPost, cfg.Method)
 	})
 
 	t.Run("invalid", func(t *testing.T) {
@@ -69,12 +69,13 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	assert.Equal(t, "web", target.ID)
 	assert.Equal(t, "Web", target.Name)
 	assert.Equal(t, httpExampleURL, target.Address)
-	require.NotNil(t, target.HTTP)
-	assert.Equal(t, http.MethodPost, target.HTTP.Method)
-	assert.Equal(t, []string{"Authorization=Bearer token"}, target.HTTP.Headers)
-	assert.Equal(t, []string{"200", "204"}, target.HTTP.ExpectedStatusCodes)
-	assert.False(t, target.HTTP.FollowRedirects)
-	assert.Equal(t, 3, target.HTTP.MaxRedirects)
+	cfg := requireHTTPConfig(t, target)
+	assert.Equal(t, http.MethodPost, cfg.Method)
+	assert.Equal(t, http.Header{"Authorization": {"Bearer token"}}, cfg.Headers)
+	assert.Equal(t, []int{http.StatusOK, http.StatusNoContent}, cfg.ExpectedStatusCodes)
+	assert.False(t, cfg.FollowRedirects)
+	assert.Equal(t, 3, cfg.MaxRedirects)
+	assert.Equal(t, "never/1.0.0", cfg.UserAgent)
 	assert.Equal(t, 3, target.MaxAttempts)
 	assert.Equal(t, backoff.ModeExponential, target.Backoff)
 	assert.Equal(t, 30*time.Second, target.MaxInterval)
@@ -90,8 +91,8 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		require.NotNil(t, parsedFlags.Targets[0].HTTP)
-		assert.Equal(t, defaultHTTPMaxRedirects, parsedFlags.Targets[0].HTTP.MaxRedirects)
+		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		assert.Equal(t, defaultHTTPMaxRedirects, cfg.MaxRedirects)
 	})
 
 	t.Run("disabled", func(t *testing.T) {
@@ -103,8 +104,8 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		require.NotNil(t, parsedFlags.Targets[0].HTTP)
-		assert.Zero(t, parsedFlags.Targets[0].HTTP.MaxRedirects)
+		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		assert.Zero(t, cfg.MaxRedirects)
 	})
 
 	t.Run("negative", func(t *testing.T) {
@@ -129,8 +130,8 @@ func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
 		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		require.NotNil(t, parsedFlags.Targets[0].HTTP)
-		assert.True(t, parsedFlags.Targets[0].HTTP.FollowRedirects)
+		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		assert.True(t, cfg.FollowRedirects)
 	})
 
 	t.Run("disabled", func(t *testing.T) {
@@ -142,8 +143,8 @@ func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		require.NotNil(t, parsedFlags.Targets[0].HTTP)
-		assert.False(t, parsedFlags.Targets[0].HTTP.FollowRedirects)
+		cfg := requireHTTPConfig(t, parsedFlags.Targets[0])
+		assert.False(t, cfg.FollowRedirects)
 	})
 }
 
@@ -186,4 +187,81 @@ func TestParseFlagsHTTPPerTargetMaxAttempts(t *testing.T) {
 	require.Len(t, parsedFlags.Targets, 1)
 	assert.Equal(t, 5, parsedFlags.MaxAttempts)
 	assert.Equal(t, 2, parsedFlags.Targets[0].MaxAttempts)
+}
+
+// TestParseFlagsHTTPInputParsing verifies HTTP-specific raw values are parsed at the CLI boundary.
+func TestParseFlagsHTTPInputParsing(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invalid header", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.header=InvalidHeader",
+		}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, `invalid HTTP header: invalid header format: "InvalidHeader"`)
+	})
+
+	t.Run("duplicate header", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.header=X-Test=one",
+			"--http.web.header=X-Test=two",
+		}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, `duplicate header: "X-Test=two"`)
+	})
+
+	t.Run("duplicate header allowed", func(t *testing.T) {
+		t.Parallel()
+
+		cfg, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.header=X-Test=one",
+			"--http.web.header=X-Test=two",
+			"--http.web.allow-duplicate-headers=true",
+		}, "1.0.0")
+		require.NoError(t, err)
+		require.Len(t, cfg.Targets, 1)
+		httpConfig := requireHTTPConfig(t, cfg.Targets[0])
+		assert.Equal(t, []string{"one", "two"}, httpConfig.Headers.Values("X-Test"))
+	})
+
+	t.Run("invalid expected status codes", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := ParseFlags([]string{
+			httpWebAddressFlag,
+			"--http.web.expected-status-codes=299-200",
+		}, "1.0.0")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "invalid expected status codes")
+	})
+}
+
+// TestParseFlagsHTTPRetryValidation verifies retry input is rejected before reaching the factory.
+func TestParseFlagsHTTPRetryValidation(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		flag string
+		want string
+	}{
+		{name: "negative interval", flag: "--http.web.interval=-1s", want: "interval must be non-negative"},
+		{name: "negative max interval", flag: "--http.web.max-interval=-1s", want: "max-interval must be non-negative"},
+		{name: "invalid max attempts", flag: "--http.web.max-attempts=-2", want: "max-attempts must be -1 or positive"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := ParseFlags([]string{httpWebAddressFlag, tt.flag}, "1.0.0")
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tt.want)
+		})
+	}
 }

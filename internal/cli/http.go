@@ -43,7 +43,6 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 		[]string{"200"},
 		"Expected HTTP status codes. Comma-separated list of status codes, ranges possible (eg \"200-299\", \"300,301\")",
 	).
-		Validate(validateHTTPStatusCodes).
 		Placeholder("CODES...")
 	httpGroup.Bool("follow-redirects", defaultHTTPFollowRedirects, "Follow HTTP redirects").Strict()
 	httpGroup.Int("max-redirects", defaultHTTPMaxRedirects, "Maximum number of redirects to follow. Set to 0 to disable redirects.").

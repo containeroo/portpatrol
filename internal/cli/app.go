@@ -7,8 +7,9 @@ import (
 
 // registerAppFlags registers core application flags and binds them to cfg.
 func registerAppFlags(tf *tinyflags.FlagSet, cfg *Config) {
-	tf.BoolVar(&cfg.ShowPath, "show-path", false, "Show URL paths, queries and fragments in logs (may expose secrets).")
+	tf.BoolVar(&cfg.ShowPath, "show-path", false, "Show URL paths in logs (may expose secrets).")
 	tf.DurationVar(&cfg.DefaultCheckInterval, "default-interval", defaultCheckInterval, "Default interval between checks. Can be overridden for each target.").
+		Validate(validateNonNegativeDuration("default-interval")).
 		Placeholder("DURATION").
 		Value()
 

@@ -18,25 +18,25 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-// TestNewICMPCheckerValidIPv4 tests creating an ICMPChecker with a valid IPv4 address.
-func TestNewICMPCheckerValidIPv4(t *testing.T) {
+// TestICMPConfigNewCheckerValidIPv4 tests creating an ICMP checker from a valid IPv4 address.
+func TestICMPConfigNewCheckerValidIPv4(t *testing.T) {
 	t.Parallel()
 
 	protocolConfig := DefaultICMPConfig()
 	protocolConfig.ReadTimeout = 2 * time.Second
 	protocolConfig.WriteTimeout = 2 * time.Second
-	checker, err := NewICMPChecker("ValidIPv4", testutils.LocalhostIPv4, protocolConfig)
+	checker, err := protocolConfig.NewChecker("ValidIPv4", testutils.LocalhostIPv4)
 
 	require.NoError(t, err)
 	assert.Equal(t, checker.Name(), "ValidIPv4")
 	assert.Equal(t, checker.Address(), testutils.LocalhostIPv4)
 }
 
-// TestNewICMPCheckerInvalidAddress tests creating an ICMPChecker with an invalid address.
-func TestNewICMPCheckerInvalidAddress(t *testing.T) {
+// TestICMPConfigNewCheckerUnresolvedAddress verifies construction does not resolve DNS eagerly.
+func TestICMPConfigNewCheckerUnresolvedAddress(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewICMPChecker("UnresolvedAddress", "not-yet-ready.invalid", DefaultICMPConfig())
+	_, err := DefaultICMPConfig().NewChecker("UnresolvedAddress", "not-yet-ready.invalid")
 	require.NoError(t, err)
 }
 
@@ -406,8 +406,10 @@ func TestICMPCheckerValidateReplyError(t *testing.T) {
 }
 
 func TestICMPDNSIsRetried(t *testing.T) {
-	c, err := NewICMPChecker("dns", "eventually-ready.invalid", DefaultICMPConfig())
+	check, err := DefaultICMPConfig().NewChecker("dns", "eventually-ready.invalid")
 	require.NoError(t, err)
+	c, ok := check.(*ICMPChecker)
+	require.True(t, ok)
 	calls := 0
 	c.lookupIP = func(ctx context.Context, network, host string) ([]net.IP, error) {
 		calls++
@@ -426,15 +428,19 @@ func TestICMPDNSHonorsDeadline(t *testing.T) {
 	protocolConfig := DefaultICMPConfig()
 	protocolConfig.ReadTimeout = 10 * time.Millisecond
 	protocolConfig.WriteTimeout = 10 * time.Millisecond
-	c, err := NewICMPChecker("dns", "slow.invalid", protocolConfig)
+	check, err := protocolConfig.NewChecker("dns", "slow.invalid")
 	require.NoError(t, err)
+	c, ok := check.(*ICMPChecker)
+	require.True(t, ok)
 	c.lookupIP = func(ctx context.Context, _, _ string) ([]net.IP, error) { <-ctx.Done(); return nil, ctx.Err() }
 	require.ErrorIs(t, c.Check(context.Background()), context.DeadlineExceeded)
 }
 
 func TestICMPReadHonorsCancellation(t *testing.T) {
-	c, err := NewICMPChecker("cancel", "127.0.0.1", DefaultICMPConfig())
+	check, err := DefaultICMPConfig().NewChecker("cancel", "127.0.0.1")
 	require.NoError(t, err)
+	c, ok := check.(*ICMPChecker)
+	require.True(t, ok)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	closed := make(chan struct{})
@@ -449,8 +455,10 @@ func TestICMPReadHonorsCancellation(t *testing.T) {
 }
 
 func TestICMPIgnoresUnrelatedPackets(t *testing.T) {
-	c, err := NewICMPChecker("matching", "127.0.0.1", DefaultICMPConfig())
+	check, err := DefaultICMPConfig().NewChecker("matching", "127.0.0.1")
 	require.NoError(t, err)
+	c, ok := check.(*ICMPChecker)
+	require.True(t, ok)
 	reads, validations := 0, 0
 	c.protocol = &testutils.MockProtocol{
 		ListenPacketFunc: func(context.Context, string, string) (net.PacketConn, error) {
