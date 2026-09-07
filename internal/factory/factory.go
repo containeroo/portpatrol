@@ -167,7 +167,7 @@ func createHTTPHeadersMap(headers []string, allowDuplicateHeaders bool) (http.He
 			return nil, fmt.Errorf("invalid header format: %q", header)
 		}
 
-		key := strings.TrimSpace(parts[0])
+		key := http.CanonicalHeaderKey(strings.TrimSpace(parts[0]))
 		value := strings.TrimSpace(parts[1])
 
 		resolved, err := resolver.ResolveVariable(value)

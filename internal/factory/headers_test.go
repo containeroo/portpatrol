@@ -39,3 +39,13 @@ func TestCreateHTTPHeadersMap_ResolvableValue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.Header{"Authorization": []string{"secret"}}, headers)
 }
+
+func TestHeaderNamesAreCaseInsensitive(t *testing.T) {
+	for _, pair := range [][]string{{"X-Test=one", "x-test=two"}, {"x-test=one", "X-TEST=two"}} {
+		_, err := createHTTPHeadersMap(pair, false)
+		require.Error(t, err)
+		headers, err := createHTTPHeadersMap(pair, true)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"one", "two"}, headers.Values("X-Test"))
+	}
+}
