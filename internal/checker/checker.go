@@ -29,6 +29,20 @@ type Checker interface {
 	Address() string                 // Address returns the address of the checker.
 }
 
+// addressOverride changes the address exposed for logging without changing checker behavior.
+type addressOverride struct {
+	Checker
+	address string
+}
+
+// Address returns the overridden checker address.
+func (c addressOverride) Address() string { return c.address }
+
+// OverrideAddress returns a checker that exposes address through Address while delegating checks to checker.
+func OverrideAddress(c Checker, address string) Checker {
+	return addressOverride{Checker: c, address: address}
+}
+
 // ParseCheckType converts a string to a CheckType enum.
 func ParseCheckType(typeStr string) (CheckType, error) {
 	switch strings.ToLower(typeStr) {

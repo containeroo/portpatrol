@@ -2,7 +2,6 @@ package checker
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -86,14 +85,10 @@ func TestHTTPChecker(t *testing.T) {
 	t.Run("Invalid URL for HTTP check", func(t *testing.T) {
 		t.Parallel()
 
-		checker, err := NewHTTPChecker("example", "://invalid-url", DefaultHTTPConfig())
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		err = checker.Check(context.Background()) // Run the check to trigger the error.
+		_, err := NewHTTPChecker("example", "://invalid-url", DefaultHTTPConfig())
 		require.Error(t, err)
-		assert.EqualError(t, err, "failed to create request: parse \"://invalid-url\": missing protocol scheme")
+		assert.EqualError(t, err, "invalid HTTP URL")
+
 	})
 
 	t.Run("Timeout during HTTP check", func(t *testing.T) {
@@ -116,8 +111,9 @@ func TestHTTPChecker(t *testing.T) {
 
 		err = checker.Check(ctx)
 
-		require.Error(t, err)
-		assert.EqualError(t, err, fmt.Sprintf("HTTP request failed: Get \"http://%s\": context deadline exceeded", server.Listener.Addr().String()))
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.EqualError(t, err, "HTTP request failed: context deadline exceeded")
+		assert.NotContains(t, err.Error(), server.URL)
 	})
 
 	t.Run("Custom expected status codes", func(t *testing.T) {

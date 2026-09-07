@@ -3,6 +3,7 @@ package cli
 import (
 	"time"
 
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/never/internal/factory"
 	"github.com/containeroo/never/internal/logging"
 	"github.com/containeroo/tinyflags"
@@ -10,10 +11,13 @@ import (
 
 const (
 	defaultCheckInterval             time.Duration = 2 * time.Second
-	defaultHTTPAllowDuplicateHeaders bool          = false
-	defaultHTTPFollowRedirects       bool          = true
-	defaultHTTPMaxRedirects          int           = 10
-	defaultHTTPSkipTLSVerify         bool          = false
+	defaultHTTPAllowDuplicateHeaders               = false
+)
+
+var (
+	defaultHTTPFollowRedirects = checker.DefaultHTTPConfig().FollowRedirects
+	defaultHTTPMaxRedirects    = checker.DefaultHTTPConfig().MaxRedirects
+	defaultHTTPSkipTLSVerify   = checker.DefaultHTTPConfig().SkipTLSVerify
 )
 
 // Config holds the parsed command-line configuration.

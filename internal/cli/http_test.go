@@ -28,7 +28,8 @@ func TestParseFlagsHTTPMethod(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		assert.Equal(t, http.MethodPost, parsedFlags.Targets[0].HTTPMethod)
+		require.NotNil(t, parsedFlags.Targets[0].HTTP)
+		assert.Equal(t, http.MethodPost, parsedFlags.Targets[0].HTTP.Method)
 	})
 
 	t.Run("invalid", func(t *testing.T) {
@@ -68,11 +69,12 @@ func TestParseFlagsHTTPTarget(t *testing.T) {
 	assert.Equal(t, "web", target.ID)
 	assert.Equal(t, "Web", target.Name)
 	assert.Equal(t, httpExampleURL, target.Address)
-	assert.Equal(t, http.MethodPost, target.HTTPMethod)
-	assert.Equal(t, []string{"Authorization=Bearer token"}, target.HTTPHeaders)
-	assert.Equal(t, []string{"200", "204"}, target.HTTPExpectedStatusCodes)
-	assert.False(t, target.HTTPFollowRedirects)
-	assert.Equal(t, 3, target.HTTPMaxRedirects)
+	require.NotNil(t, target.HTTP)
+	assert.Equal(t, http.MethodPost, target.HTTP.Method)
+	assert.Equal(t, []string{"Authorization=Bearer token"}, target.HTTP.Headers)
+	assert.Equal(t, []string{"200", "204"}, target.HTTP.ExpectedStatusCodes)
+	assert.False(t, target.HTTP.FollowRedirects)
+	assert.Equal(t, 3, target.HTTP.MaxRedirects)
 	assert.Equal(t, 3, target.MaxAttempts)
 	assert.Equal(t, backoff.ModeExponential, target.Backoff)
 	assert.Equal(t, 30*time.Second, target.MaxInterval)
@@ -88,7 +90,8 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		assert.Equal(t, defaultHTTPMaxRedirects, parsedFlags.Targets[0].HTTPMaxRedirects)
+		require.NotNil(t, parsedFlags.Targets[0].HTTP)
+		assert.Equal(t, defaultHTTPMaxRedirects, parsedFlags.Targets[0].HTTP.MaxRedirects)
 	})
 
 	t.Run("disabled", func(t *testing.T) {
@@ -100,7 +103,8 @@ func TestParseFlagsHTTPMaxRedirects(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		assert.Zero(t, parsedFlags.Targets[0].HTTPMaxRedirects)
+		require.NotNil(t, parsedFlags.Targets[0].HTTP)
+		assert.Zero(t, parsedFlags.Targets[0].HTTP.MaxRedirects)
 	})
 
 	t.Run("negative", func(t *testing.T) {
@@ -125,7 +129,8 @@ func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
 		parsedFlags, err := ParseFlags([]string{httpWebAddressFlag}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		assert.True(t, parsedFlags.Targets[0].HTTPFollowRedirects)
+		require.NotNil(t, parsedFlags.Targets[0].HTTP)
+		assert.True(t, parsedFlags.Targets[0].HTTP.FollowRedirects)
 	})
 
 	t.Run("disabled", func(t *testing.T) {
@@ -137,7 +142,8 @@ func TestParseFlagsHTTPFollowRedirects(t *testing.T) {
 		}, "1.0.0")
 		require.NoError(t, err)
 		require.Len(t, parsedFlags.Targets, 1)
-		assert.False(t, parsedFlags.Targets[0].HTTPFollowRedirects)
+		require.NotNil(t, parsedFlags.Targets[0].HTTP)
+		assert.False(t, parsedFlags.Targets[0].HTTP.FollowRedirects)
 	})
 }
 

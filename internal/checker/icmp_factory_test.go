@@ -44,9 +44,7 @@ func TestNewProtocol(t *testing.T) {
 		protocol, err := newProtocol("192.168.1.1")
 		require.NoError(t, err)
 
-		if _, ok := protocol.(*ICMPv4); !ok {
-			t.Fatalf("expected ICMPv4 protocol, got %T", protocol)
-		}
+		assert.IsType(t, &ICMPv4{}, protocol)
 	})
 
 	t.Run("Valid IPv6 Address", func(t *testing.T) {
@@ -55,9 +53,7 @@ func TestNewProtocol(t *testing.T) {
 		protocol, err := newProtocol("2001:db8::1")
 		require.NoError(t, err)
 
-		if _, ok := protocol.(*ICMPv6); !ok {
-			t.Fatalf("expected ICMPv6 protocol, got %T", protocol)
-		}
+		assert.IsType(t, &ICMPv6{}, protocol)
 	})
 
 	t.Run("Unresolvable Address", func(t *testing.T) {

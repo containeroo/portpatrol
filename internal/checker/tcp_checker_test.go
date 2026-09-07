@@ -2,7 +2,6 @@ package checker
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -68,14 +67,10 @@ func TestTCPChecker_InvalidAddress(t *testing.T) {
 
 	protocolConfig := DefaultTCPConfig()
 	protocolConfig.Timeout = 1 * time.Second
-	checker, err := NewTCPChecker("example", "invalid-address", protocolConfig)
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	err = checker.Check(ctx)
-
+	_, err := NewTCPChecker("example", "invalid-address", protocolConfig)
 	require.Error(t, err)
-	assert.EqualError(t, err, "dial tcp: address invalid-address: missing port in address")
+	assert.Contains(t, err.Error(), "TCP address must be host:port")
+
 }
 
 // TestTCPChecker_Timeout verifies the expected behavior.
@@ -94,5 +89,5 @@ func TestTCPChecker_Timeout(t *testing.T) {
 	err = checker.Check(ctx)
 
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, context.DeadlineExceeded), "expected context deadline exceeded, got %v", err)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }

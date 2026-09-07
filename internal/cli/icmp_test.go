@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containeroo/never/internal/checker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +15,9 @@ func TestParseFlagsICMPHostname(t *testing.T) {
 	parsedFlags, err := ParseFlags([]string{"--icmp.host.address=example.com"}, "1.0.0")
 	require.NoError(t, err)
 	require.Len(t, parsedFlags.Targets, 1)
-	assert.Equal(t, checker.ICMP, parsedFlags.Targets[0].Type)
+	require.NotNil(t, parsedFlags.Targets[0].ICMP)
+	assert.Nil(t, parsedFlags.Targets[0].HTTP)
+	assert.Nil(t, parsedFlags.Targets[0].TCP)
 	assert.Equal(t, "example.com", parsedFlags.Targets[0].Address)
 }
 
@@ -32,7 +33,8 @@ func TestParseFlagsICMPTimeout(t *testing.T) {
 	}, "1.0.0")
 	require.NoError(t, err)
 	require.Len(t, parsedFlags.Targets, 1)
-	assert.Equal(t, 3*time.Second, parsedFlags.Targets[0].ICMPTimeout)
-	assert.Equal(t, 4*time.Second, parsedFlags.Targets[0].ICMPReadTimeout)
-	assert.Equal(t, 5*time.Second, parsedFlags.Targets[0].ICMPWriteTimeout)
+	require.NotNil(t, parsedFlags.Targets[0].ICMP)
+	assert.Equal(t, 3*time.Second, parsedFlags.Targets[0].ICMP.Timeout)
+	assert.Equal(t, 4*time.Second, parsedFlags.Targets[0].ICMP.ReadTimeout)
+	assert.Equal(t, 5*time.Second, parsedFlags.Targets[0].ICMP.WriteTimeout)
 }

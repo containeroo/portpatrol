@@ -3,9 +3,12 @@ package checker
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -28,6 +31,47 @@ type HTTPChecker struct {
 	skipTLSVerify       bool
 	timeout             time.Duration
 	client              *http.Client
+}
+
+// NewHTTPChecker constructs an HTTP checker from explicit protocol settings.
+func NewHTTPChecker(name, address string, cfg HTTPConfig) (*HTTPChecker, error) {
+	address = strings.TrimSpace(address)
+	if err := validateHTTPAddress(address); err != nil {
+		return nil, err
+	}
+	checker := &HTTPChecker{
+		name:                name,
+		address:             address,
+		method:              cfg.Method,
+		headers:             cfg.Headers.Clone(),
+		expectedStatusCodes: slices.Clone(cfg.ExpectedStatusCodes),
+		followRedirects:     cfg.FollowRedirects,
+		maxRedirects:        cfg.MaxRedirects,
+		skipTLSVerify:       cfg.SkipTLSVerify,
+		timeout:             cfg.Timeout,
+	}
+
+	checker.client = &http.Client{
+		Timeout: checker.timeout,
+		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
+			if !checker.followRedirects || checker.maxRedirects == 0 {
+				return http.ErrUseLastResponse
+			}
+			if len(via) > checker.maxRedirects {
+				return fmt.Errorf("stopped after %d redirects", checker.maxRedirects)
+			}
+
+			return nil
+		},
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: checker.skipTLSVerify,
+			},
+		},
+	}
+
+	return checker, nil
 }
 
 // Address returns the checker address.
@@ -54,6 +98,10 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			err = urlErr.Err
+		}
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close() // nolint:errcheck
@@ -78,32 +126,12 @@ type HTTPConfig struct {
 
 // DefaultHTTPConfig returns an independent configuration with the application defaults.
 func DefaultHTTPConfig() HTTPConfig {
-	return HTTPConfig{Method: defaultHTTPMethod, Headers: make(http.Header), ExpectedStatusCodes: []int{200}, FollowRedirects: defaultHTTPFollowRedirects, MaxRedirects: defaultHTTPMaxRedirects, Timeout: defaultHTTPTimeout}
-}
-
-// NewHTTPChecker constructs an HTTP checker from explicit protocol settings.
-func NewHTTPChecker(name, address string, cfg HTTPConfig) (*HTTPChecker, error) {
-	checker := &HTTPChecker{name: name, address: address, method: cfg.Method, headers: cfg.Headers.Clone(), expectedStatusCodes: slices.Clone(cfg.ExpectedStatusCodes), followRedirects: cfg.FollowRedirects, maxRedirects: cfg.MaxRedirects, skipTLSVerify: cfg.SkipTLSVerify, timeout: cfg.Timeout}
-
-	checker.client = &http.Client{
-		Timeout: checker.timeout,
-		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
-			if !checker.followRedirects || checker.maxRedirects == 0 {
-				return http.ErrUseLastResponse
-			}
-			if len(via) > checker.maxRedirects {
-				return fmt.Errorf("stopped after %d redirects", checker.maxRedirects)
-			}
-
-			return nil
-		},
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: checker.skipTLSVerify,
-			},
-		},
+	return HTTPConfig{
+		Method:              defaultHTTPMethod,
+		Headers:             make(http.Header),
+		ExpectedStatusCodes: []int{200},
+		FollowRedirects:     defaultHTTPFollowRedirects,
+		MaxRedirects:        defaultHTTPMaxRedirects,
+		Timeout:             defaultHTTPTimeout,
 	}
-
-	return checker, nil
 }

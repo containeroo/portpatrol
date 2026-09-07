@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -139,7 +138,7 @@ func TestRunConfigErrorInvalidHeaders(t *testing.T) {
 	err := Run(ctx, version, args, &stdOut, &stdErr)
 
 	require.Error(t, err)
-	assert.EqualError(t, err, "invalid \"--http.invalidheaders.header\": invalid header format: \"InvalidHeader\"")
+	assert.EqualError(t, err, `target "invalidheaders": failed to create HTTP checker: invalid HTTP header: invalid header format: "InvalidHeader"`)
 }
 
 // TestRunParseError verifies the expected behavior.
@@ -167,12 +166,8 @@ func TestRunCanceledIsNotReady(t *testing.T) {
 	cancel()
 	var out, stderr bytes.Buffer
 	err := Run(ctx, version, []string{"--tcp.test.address=127.0.0.1:1"}, &out, &stderr)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("expected cancellation, got %v", err)
-	}
-	if strings.Contains(out.String(), "is ready") {
-		t.Fatal(out.String())
-	}
+	require.ErrorIs(t, err, context.Canceled)
+	assert.NotContains(t, out.String(), "is ready")
 }
 
 func TestURLPrivacy(t *testing.T) {

@@ -110,3 +110,16 @@ func TestParseCheckType(t *testing.T) {
 		assert.EqualError(t, err, "unsupported check type: invalid")
 	})
 }
+
+// TestOverrideAddress verifies logging can expose a different address without changing checker behavior.
+func TestOverrideAddress(t *testing.T) {
+	t.Parallel()
+
+	check, err := NewHTTPChecker("example", "http://example.com/private", DefaultHTTPConfig())
+	require.NoError(t, err)
+
+	overridden := OverrideAddress(check, "http://example.com")
+	assert.Equal(t, "http://example.com", overridden.Address())
+	assert.Equal(t, check.Name(), overridden.Name())
+	assert.Equal(t, check.Type(), overridden.Type())
+}

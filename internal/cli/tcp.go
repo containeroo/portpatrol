@@ -3,6 +3,7 @@ package cli
 import (
 	"time"
 
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -11,9 +12,8 @@ func registerTCPFlags(tf *tinyflags.FlagSet) {
 	tcp := tf.DynamicGroup("tcp").Title("TCP")
 	tcp.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
 	tcp.String("address", "", "TCP target address").
-		Validate(validateTCPAddress).
 		Required()
-	tcp.Duration("timeout", 2*time.Second, "Timeout for TCP connection").
+	tcp.Duration("timeout", checker.DefaultTCPConfig().Timeout, "Timeout for TCP connection").
 		Validate(validateTimeoutDuration()).
 		Placeholder("DURATION")
 	tcp.Duration("interval", 0*time.Second, "Time between TCP requests. Defaults to --default-interval when unset or 0.").

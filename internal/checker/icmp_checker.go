@@ -3,9 +3,9 @@ package checker
 import (
 	"context"
 	"fmt"
-	"github.com/containeroo/never/internal/utils"
 	"net"
 	"os"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -25,6 +25,20 @@ type ICMPChecker struct {
 	writeTimeout time.Duration
 	protocol     Protocol
 	lookupIP     func(context.Context, string, string) ([]net.IP, error)
+}
+
+// NewICMPChecker constructs an ICMP checker without resolving its address.
+func NewICMPChecker(name, address string, cfg ICMPConfig) (*ICMPChecker, error) {
+	address = strings.TrimSpace(address)
+	if err := validateICMPAddress(address); err != nil {
+		return nil, err
+	}
+	return &ICMPChecker{
+		name:         name,
+		address:      address,
+		readTimeout:  cfg.ReadTimeout,
+		writeTimeout: cfg.WriteTimeout,
+	}, nil
 }
 
 // Address returns the checker address.
@@ -114,7 +128,6 @@ func (c *ICMPChecker) Check(ctx context.Context) (result error) {
 		}
 		return nil
 	}
-
 }
 
 // ICMPConfig contains ICMP phase timeouts.
@@ -122,12 +135,4 @@ type ICMPConfig struct{ ReadTimeout, WriteTimeout time.Duration }
 
 func DefaultICMPConfig() ICMPConfig {
 	return ICMPConfig{ReadTimeout: defaultICMPReadTimeout, WriteTimeout: defaultICMPWriteTimeout}
-}
-
-// NewICMPChecker constructs an ICMP checker without resolving its address.
-func NewICMPChecker(name, address string, cfg ICMPConfig) (*ICMPChecker, error) {
-	if net.ParseIP(address) == nil && !utils.IsHostnameLike(address) {
-		return nil, fmt.Errorf("invalid ICMP address")
-	}
-	return &ICMPChecker{name: name, address: address, readTimeout: cfg.ReadTimeout, writeTimeout: cfg.WriteTimeout}, nil
 }

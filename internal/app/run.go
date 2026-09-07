@@ -23,15 +23,15 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 			_, _ = fmt.Fprint(stdOut, err)
 			return nil
 		}
-		_, _ = fmt.Fprintln(stdErr, logging.RedactURLs(err.Error(), false))
+		_, _ = fmt.Fprintln(stdErr, err)
 		return err
 	}
 
 	// Setup logger immediately so startup errors are correctly logged.
-	logger := logging.SetupLogger(cfg.LogFormat, stdOut, cfg.ShowPath)
+	logger := logging.SetupLogger(cfg.LogFormat, stdOut)
 
 	// Initialize target checkers
-	checkers, err := factory.BuildCheckers(cfg.Targets, cfg.DefaultCheckInterval, version)
+	checkers, err := factory.BuildCheckers(cfg.Targets, cfg.DefaultCheckInterval, cfg.MaxAttempts, version, cfg.ShowPath)
 	if err != nil {
 		logger.Error("failed to initialize target checkers", "err", err)
 		return err
@@ -42,7 +42,7 @@ func Run(ctx context.Context, version string, args []string, stdOut, stdErr io.W
 	defer stop()
 
 	// Run all checkers.
-	err = runner.RunAll(ctx, checkers, cfg.MaxAttempts, logger)
+	err = runner.RunAll(ctx, checkers, logger)
 
 	if cause := context.Cause(ctx); cause != nil {
 		logger.Info("context stopped", "cause", cause)

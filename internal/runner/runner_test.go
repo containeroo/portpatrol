@@ -3,7 +3,6 @@ package runner
 import (
 	"bytes"
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -56,7 +55,7 @@ func TestRunAllHTTPReady(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, fs.MaxAttempts, version, false)
 	require.NoError(t, err)
 
 	// Run
@@ -66,7 +65,7 @@ func TestRunAllHTTPReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, -1, logger)
+	err = RunAll(ctx, checkers, logger)
 	assert.NoError(t, err)
 
 	// Assert output contains readiness line
@@ -92,7 +91,7 @@ func TestRunAllTCPReady(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, fs.MaxAttempts, version, false)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -101,7 +100,7 @@ func TestRunAllTCPReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, -1, logger)
+	err = RunAll(ctx, checkers, logger)
 	assert.NoError(t, err)
 
 	lines := strings.Split(strings.TrimSpace(output.String()), "\n")
@@ -136,7 +135,7 @@ func TestRunAllMultipleReady(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, fs.MaxAttempts, version, false)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -145,7 +144,7 @@ func TestRunAllMultipleReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, -1, logger)
+	err = RunAll(ctx, checkers, logger)
 	assert.NoError(t, err)
 
 	// Order is nondeterministic; assert both readiness messages appear.
@@ -164,9 +163,9 @@ func TestRunAllNoCheckers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	err := RunAll(ctx, nil, -1, logger)
+	err := RunAll(ctx, nil, logger)
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrNoCheckers), "expected ErrNoCheckers, got %v", err)
+	assert.ErrorIs(t, err, ErrNoCheckers)
 	assert.EqualError(t, err, "no checkers to run")
 }
 
@@ -184,7 +183,7 @@ func TestRunAllPropagatesError(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, fs.MaxAttempts, version, false)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -193,7 +192,7 @@ func TestRunAllPropagatesError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Millisecond)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, -1, logger)
+	err = RunAll(ctx, checkers, logger)
 	require.Error(t, err)
 
 	// The exact inner error can vary (timeout, context deadline), so check the runner prefix.
@@ -214,7 +213,7 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	fs, err := cli.ParseFlags(args, version)
 	require.NoError(t, err)
 
-	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, version)
+	checkers, err := factory.BuildCheckers(fs.Targets, fs.DefaultCheckInterval, 2, version, false)
 	require.NoError(t, err)
 
 	var output strings.Builder
@@ -223,7 +222,7 @@ func TestRunAllMaxAttempts(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err = RunAll(ctx, checkers, 2, logger)
+	err = RunAll(ctx, checkers, logger)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "checker 'HTTPServer' failed")
 }

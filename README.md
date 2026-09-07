@@ -503,6 +503,6 @@ This project is licensed under the Apache License. See the [LICENSE](LICENSE) fi
 
 ### URL privacy
 
-Logs hide HTTP URL paths, queries, and fragments by default, including URLs in request errors.
+HTTP checker addresses hide paths, queries, and fragments by default.
 Use `--show-path` (or `NEVER__SHOW_PATH=true`) to include them for troubleshooting; they may contain secrets.
-URL usernames and passwords remain hidden. Invalid-argument diagnostics always hide URL paths.
+URL usernames and passwords are always hidden, and HTTP request errors do not echo the request URL.

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -12,7 +13,7 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	httpGroup := tf.DynamicGroup("http").Title("HTTP")
 	httpGroup.String("name", "", "Name of the HTTP checker. Defaults to <ID>.")
 	tinyflags.DynamicEnum(
-		httpGroup, "method", http.MethodGet, "HTTP method to use.",
+		httpGroup, "method", checker.DefaultHTTPConfig().Method, "HTTP method to use.",
 		http.MethodGet,
 		http.MethodHead,
 		http.MethodPost,
@@ -25,7 +26,6 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	).
 		Placeholder("METHOD")
 	httpGroup.String("address", "", "HTTP target URL").
-		Validate(validateHTTPAddress).
 		Required()
 	httpGroup.Duration("interval", 0*time.Second, "Time between HTTP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).
@@ -50,7 +50,7 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 		Placeholder("N")
 
 	httpGroup.Bool("skip-tls-verify", defaultHTTPSkipTLSVerify, "Skip TLS verification")
-	httpGroup.Duration("timeout", 2*time.Second, "Request timeout").
+	httpGroup.Duration("timeout", checker.DefaultHTTPConfig().Timeout, "Request timeout").
 		Validate(validateTimeoutDuration()).
 		Placeholder("DURATION")
 }

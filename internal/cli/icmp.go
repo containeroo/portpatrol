@@ -3,6 +3,7 @@ package cli
 import (
 	"time"
 
+	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -11,7 +12,6 @@ func registerICMPFlags(tf *tinyflags.FlagSet) {
 	icmp := tf.DynamicGroup("icmp").Title("ICMP")
 	icmp.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
 	icmp.String("address", "", "ICMP target address").
-		Validate(validateICMPAddress).
 		Required()
 	icmp.Duration("interval", 0*time.Second, "Time between ICMP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).
@@ -20,7 +20,7 @@ func registerICMPFlags(tf *tinyflags.FlagSet) {
 		Validate(validateOptionalMaxAttempts).
 		Placeholder("N")
 	registerRetryFlags(icmp)
-	icmp.Duration("timeout", 2*time.Second, "Timeout for ICMP read and write").
+	icmp.Duration("timeout", checker.DefaultICMPConfig().ReadTimeout, "Timeout for ICMP read and write").
 		Validate(validateTimeoutDuration()).
 		Placeholder("DURATION")
 	icmp.Duration("read-timeout", 0*time.Second, "Advanced: override the ICMP read timeout. Defaults to --icmp.<ID>.timeout when unset or 0.").

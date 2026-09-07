@@ -3,6 +3,8 @@ package testutils
 import (
 	"net"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -23,10 +25,7 @@ func ListenLocalTCP(t testing.TB) net.Listener {
 	t.Helper()
 
 	listener, err := net.Listen("tcp", LocalhostAddr("0"))
-	if err != nil {
-		t.Fatalf("listen local TCP: %v", err)
-	}
-
+	require.NoError(t, err, "listen local TCP")
 	return listener
 }
 
@@ -38,11 +37,7 @@ func LocalTCPAddr(t testing.TB) string {
 
 	listener := ListenLocalTCP(t)
 	addr := listener.Addr().String()
-
-	if err := listener.Close(); err != nil {
-		t.Fatalf("close local TCP listener: %v", err)
-	}
-
+	require.NoError(t, listener.Close(), "close local TCP listener")
 	return addr
 }
 
