@@ -150,19 +150,23 @@ func TestWaitUntilReady_TCPFailsInitially(t *testing.T) {
 
 	addr := testutils.LocalTCPAddr(t)
 
-	var listener net.Listener
+	type listenResult struct {
+		listener net.Listener
+		err      error
+	}
+	started := make(chan listenResult, 1)
 	go func() {
-		time.Sleep(500 * time.Millisecond) // Simulate a delayed server start
-		var err error
-		listener, err = net.Listen("tcp", addr)
-		if err != nil {
-			panic("Failed to start TCP server")
-		}
+		time.Sleep(500 * time.Millisecond)
+		listener, err := net.Listen("tcp", addr)
+		started <- listenResult{listener, err}
 	}()
 	defer func() {
-		if listener != nil {
-			listener.Close() // nolint:errcheck
+		result := <-started
+		if result.err != nil {
+			t.Errorf("failed to start TCP server: %v", result.err)
+			return
 		}
+		_ = result.listener.Close()
 	}()
 
 	checker, err := checker.NewChecker(checker.TCP, tcpServerName, addr)
