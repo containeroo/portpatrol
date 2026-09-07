@@ -12,6 +12,7 @@ func registerICMPFlags(tf *tinyflags.FlagSet) {
 	icmp := tf.DynamicGroup("icmp").Title("ICMP")
 	icmp.String("name", "", "Name of the ICMP checker. Defaults to <ID>.")
 	icmp.String("address", "", "ICMP target address").
+		Validate(validateICMPAddress).
 		Required()
 	icmp.Duration("interval", 0*time.Second, "Time between ICMP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).

@@ -26,6 +26,7 @@ func registerHTTPFlags(tf *tinyflags.FlagSet) {
 	).
 		Placeholder("METHOD")
 	httpGroup.String("address", "", "HTTP target URL").
+		Validate(validateHTTPAddress).
 		Required()
 	httpGroup.Duration("interval", 0*time.Second, "Time between HTTP requests. Defaults to --default-interval when unset or 0.").
 		Validate(validateNonNegativeDuration("interval")).

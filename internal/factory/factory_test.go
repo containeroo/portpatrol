@@ -190,20 +190,6 @@ func TestBuildCheckers(t *testing.T) {
 		assert.Equal(t, testutils.LocalhostIPv4, checkers[0].Checker.Address())
 	})
 
-	t.Run("Invalid ICMP Checker", func(t *testing.T) {
-		t.Parallel()
-
-		checkers, err := factory.BuildCheckers([]factory.TargetConfig{
-			{
-				ID:      targetID,
-				Address: "://invalid-url",
-				ICMP:    &factory.ICMPConfig{},
-			},
-		}, 2*time.Second, -1, testVersion, false)
-
-		assert.Nil(t, checkers)
-		require.Error(t, err)
-	})
 }
 
 func TestBuildCheckersHTTPLogAddress(t *testing.T) {

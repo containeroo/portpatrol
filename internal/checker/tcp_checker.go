@@ -3,7 +3,6 @@ package checker
 import (
 	"context"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -18,10 +17,7 @@ type TCPChecker struct {
 
 // NewTCPChecker constructs a TCP checker from explicit protocol settings.
 func NewTCPChecker(name, address string, cfg TCPConfig) (*TCPChecker, error) {
-	address = strings.TrimSpace(address)
-	if err := validateTCPAddress(address); err != nil {
-		return nil, err
-	}
+	address = normalizeAddress(address)
 	return &TCPChecker{
 		name:    name,
 		address: address,

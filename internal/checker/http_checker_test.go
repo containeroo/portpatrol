@@ -82,15 +82,6 @@ func TestHTTPChecker(t *testing.T) {
 		assert.EqualError(t, err, "unexpected status code: got 404, expected one of [200]")
 	})
 
-	t.Run("Invalid URL for HTTP check", func(t *testing.T) {
-		t.Parallel()
-
-		_, err := NewHTTPChecker("example", "://invalid-url", DefaultHTTPConfig())
-		require.Error(t, err)
-		assert.EqualError(t, err, "invalid HTTP URL")
-
-	})
-
 	t.Run("Timeout during HTTP check", func(t *testing.T) {
 		t.Parallel()
 

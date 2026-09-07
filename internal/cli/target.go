@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/containeroo/never/internal/backoff"
 	"github.com/containeroo/never/internal/checker"
 	"github.com/containeroo/never/internal/factory"
+	"github.com/containeroo/resolver"
 	"github.com/containeroo/tinyflags"
 )
 
@@ -20,10 +23,18 @@ func parseTargetConfigs(dynamicGroups []*tinyflags.DynamicGroup) ([]factory.Targ
 		}
 
 		for _, id := range group.Instances() {
+			address, err := resolveTargetAddress(
+				tinyflags.GetOrDefaultDynamic[string](group, id, "address"),
+				checkType,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("%s target %q: %w", checkType, id, err)
+			}
+
 			target := factory.TargetConfig{
 				ID:          id,
 				Name:        tinyflags.GetOrDefaultDynamic[string](group, id, "name"),
-				Address:     tinyflags.GetOrDefaultDynamic[string](group, id, "address"),
+				Address:     address,
 				Interval:    getDynamicDuration(group, id, "interval"),
 				MaxAttempts: getDynamicInt(group, id, "max-attempts"),
 				Backoff:     getDynamicBackoffMode(group, id, "backoff"),
@@ -36,6 +47,35 @@ func parseTargetConfigs(dynamicGroups []*tinyflags.DynamicGroup) ([]factory.Targ
 	}
 
 	return targets, nil
+}
+
+// resolveTargetAddress resolves a target address and validates the concrete value.
+func resolveTargetAddress(value string, checkType checker.CheckType) (string, error) {
+	address, err := resolver.ResolveVariable(strings.TrimSpace(value))
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve address: %w", err)
+	}
+
+	address = strings.TrimSpace(address)
+	if err := validateResolvedTargetAddress(address, checkType); err != nil {
+		return "", err
+	}
+
+	return address, nil
+}
+
+// validateResolvedTargetAddress dispatches concrete address validation by checker type.
+func validateResolvedTargetAddress(address string, checkType checker.CheckType) error {
+	switch checkType {
+	case checker.HTTP:
+		return validateResolvedHTTPAddress(address)
+	case checker.TCP:
+		return validateResolvedTCPAddress(address)
+	case checker.ICMP:
+		return validateResolvedICMPAddress(address)
+	default:
+		panic("unreachable checker type")
+	}
 }
 
 // applyCheckerConfig attaches the checker-specific settings for one target.

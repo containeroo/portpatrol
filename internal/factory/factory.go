@@ -98,13 +98,9 @@ func BuildCheckers(
 			return nil, fmt.Errorf("invalid backoff for %s", target.ID)
 		}
 
-		resolvedAddr, err := resolver.ResolveVariable(strings.TrimSpace(target.Address))
-		if err != nil {
-			return nil, fmt.Errorf("invalid variable in address: %w", err)
-		}
-
+		address := strings.TrimSpace(target.Address)
 		name := cmp.Or(target.Name, target.ID)
-		instance, err := buildChecker(target, checkType, name, resolvedAddr, version, showPath)
+		instance, err := buildChecker(target, checkType, name, address, version, showPath)
 		if err != nil {
 			return nil, fmt.Errorf("target %q: failed to create %s checker: %w", target.ID, checkType, err)
 		}

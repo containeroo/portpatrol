@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -29,10 +28,7 @@ type ICMPChecker struct {
 
 // NewICMPChecker constructs an ICMP checker without resolving its address.
 func NewICMPChecker(name, address string, cfg ICMPConfig) (*ICMPChecker, error) {
-	address = strings.TrimSpace(address)
-	if err := validateICMPAddress(address); err != nil {
-		return nil, err
-	}
+	address = normalizeAddress(address)
 	return &ICMPChecker{
 		name:         name,
 		address:      address,

@@ -61,18 +61,6 @@ func TestTCPChecker_FailedConnection(t *testing.T) {
 	assert.Contains(t, err.Error(), "connect: connection refused")
 }
 
-// TestTCPChecker_InvalidAddress verifies the expected behavior.
-func TestTCPChecker_InvalidAddress(t *testing.T) {
-	t.Parallel()
-
-	protocolConfig := DefaultTCPConfig()
-	protocolConfig.Timeout = 1 * time.Second
-	_, err := NewTCPChecker("example", "invalid-address", protocolConfig)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "TCP address must be host:port")
-
-}
-
 // TestTCPChecker_Timeout verifies the expected behavior.
 func TestTCPChecker_Timeout(t *testing.T) {
 	t.Parallel()

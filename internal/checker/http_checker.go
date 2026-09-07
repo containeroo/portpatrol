@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strings"
 	"time"
 )
 
@@ -35,10 +34,7 @@ type HTTPChecker struct {
 
 // NewHTTPChecker constructs an HTTP checker from explicit protocol settings.
 func NewHTTPChecker(name, address string, cfg HTTPConfig) (*HTTPChecker, error) {
-	address = strings.TrimSpace(address)
-	if err := validateHTTPAddress(address); err != nil {
-		return nil, err
-	}
+	address = normalizeAddress(address)
 	checker := &HTTPChecker{
 		name:                name,
 		address:             address,

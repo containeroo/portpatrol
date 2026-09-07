@@ -12,6 +12,7 @@ func registerTCPFlags(tf *tinyflags.FlagSet) {
 	tcp := tf.DynamicGroup("tcp").Title("TCP")
 	tcp.String("name", "", "Name of the TCP checker. Defaults to <ID>.")
 	tcp.String("address", "", "TCP target address").
+		Validate(validateTCPAddress).
 		Required()
 	tcp.Duration("timeout", checker.DefaultTCPConfig().Timeout, "Timeout for TCP connection").
 		Validate(validateTimeoutDuration()).
