@@ -1,11 +1,11 @@
 github.com/containeroo/httpgrace v0.2.0 h1:yw6NP3bYnTDbCNnGRSZzFddZWvPpb+FkRfu2dduEuxc=
 github.com/containeroo/httpgrace v0.2.0/go.mod h1:wVchVG6ETESS++4RdJr3O56MD6awm9CIOcms5Vl+9ps=
-github.com/containeroo/httputils v0.0.1 h1:W9SbW6nbmnGgaEOXRH5nY9ZwLarBo3+FLUCx6EtS2mc=
-github.com/containeroo/httputils v0.0.1/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
+github.com/containeroo/httputils v0.0.2 h1:w+ZrkyQ6BqfJ9D6IebTOA+IbzZgd3scC+0cb4FiM8co=
+github.com/containeroo/httputils v0.0.2/go.mod h1:TrmDptapH6SBe6CeHFWY2kxy63O/9ZWBWrLKpc2SFjI=
 github.com/containeroo/resolver v0.3.2 h1:hA0r3XwEQLD33sKMZwDRPtb1ipWxWaoYm4fS/6YIJsg=
 github.com/containeroo/resolver v0.3.2/go.mod h1:jw6aqwrrMX+RUqVRznaauzR4hXSYVs06isNZD9+WKts=
-github.com/containeroo/tinyflags v0.0.81 h1:CI6jtJIImJFxRJW7JV6yYqW+1bVZmw+0gSalis75Ujc=
-github.com/containeroo/tinyflags v0.0.81/go.mod h1:5CGkQy0A+90ubNaEDJanfXOlE4+aYHp4OBwCpXM1yDM=
+github.com/containeroo/tinyflags v0.0.82 h1:Dn/6AybNH0XhGXuEe0NcyqAqF3ce3HFkAGJRDFYTvco=
+github.com/containeroo/tinyflags v0.0.82/go.mod h1:5CGkQy0A+90ubNaEDJanfXOlE4+aYHp4OBwCpXM1yDM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pelletier/go-toml/v2 v2.4.3 h1:GTRvJQutkOSftxIFD5xw9aepkYNuPWmVJpffdDPYVpY=
