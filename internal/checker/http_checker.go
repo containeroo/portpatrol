@@ -103,11 +103,7 @@ func (c *HTTPChecker) Check(ctx context.Context) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	for key, values := range c.headers {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
+	req.Header = c.headers.Clone()
 
 	resp, err := c.client.Do(req)
 	if err != nil {
